@@ -1,0 +1,31 @@
+.panel {
+  margin-top: 2rem;
+  border-radius: 28px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.banner {
+  background: var(--teal);
+  padding: 1.4rem 2rem;
+  color: white;
+}
+
+.title {
+  margin: 0;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.subtitle {
+  margin: 0.25rem 0 0;
+  opacity: 0.85;
+}
+
+.grid {
+  padding: 1.8rem 2rem 2.4rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 1.2rem;
+}

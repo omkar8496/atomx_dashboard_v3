@@ -1,36 +1,55 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+## AtomX Dashboard v3 Monorepo
 
-## Getting Started
+This repository now hosts a poly-repo style workspace built with Turborepo + npm workspaces. Two fully isolated Next.js apps (`livelink` and `tag_series`) live beside a set of shared packages for UI, auth, API clients, utilities, and shared public assets.
 
-First, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```
+apps/
+  access_portal/  → shared access landing (`/access`)
+  livelink/        → streaming control surface
+  tag_series/      → IoT analytics console
+packages/
+  shared-ui/       → reusable design system pieces
+  global-components/ → layout, auth panel, footer
+  auth/            → shared login helpers + config
+  api/             → API client + routing info
+  lib/             → copy + environment helpers
+  utils/           → formatting + feature flags
+  public-assets/   → logos/assets synced into each app/public/shared
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Install & bootstrap
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+```bash
+npm install        # installs root + workspace deps and syncs shared public assets
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Run or build a single app
 
-## Learn More
+```bash
+npm run dev:livelink
+npm run dev:tag_series
+npm run build:livelink
+npm run build:tag_series
+```
 
-To learn more about Next.js, take a look at the following resources:
+### Turborepo tasks
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm run dev        # runs both apps in parallel (filtered via turbo)
+npm run build      # builds everything respecting dependency graph
+npm run lint       # placeholder if/when Next lint is configured
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Auth & API strategy
 
-## Deploy on Vercel
+- Per-project auth screens live at `apps/<project>/app/(auth)/login/page.js`.
+- Shared authentication helpers live in `packages/auth` and can be reused or swapped for a real identity provider later.
+- `packages/api` exposes `createApiClient` + route metadata so every app (and even shared packages) can consume consistent endpoints.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Shared assets
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+`packages/public-assets` holds SVGs and other static files. After install (or by running `npm run sync:public`) those files are mirrored into each app under `public/shared`, so each deployment can live on its own domain without fighting for assets.
+
+### Custom libs & utils
+
+Every app has a local `lib/`, `utils/`, and `api/` folder for project-specific code while `packages/lib` + `packages/utils` expose cross-project helpers. Use whichever makes sense and keep domain-specific logic close to the owning app.

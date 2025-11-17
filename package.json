@@ -2,19 +2,35 @@
   "name": "atomx_dashboard_v3",
   "version": "0.1.0",
   "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "next dev --webpack",
-    "build": "next build --webpack",
-    "start": "next start"
+    "dev": "turbo dev",
+    "dev:livelink": "turbo dev --filter=@atomx/livelink",
+    "dev:tag_series": "turbo dev --filter=@atomx/tag_series",
+    "dev:access": "turbo dev --filter=@atomx/access-portal",
+    "build": "turbo build",
+    "build:out": "node scripts/export-all.js",
+    "build:livelink": "turbo build --filter=@atomx/livelink",
+    "build:tag_series": "turbo build --filter=@atomx/tag_series",
+    "build:access": "turbo build --filter=@atomx/access-portal",
+    "lint": "turbo lint",
+    "sync:public": "node scripts/sync-public-assets.js",
+    "postinstall": "npm run sync:public || true"
   },
-  "dependencies": {
-    "react": "19.2.0",
-    "react-dom": "19.2.0",
-    "next": "16.0.1"
-  },
+  "packageManager": "npm@10.9.0",
   "devDependencies": {
     "babel-plugin-react-compiler": "1.0.0",
-    "@tailwindcss/postcss": "^4",
-    "tailwindcss": "^4"
+    "turbo": "^2.6.0"
+  },
+  "overrides": {
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "next": {
+      "react": "19.2.0",
+      "react-dom": "19.2.0"
+    }
   }
 }

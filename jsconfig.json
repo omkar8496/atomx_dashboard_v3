@@ -1,7 +1,22 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@atomx/shared-ui": ["packages/shared-ui/src"],
+      "@atomx/shared-ui/*": ["packages/shared-ui/src/*"],
+      "@atomx/global-components": ["packages/global-components/src"],
+      "@atomx/global-components/*": ["packages/global-components/src/*"],
+      "@atomx/auth": ["packages/auth/src"],
+      "@atomx/auth/*": ["packages/auth/src/*"],
+      "@atomx/api-client": ["packages/api/src"],
+      "@atomx/api-client/*": ["packages/api/src/*"],
+      "@atomx/lib": ["packages/lib/src"],
+      "@atomx/lib/*": ["packages/lib/src/*"],
+      "@atomx/utils": ["packages/utils/src"],
+      "@atomx/utils/*": ["packages/utils/src/*"],
+      "@livelink/*": ["apps/livelink/*"],
+      "@tag_series/*": ["apps/tag_series/*"]
     }
-  }
+  },
+  "exclude": ["node_modules"]
 }

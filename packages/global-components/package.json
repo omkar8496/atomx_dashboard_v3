@@ -1,0 +1,10 @@
+{
+  "name": "@atomx/global-components",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.js",
+  "dependencies": {
+    "@atomx/public-assets": "0.1.0"
+  }
+}

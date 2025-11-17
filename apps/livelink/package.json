@@ -1,0 +1,25 @@
+{
+  "name": "@atomx/livelink",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3001",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@atomx/api-client": "0.1.0",
+    "@atomx/auth": "0.1.0",
+    "@atomx/global-components": "0.1.0",
+    "@atomx/lib": "0.1.0",
+    "@atomx/shared-ui": "0.1.0",
+    "@atomx/utils": "0.1.0",
+    "next": "16.0.1",
+    "react": "19.2.0",
+    "react-dom": "19.2.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "tailwindcss": "^4"
+  }
+}

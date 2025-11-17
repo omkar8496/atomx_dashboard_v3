@@ -16,6 +16,12 @@
 # next.js
 /.next/
 /out/
+apps/*/.next/
+apps/*/node_modules/
+packages/*/node_modules/
+.turbo
+apps/*/public/shared/
+.turbo
 
 # production
 /build
