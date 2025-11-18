@@ -2,6 +2,9 @@
 const config = {
   reactCompiler: true,
   output: "export",
+  images: {
+    unoptimized: true
+  },
   transpilePackages: [
     "@atomx/shared-ui",
     "@atomx/global-components",
