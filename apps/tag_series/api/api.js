@@ -1,5 +1,6 @@
-const CARD_CLIENTS_ENDPOINT = "/api/card-clients";
-const SERIES_ENDPOINT = "/api/series";
+const CARD_CLIENTS_ENDPOINT = "https://dapi.atomx.in/v1/TagSeries/CardClients";
+const SERIES_ENDPOINT = "https://dapi.atomx.in/v1/TagSeries/Series";
+const TAG_SERIES_API_KEY = "pZebJlF_.dv3_prod.Iu7Zitu3X30C2R6-bVZtRXRu0DeiHY-j";
 
 function buildHeaders(token) {
   if (!token) {
@@ -7,6 +8,7 @@ function buildHeaders(token) {
   }
 
   return {
+    "x-api-key": TAG_SERIES_API_KEY,
     Authorization: `Bearer ${token}`
   };
 }

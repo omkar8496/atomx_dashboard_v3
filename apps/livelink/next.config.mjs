@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const config = {
   reactCompiler: true,
+  output: "export",
   transpilePackages: [
     "@atomx/shared-ui",
     "@atomx/global-components",

@@ -30,7 +30,6 @@ function main() {
   apps.forEach((app) => {
     const appDir = path.join(root, app.dir);
     run("npm", ["run", "build"], appDir, `Building ${app.name}`);
-    run("npx", ["next", "export", "-o", "out"], appDir, `Exporting ${app.name}`);
 
     const sourceOut = path.join(appDir, "out");
     const targetOut = path.join(outRoot, app.outLabel);
