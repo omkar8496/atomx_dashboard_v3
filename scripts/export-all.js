@@ -39,6 +39,18 @@ function main() {
     console.log(`✔ Copied ${app.name} export to ${path.relative(root, targetOut)}`);
   });
 
+  const portalOut = path.join(outRoot, "access_portal");
+  if (fs.existsSync(portalOut)) {
+    console.log("\n➜ Syncing access portal export to root /out for S3 index");
+    for (const entry of fs.readdirSync(portalOut)) {
+      const from = path.join(portalOut, entry);
+      const to = path.join(outRoot, entry);
+      fs.rmSync(to, { recursive: true, force: true });
+      fs.cpSync(from, to, { recursive: true });
+    }
+    console.log("✔ Root /out now serves the access portal build (index.html, assets, etc.)");
+  }
+
   console.log(`\nAll exports completed. Combined output lives in ${path.relative(root, outRoot)}`);
 }
 
