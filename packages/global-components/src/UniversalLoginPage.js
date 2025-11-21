@@ -72,9 +72,49 @@ export function UniversalLoginPage({
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const nextUrl = buildAuthUrl(authUrl, appId, window.location.href);
+
+    let redirectTarget = redirectPath || "/";
+    if (!/^https?:\/\//i.test(redirectTarget)) {
+      try {
+        redirectTarget = new URL(redirectTarget, window.location.origin).toString();
+      } catch {
+        redirectTarget = window.location.href;
+      }
+    }
+
+    const nextUrl = buildAuthUrl(authUrl, appId, redirectTarget);
     setLoginUrl(nextUrl);
-  }, [appId, authUrl]);
+  }, [appId, authUrl, redirectPath]);
+
+  useEffect(() => {
+    if (
+      typeof window === "undefined" ||
+      process.env.NODE_ENV !== "development" ||
+      searchParams.get("token") ||
+      status !== "idle"
+    ) {
+      return;
+    }
+
+    let cancelled = false;
+    import("../../../../DEV_TOKEN_TEMP.js")
+      .then((mod) => {
+        if (cancelled) return;
+        const devToken = mod?.DEV_PORTAL_TOKEN;
+        if (!devToken) return;
+        const decoded = decodeJwt(devToken);
+        setProfile(decoded);
+        setStatus("success");
+        window.localStorage.setItem(`atomx.auth.${appId}`, devToken);
+        router.replace(window.location.pathname);
+        setTimeout(() => router.push(redirectPath), 600);
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [appId, redirectPath, router, searchParams, status]);
 
   useEffect(() => {
     const token = searchParams.get("token");
