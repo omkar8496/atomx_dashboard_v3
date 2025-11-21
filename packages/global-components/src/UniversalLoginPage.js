@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { decodeJwt } from "@atomx/lib";
 
@@ -45,6 +45,19 @@ const buttonStyle = {
   boxShadow: "0 10px 20px rgba(248,140,67,0.25)"
 };
 
+const devButtonStyle = {
+  marginTop: 10,
+  width: "100%",
+  borderRadius: "999px",
+  padding: "10px 18px",
+  background: "#fff7ed",
+  color: "#ea580c",
+  border: "1px dashed #fed7aa",
+  fontWeight: 600,
+  fontSize: "13px",
+  cursor: "pointer"
+};
+
 function buildAuthUrl(authUrl, appId, redirect) {
   try {
     const url = new URL(authUrl);
@@ -69,6 +82,7 @@ export function UniversalLoginPage({
   const [error, setError] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loginUrl, setLoginUrl] = useState(authUrl);
+  const [devToken, setDevToken] = useState(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -86,6 +100,30 @@ export function UniversalLoginPage({
     setLoginUrl(nextUrl);
   }, [appId, authUrl, redirectPath]);
 
+  const processToken = useCallback(
+    (token, delay = 1600) => {
+      if (!token) return;
+      try {
+        const decoded = decodeJwt(token);
+        setProfile(decoded);
+        setStatus("success");
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem(`atomx.auth.${appId}`, token);
+          if (appId === "portal") {
+            window.localStorage.setItem("atomx.portal.token", token);
+          }
+          router.replace(window.location.pathname);
+          setTimeout(() => router.push(redirectPath), delay);
+        }
+      } catch (err) {
+        console.error(err);
+        setError("We couldn't verify your login token. Please try again.");
+        setStatus("error");
+      }
+    },
+    [appId, redirectPath, router]
+  );
+
   useEffect(() => {
     if (
       typeof window === "undefined" ||
@@ -97,45 +135,37 @@ export function UniversalLoginPage({
     }
 
     let cancelled = false;
-    import("../../../../DEV_TOKEN_TEMP.js")
+    import("../../../DEV_TOKEN_TEMP.js")
       .then((mod) => {
         if (cancelled) return;
-        const devToken = mod?.DEV_PORTAL_TOKEN;
-        if (!devToken) return;
-        const decoded = decodeJwt(devToken);
-        setProfile(decoded);
-        setStatus("success");
-        window.localStorage.setItem(`atomx.auth.${appId}`, devToken);
-        router.replace(window.location.pathname);
-        setTimeout(() => router.push(redirectPath), 600);
+        if (mod?.DEV_PORTAL_TOKEN) {
+          setDevToken(mod.DEV_PORTAL_TOKEN);
+        }
       })
-      .catch(() => {});
+      .catch(() => setDevToken(null));
 
     return () => {
       cancelled = true;
     };
-  }, [appId, redirectPath, router, searchParams, status]);
+  }, [searchParams, status]);
 
   useEffect(() => {
     const token = searchParams.get("token");
     if (!token) return;
+    processToken(token);
+  }, [searchParams, processToken]);
 
-    try {
-      const decoded = decodeJwt(token);
-      setProfile(decoded);
-      setStatus("success");
-      if (typeof window !== "undefined") {
-        window.localStorage.setItem(`atomx.auth.${appId}`, token);
-        const newUrl = window.location.pathname;
-        router.replace(newUrl);
-        setTimeout(() => router.push(redirectPath), 1600);
-      }
-    } catch (err) {
-      console.error(err);
-      setError("We couldn't verify your login token. Please try again.");
-      setStatus("error");
-    }
-  }, [searchParams, router, redirectPath, appId]);
+  const showDevButton =
+    process.env.NODE_ENV === "development" &&
+    process.env.NEXT_PUBLIC_DEV_TOKEN_BUTTON === "true" &&
+    devToken &&
+    status === "idle" &&
+    !profile;
+
+  const handleDevTokenLogin = () => {
+    if (!showDevButton) return;
+    processToken(devToken, 600);
+  };
 
   const statusLabel = useMemo(() => {
     switch (status) {
@@ -210,6 +240,12 @@ export function UniversalLoginPage({
             </span>
             {statusLabel}
           </a>
+        )}
+
+        {showDevButton && (
+          <button type="button" style={devButtonStyle} onClick={handleDevTokenLogin}>
+            Use dev session token
+          </button>
         )}
 
         <p style={{ marginTop: 18, fontSize: "11px", color: "#a0a0a0" }}>

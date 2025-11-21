@@ -3,8 +3,13 @@
 import { useState } from "react";
 import styles from "./UserMenu.module.css";
 
-export function UserMenu({ user }) {
+export function UserMenu({ user, onSignOut = () => {} }) {
   const [open, setOpen] = useState(false);
+
+  const handleSignOut = () => {
+    setOpen(false);
+    onSignOut();
+  };
 
   return (
     <div className={styles.container}>
@@ -41,7 +46,7 @@ export function UserMenu({ user }) {
             <p>{user.email}</p>
             <small>Signed in from AtomX Access Portal</small>
           </div>
-          <button type="button" className={styles.signout}>
+          <button type="button" className={styles.signout} onClick={handleSignOut}>
             Sign out
           </button>
         </div>

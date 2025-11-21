@@ -71,6 +71,13 @@ export default function AccessPage() {
     tokenCandidate = Array.isArray(tokenCandidate) ? tokenCandidate[0] : tokenCandidate;
 
     if (!tokenCandidate && typeof window !== "undefined") {
+      const directToken = new URLSearchParams(window.location.search).get("token");
+      if (directToken) {
+        tokenCandidate = directToken;
+      }
+    }
+
+    if (!tokenCandidate && typeof window !== "undefined") {
       tokenCandidate = window.localStorage.getItem("atomx.portal.token");
     }
 
@@ -200,6 +207,35 @@ export default function AccessPage() {
     });
   };
 
+  const handleSignOut = () => {
+    if (typeof window !== "undefined") {
+      try {
+        window.localStorage.removeItem("atomx.portal.token");
+        const keysToRemove = [];
+        for (let i = 0; i < window.localStorage.length; i += 1) {
+          const key = window.localStorage.key(i);
+          if (!key) continue;
+          if (key.startsWith("atomx.auth.")) {
+            keysToRemove.push(key);
+          }
+        }
+        keysToRemove.forEach((key) => window.localStorage.removeItem(key));
+        if (window.sessionStorage) {
+          window.sessionStorage.clear();
+        }
+      } catch (err) {
+        console.error("Failed to clear auth cache", err);
+      }
+      window.location.assign("/");
+      return;
+    }
+    setProfile(null);
+    setModules([]);
+    setStatus("empty");
+    setToken(null);
+    router.replace("/");
+  };
+
   return (
     <>
       <Head>
@@ -210,7 +246,7 @@ export default function AccessPage() {
         />
       </Head>
       <main className={styles.wrapper}>
-        <HeaderBar user={user} />
+        <HeaderBar user={user} onSignOut={handleSignOut} />
 
         {status === "error" && (
           <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">

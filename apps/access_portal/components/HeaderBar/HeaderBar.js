@@ -4,7 +4,7 @@ import { UserMenu } from "../UserMenu/UserMenu";
 
 const LOGO_SRC = "/shared/logos/AtomX_Logo.svg";
 
-export function HeaderBar({ user }) {
+export function HeaderBar({ user, onSignOut }) {
   return (
     <header className={styles.header}>
       <div className={styles.logoStack}>
@@ -21,7 +21,7 @@ export function HeaderBar({ user }) {
         </div>
       </div>
 
-      <UserMenu user={user} />
+      <UserMenu user={user} onSignOut={onSignOut} />
     </header>
   );
 }
