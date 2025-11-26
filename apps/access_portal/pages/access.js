@@ -9,8 +9,8 @@ import { QuickActionsPanel } from "../components/QuickActionsPanel/QuickActionsP
 import styles from "../styles/AccessPage.module.css";
 
 const moduleLinks = {
-  livelink: process.env.NEXT_PUBLIC_LIVELINK_URL ?? "http://localhost:3001",
-  "tag-series": process.env.NEXT_PUBLIC_TAG_SERIES_URL ?? "http://localhost:3002"
+  livelink: process.env.NEXT_PUBLIC_LIVELINK_URL ?? "/livelink",
+  "tag-series": process.env.NEXT_PUBLIC_TAG_SERIES_URL ?? "/tag_series"
 };
 
 const MODULE_CATALOG = {
