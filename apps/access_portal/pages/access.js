@@ -189,9 +189,13 @@ export default function AccessPage() {
 
   const handleAction = (action) => {
     const moduleMeta = modules.find((module) => module.type === action.type);
-    if (moduleMeta?.href) {
+    const destination = moduleMeta?.href ?? moduleLinks[action.type];
+
+    if (destination && typeof window !== "undefined") {
       try {
-        const target = new URL(moduleMeta.href);
+        const target = destination.startsWith("http")
+          ? new URL(destination)
+          : new URL(destination, window.location.origin);
         if (token) {
           target.searchParams.set("token", token);
         }
@@ -201,6 +205,7 @@ export default function AccessPage() {
         // fall back to modal
       }
     }
+
     setModalApp({
       title: action.title,
       description: action.description
