@@ -2,6 +2,8 @@
 const config = {
   reactCompiler: true,
   output: "export",
+  basePath: "/tag_series",
+  assetPrefix: "/tag_series",
   images: {
     unoptimized: true
   },

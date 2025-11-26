@@ -2,6 +2,8 @@
 const config = {
   reactCompiler: true,
   output: "export",
+  basePath: "/livelink",
+  assetPrefix: "/livelink",
   images: {
     unoptimized: true
   },
