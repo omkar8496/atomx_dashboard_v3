@@ -1,5 +1,7 @@
 const CARD_CLIENTS_ENDPOINT = "https://dapi.atomx.in/v1/TagSeries/CardClients";
 const SERIES_ENDPOINT = "https://dapi.atomx.in/v1/TagSeries/Series";
+const LOGS_ENDPOINT = "https://dapi.atomx.in/v1/TagSeries/Logs";
+const BATCH_RECORDS_ENDPOINT = "https://dapi.atomx.in/v1/TagSeries/BatchRecords";
 const TAG_SERIES_API_KEY = "pZebJlF_.dv3_prod.Iu7Zitu3X30C2R6-bVZtRXRu0DeiHY-j";
 
 function buildHeaders(token) {
@@ -51,6 +53,57 @@ export async function fetchSeriesMeta(token, { eventId, adminId, yearSeries }) {
     const errorMessage = await response.text().catch(() => response.statusText);
     throw new Error(
       `Series request failed (${response.status}): ${errorMessage || "Unknown error"}`
+    );
+  }
+
+  return response.json();
+}
+
+export async function createTagSeriesLog(token, payload) {
+  if (!payload) {
+    throw new Error("Missing payload for Tag Series log request");
+  }
+
+  const response = await fetch(LOGS_ENDPOINT, {
+    method: "POST",
+    headers: {
+      ...buildHeaders(token),
+      "Content-Type": "application/json"
+    },
+    cache: "no-store",
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    const errorMessage = await response.text().catch(() => response.statusText);
+    throw new Error(
+      `Logs request failed (${response.status}): ${errorMessage || "Unknown error"}`
+    );
+  }
+
+  return response.json();
+}
+
+export async function fetchBatchRecords(token, { eventId, adminId }) {
+  if (!eventId || !adminId) {
+    throw new Error("Missing eventId or adminId for BatchRecords request");
+  }
+
+  const searchParams = new URLSearchParams({
+    eventId: String(eventId),
+    adminId: String(adminId)
+  });
+
+  const response = await fetch(`${BATCH_RECORDS_ENDPOINT}?${searchParams.toString()}`, {
+    method: "GET",
+    headers: buildHeaders(token),
+    cache: "no-store"
+  });
+
+  if (!response.ok) {
+    const errorMessage = await response.text().catch(() => response.statusText);
+    throw new Error(
+      `BatchRecords request failed (${response.status}): ${errorMessage || "Unknown error"}`
     );
   }
 

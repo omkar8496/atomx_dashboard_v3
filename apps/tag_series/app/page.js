@@ -14,7 +14,7 @@ export default function EventIdPage() {
   const [error, setError] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
   const [cardClientsError, setCardClientsError] = useState(null);
-  const [yearSeries] = useState(() => new Date().getFullYear().toString().slice(-2));
+  const [yearSeries, setYearSeries] = useState(() => new Date().getFullYear().toString().slice(-2));
   const [clients, setClients] = useState([]);
   const [clientsLoading, setClientsLoading] = useState(false);
   const [selectedClient, setSelectedClient] = useState("");
@@ -49,7 +49,9 @@ export default function EventIdPage() {
       if (typeof window === "undefined") return;
       setClientsLoading(true);
       try {
-        const token = window.localStorage.getItem("atomx.auth.tag-series");
+        const token =
+          window.localStorage.getItem("atomx.auth.tag-series") ||
+          window.localStorage.getItem("atomx.auth.tag_series");
         const response = await fetchCardClients(token);
         if (!cancelled) {
           const fetchedClients = response?.cardClients ?? [];
@@ -215,8 +217,10 @@ export default function EventIdPage() {
               <label className="mb-2 block text-sm font-semibold text-slate-600">Year Series</label>
               <input
                 value={yearSeries}
-                readOnly
-                className="w-full cursor-not-allowed rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3 text-base font-semibold text-slate-700"
+                onChange={(e) => setYearSeries(e.target.value.replace(/\D/g, "").slice(0, 2))}
+                inputMode="numeric"
+                maxLength={2}
+                className="w-full rounded-2xl border border-slate-200 bg-white/70 px-4 py-3 text-base font-semibold text-slate-700 shadow-inner shadow-slate-100 outline-none focus:border-[#e04420] focus:ring-2 focus:ring-[#e04420]/30"
               />
             </div>
             <div>

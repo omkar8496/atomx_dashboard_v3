@@ -5,7 +5,8 @@ const path = require("node:path");
 const apps = [
   { name: "Tag Series", dir: "apps/tag_series", outLabel: "tag_series" },
   { name: "LiveLink", dir: "apps/livelink", outLabel: "livelink" },
-  { name: "Access Portal", dir: "apps/access_portal", outLabel: "access_portal" }
+  { name: "Access Portal", dir: "apps/access_portal", outLabel: "access_portal" },
+  { name: "AccessX", dir: "apps/livelink/accessx", outLabel: "livelink/accessx" }
 ];
 
 function run(command, args, cwd, label) {
@@ -29,7 +30,22 @@ function main() {
 
   apps.forEach((app) => {
     const appDir = path.join(root, app.dir);
-    run("npm", ["run", "build"], appDir, `Building ${app.name}`);
+    if (!fs.existsSync(appDir)) {
+      console.warn(`⚠ Skipping ${app.name} — missing directory ${app.dir}`);
+      return;
+    }
+
+    const pkg = path.join(appDir, "package.json");
+    if (!fs.existsSync(pkg)) {
+      console.warn(`⚠ Skipping ${app.name} — missing package.json in ${app.dir}`);
+      return;
+    }
+
+    // Ensure stale out folders don't interfere with fresh exports.
+    fs.rmSync(path.join(appDir, "out"), { recursive: true, force: true });
+
+    // Force webpack build to avoid Turbopack port-binding panic in this environment.
+    run("npx", ["next", "build", "--webpack"], appDir, `Building ${app.name}`);
 
     const sourceOut = path.join(appDir, "out");
     const targetOut = path.join(outRoot, app.outLabel);
