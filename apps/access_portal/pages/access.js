@@ -5,8 +5,7 @@ import { decodeJwt, getInitials } from "@atomx/lib";
 import { HeaderBar } from "../components/HeaderBar/HeaderBar";
 import { WelcomePanel } from "../components/WelcomePanel/WelcomePanel";
 import { AssignmentCard } from "../components/AssignmentCard/AssignmentCard";
-import { QuickActionsPanel } from "../components/QuickActionsPanel/QuickActionsPanel";
-import styles from "../styles/AccessPage.module.css";
+import { Add_Role } from "../components/Add_Role/Add_Role";
 
 const moduleLinks = {
   livelink: process.env.NEXT_PUBLIC_LIVELINK_URL ?? "/livelink",
@@ -50,7 +49,9 @@ function sanitizeModules(roles = []) {
     acc.push({
       ...meta,
       type: role.type,
-      expiryAt: role.expiryAt ?? null
+      expiryAt: role.expiryAt ?? null,
+      adminId: role.adminId ?? null,
+      rawRole: role
     });
     return acc;
   }, []);
@@ -64,6 +65,8 @@ export default function AccessPage() {
   const [error, setError] = useState(null);
   const [modalApp, setModalApp] = useState(null);
   const [token, setToken] = useState(null);
+  const [selecting, setSelecting] = useState(null);
+  const [selectError, setSelectError] = useState(null);
 
   useEffect(() => {
     if (!router.isReady) return;
@@ -120,14 +123,16 @@ export default function AccessPage() {
         name: "AtomX Operator",
         role: "Awaiting Login",
         email: "login@atomx.in",
-        initials: "AO"
+        initials: "AO",
+        picture: null
       };
     }
     return {
       name: profile.name ?? "AtomX Operator",
       role: profile.type ?? "member",
       email: profile.email ?? "unknown@atomx.in",
-      initials: getInitials(profile.name)
+      initials: getInitials(profile.name),
+      picture: profile.picture ?? profile.image ?? null
     };
   }, [profile]);
 
@@ -145,71 +150,99 @@ export default function AccessPage() {
       event: "AtomX Universal Access",
       email: profile.email,
       period: `Session expires ${expiry}`,
-      permissions: modules.length ? modules.map((module) => module.title) : ["No modules assigned"]
+      permissions: modules.length
+        ? modules.map((module) => ({
+            label: module.title,
+            type: module.type,
+            href: module.href ?? moduleLinks[module.type]
+          }))
+        : [
+            {
+              label: "Tag Series",
+              type: "tag-series",
+              href: moduleLinks["tag-series"]
+            }
+          ]
     };
   }, [profile, modules]);
 
-  const highlightActions = useMemo(() => {
-    if (!modules.length) {
-      return [
-        { label: "LiveLink", variant: "teal" },
-        { label: "Tag Series", variant: "orange" }
-      ];
-    }
-    return modules.slice(0, 2).map((module, index) => ({
-      label: module.title,
-      variant: module.variant ?? (index === 0 ? "teal" : "orange")
-    }));
-  }, [modules]);
+  const highlightActions = useMemo(() => [], []);
 
-  const quickActions = useMemo(() => {
-    if (!modules.length) {
-      return [
-        {
-          title: "LiveLink",
-          description: "Unified live orchestration",
-          color: "#f88c43",
-          type: "livelink"
+  const handlePermissionClick = async (permission) => {
+    if (typeof window === "undefined") return;
+    setSelectError(null);
+    const apiBase = (process.env.NEXT_PUBLIC_BASE_URL ?? "https://dapi.atomx.in").replace(/\/$/, "");
+    const moduleMeta =
+      modules.find((module) => module.type === permission.type) ??
+      modules.find((module) => module.title === permission.label);
+    const destination = permission.href ?? moduleMeta?.href ?? moduleLinks[permission.type];
+    const roleMatch =
+      profile?.roles?.find((role) => role.type === permission.type) ??
+      profile?.roles?.find((role) => role.type === permission.label);
+    const adminId = roleMatch?.adminId;
+    const apiType = permission.type ?? roleMatch?.type;
+
+    if (!apiBase) {
+      setSelectError("Missing API base URL (NEXT_PUBLIC_BASE_URL)");
+      return;
+    }
+    if (!adminId || !apiType) {
+      setSelectError("Module is missing admin access details.");
+      return;
+    }
+
+    try {
+      setSelecting(permission.type || permission.label || "switching");
+      const res = await fetch(`${apiBase}/auth/select`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
         },
-        {
-          title: "Tag Series",
-          description: "IoT tag + telemetry control",
-          color: "#1495ab",
-          type: "tag-series"
+        body: JSON.stringify({ adminId, type: apiType })
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || `Request failed (${res.status})`);
+      }
+
+      const data = await res.json();
+      const nextToken = data.token ?? data.accessToken ?? data.data?.token;
+      if (!nextToken) {
+        throw new Error("No token returned from auth/select");
+      }
+
+      // persist and refresh state with new token
+      window.localStorage.setItem("atomx.portal.token", nextToken);
+      const decoded = decodeJwt(nextToken);
+      const sanitized = sanitizeModules(decoded.roles);
+      setProfile(decoded);
+      setModules(sanitized);
+      setToken(nextToken);
+      sanitized.forEach((module) => {
+        if (module.type) {
+          window.localStorage.setItem(`atomx.auth.${module.type}`, nextToken);
         }
-      ];
-    }
-    return modules.map((module) => ({
-      title: module.title,
-      description: module.description,
-      color: module.color,
-      type: module.type
-    }));
-  }, [modules]);
+      });
 
-  const handleAction = (action) => {
-    const moduleMeta = modules.find((module) => module.type === action.type);
-    const destination = moduleMeta?.href ?? moduleLinks[action.type];
-
-    if (destination && typeof window !== "undefined") {
-      try {
+      if (destination) {
         const target = destination.startsWith("http")
           ? new URL(destination)
           : new URL(destination, window.location.origin);
-        if (token) {
-          target.searchParams.set("token", token);
-        }
+        target.searchParams.set("token", nextToken);
         window.location.href = target.toString();
-        return;
-      } catch {
-        // fall back to modal
       }
+    } catch (err) {
+      console.error(err);
+      setSelectError(err.message || "Failed to switch module");
+      setModalApp({
+        title: permission.label,
+        description: "We could not refresh your access token. Please try again."
+      });
+    } finally {
+      setSelecting(null);
     }
-
-    setModalApp({
-      title: action.title,
-      description: action.description
-    });
   };
 
   const handleSignOut = () => {
@@ -250,7 +283,7 @@ export default function AccessPage() {
           content="Pick the AtomX module you need in one click."
         />
       </Head>
-      <main className={styles.wrapper}>
+      <main className="mx-auto flex max-w-5xl flex-col gap-3 px-4 pb-10 pt-6 md:px-6 md:pt-8">
         <HeaderBar user={user} onSignOut={handleSignOut} />
 
         {status === "error" && (
@@ -265,19 +298,42 @@ export default function AccessPage() {
           </div>
         )}
 
-        <WelcomePanel user={user} actions={highlightActions} />
-        <AssignmentCard assignment={assignment} />
-        <QuickActionsPanel actions={quickActions} onAction={handleAction} />
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <WelcomePanel user={user} actions={highlightActions} />
+          <div className="flex justify-start md:justify-end px-1 md:px-2">
+            <Add_Role labels={["Admin", "Operator"]} />
+          </div>
+        </div>
+        <AssignmentCard assignment={assignment} onPermissionClick={handlePermissionClick} />
       </main>
 
+      {selecting && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/70 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-3 rounded-2xl bg-white px-6 py-5 shadow-[0_20px_45px_rgba(15,23,42,0.18)]">
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#0f9ca3] border-t-transparent" />
+            <p className="m-0 text-sm font-semibold text-slate-700">Switching access…</p>
+          </div>
+        </div>
+      )}
+
+      {selectError && !modalApp && (
+        <div className="fixed bottom-4 left-1/2 z-40 w-[90%] max-w-md -translate-x-1/2 rounded-2xl bg-red-50 px-4 py-3 text-center text-sm font-medium text-red-700 shadow-lg">
+          {selectError}
+        </div>
+      )}
+
       {modalApp && (
-        <div className={styles.modalBackdrop}>
-          <div className={styles.modalCard}>
-            <h2>{modalApp.title}</h2>
-            <p>
-              {modalApp.description || "This module is going live soon. We&apos;ll notify you when access is ready."}
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 text-center shadow-[0_32px_65px_rgba(15,23,42,0.24)]">
+            <h2 className="m-0 text-xl font-semibold">{modalApp.title}</h2>
+            <p className="mt-3 text-base text-slate-600">
+              {modalApp.description || "This module is going live soon. We’ll notify you when access is ready."}
             </p>
-            <button type="button" onClick={() => setModalApp(null)}>
+            <button
+              type="button"
+              className="mt-5 w-full rounded-full bg-[#e04420] px-4 py-3 text-sm font-semibold text-white shadow-[0_15px_40px_rgba(224,68,32,0.3)] transition hover:brightness-105"
+              onClick={() => setModalApp(null)}
+            >
               Got it
             </button>
           </div>

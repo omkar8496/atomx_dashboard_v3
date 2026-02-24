@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { fetchCardClients, fetchSeriesMeta } from "../api/api";
-import { saveStepOneState } from "../lib/setupStorage";
+import { getStepOneState, saveStepOneState } from "../lib/setupStorage";
 import AddFormFactorPage from "./Admin/AddFormFactor/page";
 import AddProductPage from "./Admin/AddProduct/page";
 import ViewPage from "./Admin/View/page";
@@ -22,6 +22,7 @@ export default function EventIdPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const menuRef = useRef(null);
+  const savedStateRef = useRef(null);
 
   const adminQuickLinks = [
     { label: "View", href: "/Admin/View", component: ViewPage },
@@ -43,6 +44,21 @@ export default function EventIdPage() {
   }, [menuOpen]);
 
   useEffect(() => {
+    // Prefill form from the last completed Step 1 (saved in sessionStorage)
+    const saved = getStepOneState();
+    savedStateRef.current = saved;
+    if (saved) {
+      setEventId(saved.eventId ? String(saved.eventId) : "");
+      if (saved.yearSeries) {
+        setYearSeries(String(saved.yearSeries).slice(0, 2));
+      }
+      if (saved.clientId) {
+        setSelectedClient(String(saved.clientId));
+      }
+    }
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
 
     async function loadCardClients() {
@@ -55,8 +71,16 @@ export default function EventIdPage() {
         const response = await fetchCardClients(token);
         if (!cancelled) {
           const fetchedClients = response?.cardClients ?? [];
+          const preferredId = savedStateRef.current?.clientId?.toString();
+          const hasPreferred = preferredId
+            ? fetchedClients.some((client) => client.id?.toString() === preferredId)
+            : false;
           setClients(fetchedClients);
-          setSelectedClient(fetchedClients[0]?.id?.toString() ?? "");
+          setSelectedClient(
+            hasPreferred
+              ? preferredId
+              : fetchedClients[0]?.id?.toString() ?? ""
+          );
           setCardClientsError(null);
         }
       } catch (err) {

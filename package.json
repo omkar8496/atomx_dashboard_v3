@@ -11,11 +11,13 @@
     "dev:livelink": "turbo dev --filter=@atomx/livelink",
     "dev:tag_series": "turbo dev --filter=@atomx/tag_series",
     "dev:access": "turbo dev --filter=@atomx/access-portal",
+    "dev:dashboard": "turbo dev --filter=@atomx/dashboard",
     "build": "turbo build",
     "build:out": "node scripts/export-all.js",
     "build:livelink": "turbo build --filter=@atomx/livelink",
     "build:tag_series": "turbo build --filter=@atomx/tag_series",
     "build:access": "turbo build --filter=@atomx/access-portal",
+    "build:dashboard": "turbo build --filter=@atomx/dashboard",
     "lint": "turbo lint",
     "sync:public": "node scripts/sync-public-assets.js",
     "postinstall": "npm run sync:public || true"
