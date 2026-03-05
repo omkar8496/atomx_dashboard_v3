@@ -29,7 +29,7 @@ export default function VendorTable() {
           </thead>
           <tbody className="divide-y divide-slate-100">
             {rows.map((row) => (
-              <tr key={row.id}>
+              <tr key={row.id} className="hover:bg-slate-50/60">
                 <td className="px-4 py-4 text-slate-600">{row.id}</td>
                 <td className="px-4 py-4 font-semibold text-slate-800">{row.name}</td>
                 <td className="px-4 py-4">
@@ -39,9 +39,21 @@ export default function VendorTable() {
                 </td>
                 <td className="px-4 py-4 text-slate-700">{row.loginCode}</td>
                 <td className="px-4 py-4 text-slate-600">{row.items}</td>
-                <td className="px-4 py-4 text-slate-500">⛓</td>
-                <td className="px-4 py-4 text-slate-500">＋</td>
-                <td className="px-4 py-4 text-slate-500">✎</td>
+                <td className="px-4 py-4 text-slate-500">
+                  <button className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-500 hover:border-[#1495ab] hover:text-[#1495ab]">
+                    Link
+                  </button>
+                </td>
+                <td className="px-4 py-4 text-slate-500">
+                  <button className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-500 hover:border-[#1495ab] hover:text-[#1495ab]">
+                    Add
+                  </button>
+                </td>
+                <td className="px-4 py-4 text-slate-500">
+                  <button className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-500 hover:border-[#1495ab] hover:text-[#1495ab]">
+                    Edit
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>

@@ -1,50 +1,63 @@
+import Link from "next/link";
 import Header from "../components/Header";
-import SectionHeader from "./components/SectionHeader";
-import SearchInput from "./components/SearchInput";
-import VendorTable from "./components/VendorTable";
-import StallTable from "./components/StallTable";
-import StockroomTable from "./components/StockroomTable";
+import ConfigTransition from "./components/ConfigTransition";
+import BasicEventDetails from "./components/Basic_Event_Details";
+import ActiveService from "./components/Active_Service";
+import ConfigPos from "./components/Config_Pos";
+import ConfigCard from "./components/Config_Card";
+import ConfigBankDetails from "./components/Config_Bank_Details";
+import ConfigDashSettings from "./components/Config_Dash_Settings";
 
 export default function ConfigPage() {
-  const user = {
-    name: "Omkar Designer",
-    email: "design@atomx.in",
-    image: null
-  };
-
   return (
     <main className="min-h-screen bg-[#f3f7fb] pb-10">
-      <div className="w-full px-4 pt-6 md:px-8">
-        <Header
-          eventId="4356"
-          eventName="Sunburn"
-          pages={["Access Control", "Tag Series", "Inventory", "Configuration"]}
-          currentPage="Configuration"
-          user={user}
-        />
-      </div>
+      <Header
+        areaLabel="Configuration"
+        breadcrumb={
+          <>
+            <Link className="font-semibold text-[#258d9c]" href="/Config" replace>
+              Profile
+            </Link>
+            <span className="text-slate-400">/</span>
+            <Link className="text-slate-600 hover:text-[#258d9c]" href="/Config/operations" replace>
+              Operations
+            </Link>
+          </>
+        }
+      />
+      <ConfigTransition>
+        <div className="w-full pr-4 pl-16 md:pr-8 md:pl-20 mt-6">
+          <BasicEventDetails />
 
-      <div className="w-full px-4 md:px-8">
-        <div className="mt-6 grid gap-6 lg:grid-cols-2">
-          <section className="rounded-3xl bg-white px-6 py-6 shadow-[0_24px_60px_rgba(15,23,42,0.12)]">
-            <SectionHeader title="Vendors" actionLabel="Add Vendor" />
-            <SearchInput placeholder="Search Vendor" />
-            <VendorTable />
-          </section>
+          <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_1.4fr] items-stretch">
+            <div className="flex flex-col h-full">
+              <div>
+                <div className="text-sm font-semibold text-slate-700">Active Services</div>
+                <div className="mt-3">
+                  <ActiveService />
+                </div>
+              </div>
+              <div className="mt-auto">
+                <div className="text-sm font-semibold text-slate-700">Card</div>
+                <div className="mt-3">
+                  <ConfigCard />
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-col h-full">
+              <div className="text-sm font-semibold text-slate-700">Pos</div>
+              <div className="mt-3 flex-1">
+                <ConfigPos />
+              </div>
+            </div>
+          </div>
 
-          <section className="rounded-3xl bg-white px-6 py-6 shadow-[0_24px_60px_rgba(15,23,42,0.12)]">
-            <SectionHeader title="Stalls" count={3} />
-            <SearchInput placeholder="Search Stall" />
-            <StallTable />
-          </section>
+          <div className="mt-8 grid gap-8 lg:grid-cols-[1.35fr_1fr] items-stretch">
+            <ConfigBankDetails />
+            <ConfigDashSettings />
+          </div>
         </div>
-
-        <section className="mt-6 rounded-3xl bg-[#f9b66e] px-6 py-6 shadow-[0_24px_60px_rgba(248,140,67,0.25)]">
-          <SectionHeader title="Stockrooms" count={4} />
-          <SearchInput placeholder="Search Stockroom" />
-          <StockroomTable />
-        </section>
-      </div>
+      </ConfigTransition>
     </main>
   );
 }

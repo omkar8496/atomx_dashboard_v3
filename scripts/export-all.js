@@ -6,6 +6,7 @@ const apps = [
   { name: "Tag Series", dir: "apps/tag_series", outLabel: "tag_series" },
   { name: "LiveLink", dir: "apps/livelink", outLabel: "livelink" },
   { name: "Access Portal", dir: "apps/access_portal", outLabel: "access_portal" },
+  { name: "Dashboard", dir: "apps/dashboard", outLabel: "dashboard" },
   { name: "AccessX", dir: "apps/livelink/accessx", outLabel: "livelink/accessx" }
 ];
 

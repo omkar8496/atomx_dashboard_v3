@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { fetchCardClients, fetchSeriesMeta } from "../api/api";
+import { fetchCardClients, fetchSeriesMeta, fetchTagSeriesEvents } from "../api/api";
 import { getStepOneState, saveStepOneState } from "../lib/setupStorage";
 import AddFormFactorPage from "./Admin/AddFormFactor/page";
 import AddProductPage from "./Admin/AddProduct/page";
@@ -18,10 +18,15 @@ export default function EventIdPage() {
   const [clients, setClients] = useState([]);
   const [clientsLoading, setClientsLoading] = useState(false);
   const [selectedClient, setSelectedClient] = useState("");
+  const [events, setEvents] = useState([]);
+  const [eventsLoading, setEventsLoading] = useState(false);
+  const [eventsError, setEventsError] = useState(null);
+  const [eventDropdownOpen, setEventDropdownOpen] = useState(false);
   const [submitError, setSubmitError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
   const menuRef = useRef(null);
+  const eventDropdownRef = useRef(null);
   const savedStateRef = useRef(null);
 
   const adminQuickLinks = [
@@ -44,6 +49,19 @@ export default function EventIdPage() {
   }, [menuOpen]);
 
   useEffect(() => {
+    if (!eventDropdownOpen) return undefined;
+
+    const handleClickOutside = (event) => {
+      if (eventDropdownRef.current && !eventDropdownRef.current.contains(event.target)) {
+        setEventDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [eventDropdownOpen]);
+
+  useEffect(() => {
     // Prefill form from the last completed Step 1 (saved in sessionStorage)
     const saved = getStepOneState();
     savedStateRef.current = saved;
@@ -56,6 +74,71 @@ export default function EventIdPage() {
         setSelectedClient(String(saved.clientId));
       }
     }
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadEvents() {
+      if (typeof window === "undefined") return;
+      setEventsLoading(true);
+      try {
+        const token =
+          window.localStorage.getItem("atomx.auth.tag-series") ||
+          window.localStorage.getItem("atomx.auth.tag_series");
+        const response = await fetchTagSeriesEvents(token);
+        const raw = response?.events ?? response?.data ?? response?.result ?? response;
+        const list = Array.isArray(raw) ? raw : [];
+        const mapped = list.map((item) => {
+          if (typeof item === "string" || typeof item === "number") {
+            return { id: String(item), name: "" };
+          }
+          const id =
+            item?.eventId ??
+            item?.event_id ??
+            item?.id ??
+            item?.eventID ??
+            item?.eventCode ??
+            "";
+          const name =
+            item?.eventName ??
+            item?.name ??
+            item?.title ??
+            item?.event ??
+            item?.eventTitle ??
+            "";
+          return { id: String(id), name: String(name || "") };
+        }).filter((item) => item.id);
+
+        if (!cancelled) {
+          setEvents(mapped);
+          const preferredId = savedStateRef.current?.eventId?.toString();
+          const hasPreferred = preferredId
+            ? mapped.some((event) => event.id === preferredId)
+            : false;
+          setEventId((prev) =>
+            prev || (hasPreferred ? preferredId : savedStateRef.current?.eventId?.toString() ?? "")
+          );
+          setEventsError(null);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error("Failed to fetch events", err);
+          setEvents([]);
+          setEventsError("Unable to load events. Try again later.");
+        }
+      } finally {
+        if (!cancelled) {
+          setEventsLoading(false);
+        }
+      }
+    }
+
+    loadEvents();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -112,8 +195,18 @@ export default function EventIdPage() {
     e.preventDefault();
     setSubmitError(null);
 
+    if (!eventId) {
+      setError("Please select an event.");
+      return;
+    }
+
     if (!/^\d+$/.test(eventId)) {
       setError("Event ID must be digits only.");
+      return;
+    }
+
+    if (!events.some((event) => event.id === eventId)) {
+      setError("Event ID does not exist.");
       return;
     }
 
@@ -158,6 +251,11 @@ export default function EventIdPage() {
   };
 
   const isContinueDisabled = !eventId || !selectedClient || submitting;
+  const filteredEvents = events.filter((event) => {
+    if (!eventId) return true;
+    const query = eventId.toLowerCase();
+    return event.id.toLowerCase().includes(query) || event.name.toLowerCase().includes(query);
+  });
 
   return (
     <div className="relative min-h-[100dvh] w-full bg-gradient-to-br from-[#fef3ec] via-white to-[#eff8ff] px-4 py-16">
@@ -220,20 +318,59 @@ export default function EventIdPage() {
         )}
 
         <form onSubmit={onSubmit} className="mt-6 space-y-5">
-          <div>
-            <label className="mb-2 block text-sm font-semibold text-slate-600">Event ID</label>
-            <input
-              className="w-full rounded-2xl border border-slate-200 bg-white/70 px-4 py-3 text-base font-medium text-slate-900 shadow-inner shadow-slate-100 outline-none ring-0 placeholder:text-slate-300 focus:border-[#e04420] focus:ring-2 focus:ring-[#e04420]/30"
-              inputMode="numeric"
-              pattern="\d*"
-              placeholder="e.g. 569"
-              value={eventId}
-              onChange={(e) => {
-                setError("");
-                setEventId(e.target.value.replace(/\D/g, ""));
-              }}
-            />
+          <div ref={eventDropdownRef}>
+            <label className="mb-2 block text-sm font-semibold text-slate-600">Event</label>
+            <div className="relative">
+              <input
+                className="w-full rounded-2xl border border-slate-200 bg-white/70 px-4 py-3 text-base font-medium text-slate-900 shadow-inner shadow-slate-100 outline-none ring-0 placeholder:text-slate-300 focus:border-[#e04420] focus:ring-2 focus:ring-[#e04420]/30"
+                inputMode="numeric"
+                pattern="\d*"
+                placeholder="Select event"
+                value={eventId}
+                onFocus={() => setEventDropdownOpen(true)}
+                onChange={(e) => {
+                  setError("");
+                  setEventId(e.target.value.replace(/\D/g, ""));
+                  setEventDropdownOpen(true);
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setEventDropdownOpen((prev) => !prev)}
+                className="absolute inset-y-0 right-3 flex items-center text-slate-400"
+                aria-label="Toggle event dropdown"
+              >
+                {eventDropdownOpen ? "▲" : "▼"}
+              </button>
+
+              {eventDropdownOpen && (
+                <div className="absolute z-20 mt-2 w-full max-h-64 overflow-auto rounded-2xl border border-slate-200 bg-white shadow-lg">
+                  {eventsLoading && (
+                    <div className="px-4 py-3 text-sm text-slate-500">Loading events…</div>
+                  )}
+                  {!eventsLoading && !filteredEvents.length && (
+                    <div className="px-4 py-3 text-sm text-slate-500">No matching events.</div>
+                  )}
+                  {!eventsLoading &&
+                    filteredEvents.map((event) => (
+                      <button
+                        key={event.id}
+                        type="button"
+                        onClick={() => {
+                          setEventId(event.id);
+                          setEventDropdownOpen(false);
+                        }}
+                        className="flex w-full items-center justify-between px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-50"
+                      >
+                        <span className="font-semibold">{event.id}</span>
+                        <span className="text-slate-500">{event.name || ""}</span>
+                      </button>
+                    ))}
+                </div>
+              )}
+            </div>
             {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+            {eventsError && <p className="mt-1 text-sm text-red-600">{eventsError}</p>}
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">

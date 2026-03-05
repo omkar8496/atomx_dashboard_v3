@@ -25,6 +25,7 @@
   "packageManager": "npm@10.9.0",
   "devDependencies": {
     "babel-plugin-react-compiler": "1.0.0",
+    "baseline-browser-mapping": "^2.10.0",
     "turbo": "^2.6.0"
   },
   "overrides": {

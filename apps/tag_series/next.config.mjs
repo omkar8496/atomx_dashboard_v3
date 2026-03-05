@@ -7,6 +7,7 @@ const config = {
   images: {
     unoptimized: true
   },
+  trailingSlash: true,
   transpilePackages: [
     "@atomx/shared-ui",
     "@atomx/global-components",

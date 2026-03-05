@@ -2,6 +2,7 @@ const CARD_CLIENTS_ENDPOINT = "https://dapi.atomx.in/v1/TagSeries/CardClients";
 const SERIES_ENDPOINT = "https://dapi.atomx.in/v1/TagSeries/Series";
 const LOGS_ENDPOINT = "https://dapi.atomx.in/v1/TagSeries/Logs";
 const BATCH_RECORDS_ENDPOINT = "https://dapi.atomx.in/v1/TagSeries/BatchRecords";
+const EVENTS_ENDPOINT = "https://dapi.atomx.in/v1/TagSeries/Events";
 const TAG_SERIES_API_KEY = "pZebJlF_.dv3_prod.Iu7Zitu3X30C2R6-bVZtRXRu0DeiHY-j";
 
 function buildHeaders(token) {
@@ -104,6 +105,23 @@ export async function fetchBatchRecords(token, { eventId, adminId }) {
     const errorMessage = await response.text().catch(() => response.statusText);
     throw new Error(
       `BatchRecords request failed (${response.status}): ${errorMessage || "Unknown error"}`
+    );
+  }
+
+  return response.json();
+}
+
+export async function fetchTagSeriesEvents(token) {
+  const response = await fetch(EVENTS_ENDPOINT, {
+    method: "GET",
+    headers: buildHeaders(token),
+    cache: "no-store"
+  });
+
+  if (!response.ok) {
+    const errorMessage = await response.text().catch(() => response.statusText);
+    throw new Error(
+      `Events request failed (${response.status}): ${errorMessage || "Unknown error"}`
     );
   }
 

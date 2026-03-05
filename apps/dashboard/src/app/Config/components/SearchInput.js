@@ -20,6 +20,12 @@ export default function SearchInput({ placeholder }) {
         placeholder={placeholder}
         className="w-full border-0 bg-transparent text-sm font-medium text-slate-700 placeholder:text-slate-400 focus:outline-none"
       />
+      <button
+        type="button"
+        className="rounded-full bg-[#1495ab] px-4 py-1.5 text-xs font-semibold text-white shadow-sm"
+      >
+        Search
+      </button>
     </div>
   );
 }
