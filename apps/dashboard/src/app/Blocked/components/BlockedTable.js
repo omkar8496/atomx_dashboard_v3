@@ -12,7 +12,7 @@ export default function BlockedTable() {
     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div className="overflow-x-auto">
         <table className="min-w-full text-left text-sm">
-          <thead className="bg-[#f88c43] text-white">
+          <thead className="bg-[color:rgb(var(--color-orange))] text-white">
             <tr>
               <th className="px-6 py-4 text-xs font-semibold uppercase tracking-[0.2em]">#</th>
               <th className="px-6 py-4 text-xs font-semibold uppercase tracking-[0.2em]">Card Id</th>
@@ -33,7 +33,7 @@ export default function BlockedTable() {
                 <td className="px-6 py-5">
                   <button
                     type="button"
-                    className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:border-[#1495ab] hover:text-[#1495ab]"
+                    className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:border-[color:rgb(var(--color-teal))] hover:text-[color:rgb(var(--color-teal))]"
                     aria-label="Unblock card"
                   >
                     <svg

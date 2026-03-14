@@ -29,12 +29,12 @@ export default function StallTable() {
                 <td className="px-4 py-4 text-slate-700">{row.stall}</td>
                 <td className="px-4 py-4 text-slate-600">{row.devices}</td>
                 <td className="px-4 py-4 text-slate-500">
-                  <button className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-500 hover:border-[#1495ab] hover:text-[#1495ab]">
+                  <button className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-500 hover:border-[color:rgb(var(--color-teal))] hover:text-[color:rgb(var(--color-teal))]">
                     Menu
                   </button>
                 </td>
                 <td className="px-4 py-4 text-slate-500">
-                  <button className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-500 hover:border-[#1495ab] hover:text-[#1495ab]">
+                  <button className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-500 hover:border-[color:rgb(var(--color-teal))] hover:text-[color:rgb(var(--color-teal))]">
                     Edit
                   </button>
                 </td>

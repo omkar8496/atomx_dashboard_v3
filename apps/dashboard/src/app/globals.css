@@ -3,6 +3,9 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --color-teal: 20 149 171;
+  --color-orange: 248 140 67;
+  --color-bg: 243 247 251;
 }
 
 @theme inline {

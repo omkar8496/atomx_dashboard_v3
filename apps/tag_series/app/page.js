@@ -205,11 +205,6 @@ export default function EventIdPage() {
       return;
     }
 
-    if (!events.some((event) => event.id === eventId)) {
-      setError("Event ID does not exist.");
-      return;
-    }
-
     if (!selectedClient) {
       setSubmitError("Please select a client.");
       return;

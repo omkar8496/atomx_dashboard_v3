@@ -6,7 +6,7 @@ import React from "react";
 const UploadIcon = () => (
   <svg
     viewBox="0 0 24 24"
-    className="h-12 w-12 text-[#1495ab]"
+    className="h-12 w-12 text-[color:rgb(var(--color-teal))]"
     fill="none"
     stroke="currentColor"
     strokeWidth="2"
@@ -22,9 +22,9 @@ const UploadIcon = () => (
 export default function UploadDropzone() {
   return (
 
-    <div className="flex h-full flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[#1495ab]/40 bg-white px-6 py-8 text-center text-slate-700 shadow-sm">
+    <div className="flex h-full flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[color:rgb(var(--color-teal)/0.4)] bg-white px-6 py-8 text-center text-slate-700 shadow-sm">
     
-      <div className="flex items-center gap-3 text-[#1495ab]">
+      <div className="flex items-center gap-3 text-[color:rgb(var(--color-teal))]">
         <span className="text-xl font-semibold">+</span>
         <span className="text-base font-semibold uppercase tracking-wide">Upload</span>
       </div>
@@ -39,7 +39,7 @@ export default function UploadDropzone() {
       </span>
       <button
         type="button"
-        className="mt-4 rounded-full bg-[#1495ab] px-8 py-2 text-sm font-semibold text-white shadow hover:brightness-105"
+        className="mt-4 rounded-full bg-[color:rgb(var(--color-teal))] px-8 py-2 text-sm font-semibold text-white shadow hover:brightness-105"
       >
         Browse Files
       </button>

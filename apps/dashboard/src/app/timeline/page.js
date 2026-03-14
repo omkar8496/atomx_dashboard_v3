@@ -4,7 +4,7 @@ import TimelineEmptyState from "./components/TimelineEmptyState";
 
 export default function TimelinePage() {
   return (
-    <main className="min-h-screen bg-[#f3f7fb] pb-10">
+    <main className="min-h-screen bg-[color:rgb(var(--color-bg))] pb-10">
       <Header areaLabel="Timeline" />
 
       <div className="w-full pr-4 pl-16 md:pr-8 md:pl-20 mt-6">

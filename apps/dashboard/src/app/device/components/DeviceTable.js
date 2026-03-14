@@ -112,7 +112,7 @@ export default function DeviceTable() {
                       {row.type}
                     </span>
                     {row.vendorTag && (
-                      <span className="rounded-full border border-[#f8c78a] px-3 py-1 text-xs font-semibold text-[#f88c43]">
+                      <span className="rounded-full border border-[#f8c78a] px-3 py-1 text-xs font-semibold text-[color:rgb(var(--color-orange))]">
                         {row.vendorTag}
                       </span>
                     )}

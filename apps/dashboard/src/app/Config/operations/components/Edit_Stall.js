@@ -1,6 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useDashboardStore } from "../../../../store/dashboardStore";
+import { createStall } from "../../../../lib/dashboardApi";
+import { useFormAutosave } from "../../../../lib/useFormAutosave";
 
 const BANK_OPTIONS = [
   "MSWIPE",
@@ -15,8 +18,31 @@ const BANK_OPTIONS = [
 
 const SCAN_OPTIONS = ["NONE", "MENU", "TICKET"];
 
-export default function EditStall({ open, onClose }) {
+const STALL_TYPE_OPTIONS = [
+  { label: "Topup", value: "topup" },
+  { label: "Sale", value: "sale" },
+  { label: "AccessX", value: "accessx" },
+  { label: "Inventory", value: "inventory" },
+  { label: "Stockmaster", value: "stockmaster" },
+  { label: "Tables", value: "tables" }
+];
+
+export default function EditStall({
+  open,
+  onClose,
+  title = "Edit Stall",
+  seed,
+  mode = "edit",
+  onSaved,
+  onToast
+}) {
   const [animateIn, setAnimateIn] = useState(false);
+  const token = useDashboardStore((state) => state.token);
+  const profile = useDashboardStore((state) => state.profile);
+  const eventId = useDashboardStore((state) => state.eventMeta?.eventId);
+  const [stallType, setStallType] = useState("sale");
+  const [bankPayment, setBankPayment] = useState(BANK_OPTIONS[0]);
+  const [scanMode, setScanMode] = useState(SCAN_OPTIONS[0]);
   const [paymentMode, setPaymentMode] = useState("ALL");
   const [modeOptions, setModeOptions] = useState(["Card", "UPI", "Cash"]);
   const [toggles, setToggles] = useState({
@@ -27,6 +53,16 @@ export default function EditStall({ open, onClose }) {
     sms: false,
     tapx: false
   });
+  const [saving, setSaving] = useState(false);
+  const formRef = useRef(null);
+  const draftAppliedRef = useRef(false);
+  const stallId = seed?.id ?? seed?.stallId ?? null;
+  const draftKey = useMemo(() => {
+    if (!eventId) return null;
+    const userKey = profile?.id ?? profile?.sub ?? profile?.email ?? "anon";
+    const stallKey = stallId ?? "new";
+    return `dashboard:stall:${userKey}:${eventId}:${stallKey}`;
+  }, [eventId, profile, stallId]);
 
   useEffect(() => {
     if (!open) return;
@@ -34,6 +70,18 @@ export default function EditStall({ open, onClose }) {
     const timer = setTimeout(() => setAnimateIn(true), 20);
     return () => clearTimeout(timer);
   }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const initialType = String(seed?.type ?? seed?.stallType ?? "sale").toLowerCase();
+    setStallType(initialType);
+    setBankPayment(BANK_OPTIONS[0]);
+    setScanMode(SCAN_OPTIONS[0]);
+  }, [open, seed]);
+
+  useEffect(() => {
+    draftAppliedRef.current = false;
+  }, [stallId, open]);
 
   if (!open) return null;
 
@@ -47,19 +95,146 @@ export default function EditStall({ open, onClose }) {
     setToggles((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
+  const getFormValues = useCallback(() => {
+    const form = formRef.current;
+    if (!form) return {};
+    const data = new FormData(form);
+    const values = {};
+    for (const [key, value] of data.entries()) {
+      values[key] = String(value ?? "");
+    }
+    values.paymentMode = paymentMode;
+    values.modeOptions = modeOptions.join(",");
+    values.stallType = stallType;
+    values.bankPayment = bankPayment;
+    values.scanMode = scanMode;
+    Object.entries(toggles).forEach(([key, value]) => {
+      values[`toggle.${key}`] = value ? "1" : "0";
+    });
+    return values;
+  }, [bankPayment, modeOptions, paymentMode, scanMode, stallType, toggles]);
+
+  const applyDraftToForm = useCallback((values) => {
+    const form = formRef.current;
+    if (!form || !values) return;
+    const escapeName = (name) => {
+      if (typeof CSS !== "undefined" && CSS.escape) {
+        return CSS.escape(name);
+      }
+      return name.replace(/\"/g, '\\"');
+    };
+
+    Object.entries(values).forEach(([name, value]) => {
+      if (
+        name.startsWith("toggle.") ||
+        name === "paymentMode" ||
+        name === "modeOptions" ||
+        name === "stallType" ||
+        name === "bankPayment" ||
+        name === "scanMode"
+      ) {
+        return;
+      }
+      const selector = `[name=\"${escapeName(name)}\"]`;
+      const nodes = form.querySelectorAll(selector);
+      nodes.forEach((node) => {
+        if (node.type === "checkbox" || node.type === "radio") {
+          node.checked = value === "1" || value === "true";
+        } else {
+          node.value = String(value);
+        }
+        node.dispatchEvent(new Event("input", { bubbles: true }));
+        node.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+    });
+  }, []);
+
+  const { clearDraft } = useFormAutosave({
+    formRef,
+    draftKey,
+    enabled: open,
+    getValues: getFormValues,
+    watch: [
+      paymentMode,
+      modeOptions.join(","),
+      stallType,
+      bankPayment,
+      scanMode,
+      JSON.stringify(toggles)
+    ],
+    onRestore: (values) => {
+      if (draftAppliedRef.current) return;
+      if (!values) return;
+      if (values.paymentMode) setPaymentMode(values.paymentMode);
+      if (values.modeOptions) {
+        setModeOptions(values.modeOptions.split(",").filter(Boolean));
+      }
+      if (values.stallType) setStallType(values.stallType);
+      if (values.bankPayment) setBankPayment(values.bankPayment);
+      if (values.scanMode) setScanMode(values.scanMode);
+      const nextToggles = { ...toggles };
+      Object.keys(nextToggles).forEach((key) => {
+        if (values[`toggle.${key}`] !== undefined) {
+          nextToggles[key] = values[`toggle.${key}`] === "1" || values[`toggle.${key}`] === "true";
+        }
+      });
+      setToggles(nextToggles);
+      applyDraftToForm(values);
+      draftAppliedRef.current = true;
+    }
+  });
+
+  const handleSubmit = async () => {
+    if (saving) return;
+    if (mode !== "create") {
+      onClose?.();
+      return;
+    }
+    const vendorId =
+      seed?.vendorId ??
+      seed?.vendor?.id ??
+      seed?.vendorId ??
+      1931;
+    const payload = {
+      vendorId,
+      type: stallType || "sale"
+    };
+    setSaving(true);
+    try {
+      await createStall({ token, stall: payload });
+      onToast?.({
+        title: "Stall Added",
+        message: "Stall created successfully."
+      });
+      clearDraft();
+      onSaved?.();
+      onClose?.();
+    } catch (error) {
+      console.error("Failed to create stall", error);
+      onToast?.({
+        title: "Stall Error",
+        message: "Unable to create stall."
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div
       className={`fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4 py-6 transition-opacity duration-300 ${
         animateIn ? "opacity-100" : "opacity-0"
       }`}
     >
-      <div
+      <form
+        ref={formRef}
+        onSubmit={(event) => event.preventDefault()}
         className={`w-full max-w-3xl rounded-xl border border-[#e8d9d3] bg-white shadow-[0_24px_60px_rgba(15,23,42,0.18)] transition-all duration-300 ${
           animateIn ? "scale-100 opacity-100" : "scale-95 opacity-0"
         }`}
       >
         <div className="flex items-center justify-between border-b border-[#e7e0dc] px-6 py-4">
-          <h2 className="text-lg font-semibold text-slate-800">Edit Stall</h2>
+          <h2 className="text-lg font-semibold text-slate-800">{title}</h2>
           <button
             type="button"
             onClick={onClose}
@@ -90,7 +265,8 @@ export default function EditStall({ open, onClose }) {
                 <input
                   type="text"
                   maxLength={50}
-                  className="border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[#f88c43]"
+                  name="vendorName"
+                  className="border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[color:rgb(var(--color-orange))]"
                   placeholder="Vendor"
                 />
               </label>
@@ -100,7 +276,8 @@ export default function EditStall({ open, onClose }) {
                 <input
                   type="text"
                   maxLength={50}
-                  className="border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[#f88c43]"
+                  name="stallName"
+                  className="border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[color:rgb(var(--color-orange))]"
                   placeholder="Stall"
                 />
               </label>
@@ -120,13 +297,17 @@ export default function EditStall({ open, onClose }) {
 
               <label className="flex flex-col gap-2 text-sm text-slate-600">
                 Type
-                <select className="border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[#f88c43]">
-                  <option>Topup</option>
-                  <option>Sale</option>
-                  <option>AccessX</option>
-                  <option>Inventory</option>
-                  <option>Stockmaster</option>
-                  <option>Tables</option>
+                <select
+                  name="stallType"
+                  className="border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[color:rgb(var(--color-orange))]"
+                  value={stallType}
+                  onChange={(event) => setStallType(event.target.value)}
+                >
+                  {STALL_TYPE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
                 </select>
               </label>
             </div>
@@ -140,7 +321,7 @@ export default function EditStall({ open, onClose }) {
                   type="button"
                   onClick={() => setPaymentMode("NFC")}
                   className={`rounded-full px-4 py-1 text-xs font-semibold transition ${
-                    paymentMode === "NFC" ? "bg-[#1495ab] text-white" : "text-slate-500"
+                    paymentMode === "NFC" ? "bg-[color:rgb(var(--color-teal))] text-white" : "text-slate-500"
                   }`}
                 >
                   Only NFC
@@ -149,7 +330,7 @@ export default function EditStall({ open, onClose }) {
                   type="button"
                   onClick={() => setPaymentMode("ALL")}
                   className={`rounded-full px-4 py-1 text-xs font-semibold transition ${
-                    paymentMode === "ALL" ? "bg-[#1495ab] text-white" : "text-slate-500"
+                    paymentMode === "ALL" ? "bg-[color:rgb(var(--color-teal))] text-white" : "text-slate-500"
                   }`}
                 >
                   Accept All Mode
@@ -170,7 +351,7 @@ export default function EditStall({ open, onClose }) {
                         onClick={() => toggleModeOption(option)}
                         className={`rounded-full border px-4 py-1 text-xs font-semibold transition ${
                           active
-                            ? "border-[#1495ab] bg-[#1495ab] text-white"
+                            ? "border-[color:rgb(var(--color-teal))] bg-[color:rgb(var(--color-teal))] text-white"
                             : "border-slate-200 text-slate-500"
                         }`}
                       >
@@ -185,7 +366,12 @@ export default function EditStall({ open, onClose }) {
             <div className="mt-3 grid gap-3">
               <label className="flex items-center justify-between gap-4 text-sm text-slate-600">
                 <span className="font-semibold">Bank Payment :</span>
-                <select className="flex-1 border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[#f88c43]">
+                <select
+                  name="bankPayment"
+                  value={bankPayment}
+                  onChange={(event) => setBankPayment(event.target.value)}
+                  className="flex-1 border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[color:rgb(var(--color-orange))]"
+                >
                   {BANK_OPTIONS.map((option) => (
                     <option key={option}>{option}</option>
                   ))}
@@ -194,7 +380,12 @@ export default function EditStall({ open, onClose }) {
 
               <label className="flex items-center justify-between gap-4 text-sm text-slate-600">
                 <span className="font-semibold">Scan Mode :</span>
-                <select className="flex-1 border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[#f88c43]">
+                <select
+                  name="scanMode"
+                  value={scanMode}
+                  onChange={(event) => setScanMode(event.target.value)}
+                  className="flex-1 border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[color:rgb(var(--color-orange))]"
+                >
                   {SCAN_OPTIONS.map((option) => (
                     <option key={option}>{option}</option>
                   ))}
@@ -221,7 +412,7 @@ export default function EditStall({ open, onClose }) {
                   {item.label}
                   <span
                     className={`relative h-5 w-10 rounded-full transition ${
-                      toggles[item.key] ? "bg-[#1495ab]" : "bg-slate-200"
+                      toggles[item.key] ? "bg-[color:rgb(var(--color-teal))]" : "bg-slate-200"
                     }`}
                   >
                     <span
@@ -250,7 +441,7 @@ export default function EditStall({ open, onClose }) {
                   {item.label}
                   <span
                     className={`relative h-5 w-10 rounded-full transition ${
-                      toggles[item.key] ? "bg-[#1495ab]" : "bg-slate-200"
+                      toggles[item.key] ? "bg-[color:rgb(var(--color-teal))]" : "bg-slate-200"
                     }`}
                   >
                     <span
@@ -264,13 +455,15 @@ export default function EditStall({ open, onClose }) {
             </div>
             <button
               type="button"
-              className="rounded-md bg-[#1495ab] px-4 py-2 text-sm font-semibold text-white shadow-[0_6px_12px_rgba(20,149,171,0.25)]"
+              onClick={handleSubmit}
+              disabled={saving}
+              className="rounded-md bg-[color:rgb(var(--color-teal))] px-4 py-2 text-sm font-semibold text-white shadow-[0_6px_12px_rgb(var(--color-teal)/0.25)]"
             >
-              Confirm
+              {saving ? "Saving..." : "Confirm"}
             </button>
           </div>
         </div>
-      </div>
+      </form>
     </div>
   );
 }

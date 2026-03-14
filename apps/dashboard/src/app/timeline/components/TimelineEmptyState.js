@@ -3,7 +3,7 @@
 export default function TimelineEmptyState() {
   return (
     <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-slate-200 bg-white px-6 py-16 text-center shadow-sm">
-      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#eaf8fb] text-[#1495ab]">
+      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#eaf8fb] text-[color:rgb(var(--color-teal))]">
         <svg
           viewBox="0 0 24 24"
           className="h-8 w-8"

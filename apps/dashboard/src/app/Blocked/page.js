@@ -4,7 +4,7 @@ import BlockedTable from "./components/BlockedTable";
 
 export default function BlockedPage() {
   return (
-    <main className="min-h-screen bg-[#f3f7fb] pb-10">
+    <main className="min-h-screen bg-[color:rgb(var(--color-bg))] pb-10">
       <Header areaLabel="Blocked" />
 
       <div className="w-full pr-4 pl-16 md:pr-8 md:pl-20 mt-6">

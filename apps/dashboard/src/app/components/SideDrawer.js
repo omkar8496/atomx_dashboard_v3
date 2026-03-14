@@ -6,6 +6,8 @@ import { usePathname } from "next/navigation";
 const ITEMS = [
   { id: "analytics", label: "Analytics" },
   { id: "configuration", label: "Configuration", href: "/Config/operations", match: "/Config" },
+  { id: "admin", label: "Admin", href: "/admin", match: "/admin" },
+  { id: "create-event", label: "Create Event", href: "/admin/Create_event", match: "/admin/Create_event" },
   { id: "reports", label: "Reports", href: "/device/Reports", match: "/device/Reports" },
   { id: "transactions", label: "Transactions" },
   { id: "device", label: "Devices", href: "/device", exact: true },
@@ -24,10 +26,23 @@ const ICONS = {
       <path d="M4 6h16v2H4V6zm0 5h10v2H4v-2zm0 5h16v2H4v-2z" />
     </svg>
   ),
+  admin: (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
+      <path d="M12 2l7 3v6c0 5-3.8 9.3-7 10-3.2-.7-7-5-7-10V5l7-3z" />
+      <path d="M9.5 11.5l1.8 1.8 3.5-3.5" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
+  "create-event": (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
+      <path d="M6 3h9l5 5v13a1.8 1.8 0 01-1.8 1.8H6A1.8 1.8 0 014.2 21V4.8A1.8 1.8 0 016 3z" />
+      <path d="M14 3v5h5" fill="rgb(var(--color-orange))" />
+      <path d="M12 10v6M9 13h6" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  ),
   device: (
     <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
       <rect x="7" y="2.5" width="10" height="19" rx="2.2" />
-      <rect x="10" y="18" width="4" height="1.6" rx="0.8" fill="#f88c43" />
+      <rect x="10" y="18" width="4" height="1.6" rx="0.8" fill="rgb(var(--color-orange))" />
     </svg>
   ),
   blocked: (
@@ -54,6 +69,10 @@ const ICONS = {
 
 export default function SideDrawer({ open, onClose, eventName = "SUNBURN" }) {
   const pathname = usePathname();
+  const isAdminArea = pathname?.startsWith("/admin");
+  const visibleItems = isAdminArea
+    ? ITEMS.filter((item) => item.id === "admin" || item.id === "create-event")
+    : ITEMS.filter((item) => item.id !== "create-event");
 
   useEffect(() => {
     if (!open) return;
@@ -70,10 +89,10 @@ export default function SideDrawer({ open, onClose, eventName = "SUNBURN" }) {
       style={{ top: "var(--header-h)", height: "calc(100vh - var(--header-h))" }}
     >
       <div
-        className="h-full w-12 bg-[#f88c43] py-6 shadow-[0_18px_40px_rgba(0,0,0,0.25)] transition-[width] duration-500 ease-in-out group-hover:w-56"
+        className="h-full w-12 bg-[color:rgb(var(--color-orange))] py-6 shadow-[0_18px_40px_rgba(0,0,0,0.25)] transition-[width] duration-500 ease-in-out group-hover:w-56"
       >
         <nav className="flex flex-col gap-3 px-1">
-          {ITEMS.map((item) => {
+          {visibleItems.map((item) => {
             const matchBase = item.match || item.href;
             const isActive = item.exact
               ? pathname === matchBase

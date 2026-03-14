@@ -4,7 +4,7 @@ import EmptyState from "./components/EmptyState";
 
 export default function WhitelistPage() {
   return (
-    <main className="min-h-screen bg-[#f3f7fb] pb-10">
+    <main className="min-h-screen bg-[color:rgb(var(--color-bg))] pb-10">
       <Header areaLabel="Whitelist" />
 
       <div className="w-full pr-4 pl-16 md:pr-8 md:pl-20 mt-6">

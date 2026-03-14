@@ -5,7 +5,7 @@ export default function DownloadButton() {
     <div className="flex justify-center">
       <button
         type="button"
-        className="mt-4 flex items-center gap-3 rounded-2xl bg-[#1495ab] px-8 py-3 text-base font-semibold text-white shadow-[0_16px_32px_rgba(20,149,171,0.35)] transition hover:brightness-105"
+        className="mt-4 flex items-center gap-3 rounded-2xl bg-[color:rgb(var(--color-teal))] px-8 py-3 text-base font-semibold text-white shadow-[0_16px_32px_rgb(var(--color-teal)/0.35)] transition hover:brightness-105"
       >
         <svg
           viewBox="0 0 24 24"

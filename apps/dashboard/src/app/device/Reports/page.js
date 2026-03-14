@@ -5,7 +5,7 @@ import DownloadButton from "./components/DownloadButton";
 
 export default function ReportsPage() {
   return (
-    <main className="min-h-screen bg-[#f3f7fb] pb-10">
+    <main className="min-h-screen bg-[color:rgb(var(--color-bg))] pb-10">
       <Header areaLabel="Reports" />
 
       <div className="w-full pr-4 pl-16 md:pr-8 md:pl-20 mt-6">

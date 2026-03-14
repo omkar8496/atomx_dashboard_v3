@@ -8,7 +8,7 @@ export default function SectionHeader({ title, count, actionLabel }) {
           {title}
         </div>
         {typeof count === "number" ? (
-          <span className="rounded-full bg-[#eaf8fb] px-3 py-1 text-xs font-semibold text-[#1495ab]">
+          <span className="rounded-full bg-[#eaf8fb] px-3 py-1 text-xs font-semibold text-[color:rgb(var(--color-teal))]">
             {count}
           </span>
         ) : null}
@@ -16,7 +16,7 @@ export default function SectionHeader({ title, count, actionLabel }) {
       {actionLabel ? (
         <button
           type="button"
-          className="flex items-center gap-2 rounded-xl bg-[#f88c43] px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white shadow-[0_12px_30px_rgba(248,140,67,0.35)]"
+          className="flex items-center gap-2 rounded-xl bg-[color:rgb(var(--color-orange))] px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white shadow-[0_12px_30px_rgb(var(--color-orange)/0.35)]"
         >
           <span className="text-sm">+</span>
           {actionLabel}

@@ -3,7 +3,7 @@
 export default function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-slate-200 bg-white px-6 py-16 text-center shadow-sm">
-      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#fff5e8] text-[#f88c43]">
+      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#fff5e8] text-[color:rgb(var(--color-orange))]">
         <svg
           viewBox="0 0 24 24"
           className="h-8 w-8"

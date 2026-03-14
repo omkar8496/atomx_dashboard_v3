@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const SERVICES = [
   "NFC Cashless",
@@ -11,11 +11,38 @@ const SERVICES = [
   "Taxation"
 ];
 
-export default function ActiveService() {
+const SERVICE_FIELDS = {
+  "NFC Cashless": "event.useNfc",
+  "Online Topup": "event.onlineTopup",
+  "Use Pin": "event.usePin",
+  "Access Control": "event.useAccessx",
+  "Maker Checker": "event.useMakerChecker",
+  Taxation: "event.gstSetting"
+};
+
+export default function ActiveService({ event, onFieldChange }) {
   const [active, setActive] = useState({});
 
+  useEffect(() => {
+    if (!event) return;
+    setActive({
+      "NFC Cashless": Boolean(event.useNfc),
+      "Online Topup": Boolean(event.onlineTopup),
+      "Use Pin": Boolean(event.usePin),
+      "Access Control": Boolean(event.useAccessx),
+      "Maker Checker": Boolean(event.useMakerChecker),
+      Taxation: Boolean(event.gstSetting)
+    });
+  }, [event]);
+
   const toggle = (key) => {
-    setActive((prev) => ({ ...prev, [key]: !prev[key] }));
+    setActive((prev) => {
+      const next = { ...prev, [key]: !prev[key] };
+      return next;
+    });
+    if (onFieldChange) {
+      requestAnimationFrame(() => onFieldChange());
+    }
   };
 
   return (
@@ -32,7 +59,7 @@ export default function ActiveService() {
             >
               <span
                 className={`relative h-5 w-10 rounded-full transition ${
-                  isOn ? "bg-[#1495ab]" : "bg-slate-200"
+                  isOn ? "bg-[color:rgb(var(--color-teal))]" : "bg-slate-200"
                 }`}
               >
                 <span
@@ -44,6 +71,11 @@ export default function ActiveService() {
               <span className="text-sm font-medium text-slate-700 whitespace-nowrap">
                 {service}
               </span>
+              <input
+                type="hidden"
+                name={SERVICE_FIELDS[service]}
+                value={isOn ? "1" : "0"}
+              />
             </button>
           );
         })}

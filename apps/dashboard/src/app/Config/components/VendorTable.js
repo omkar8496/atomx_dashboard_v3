@@ -33,24 +33,24 @@ export default function VendorTable() {
                 <td className="px-4 py-4 text-slate-600">{row.id}</td>
                 <td className="px-4 py-4 font-semibold text-slate-800">{row.name}</td>
                 <td className="px-4 py-4">
-                  <span className="rounded-full bg-[#ffe8d4] px-3 py-1 text-xs font-semibold text-[#f88c43]">
+                  <span className="rounded-full bg-[#ffe8d4] px-3 py-1 text-xs font-semibold text-[color:rgb(var(--color-orange))]">
                     {row.type}
                   </span>
                 </td>
                 <td className="px-4 py-4 text-slate-700">{row.loginCode}</td>
                 <td className="px-4 py-4 text-slate-600">{row.items}</td>
                 <td className="px-4 py-4 text-slate-500">
-                  <button className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-500 hover:border-[#1495ab] hover:text-[#1495ab]">
+                  <button className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-500 hover:border-[color:rgb(var(--color-teal))] hover:text-[color:rgb(var(--color-teal))]">
                     Link
                   </button>
                 </td>
                 <td className="px-4 py-4 text-slate-500">
-                  <button className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-500 hover:border-[#1495ab] hover:text-[#1495ab]">
+                  <button className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-500 hover:border-[color:rgb(var(--color-teal))] hover:text-[color:rgb(var(--color-teal))]">
                     Add
                   </button>
                 </td>
                 <td className="px-4 py-4 text-slate-500">
-                  <button className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-500 hover:border-[#1495ab] hover:text-[#1495ab]">
+                  <button className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-500 hover:border-[color:rgb(var(--color-teal))] hover:text-[color:rgb(var(--color-teal))]">
                     Edit
                   </button>
                 </td>

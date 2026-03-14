@@ -30,12 +30,12 @@ export default function StockroomTable() {
                 <td className="px-4 py-4 text-slate-700">{row.stall}</td>
                 <td className="px-4 py-4 text-slate-600">{row.devices}</td>
                 <td className="px-4 py-4 text-slate-500">
-                  <button className="rounded-full border border-orange-200 px-3 py-1 text-xs font-semibold text-slate-600 hover:border-[#f88c43] hover:text-[#f88c43]">
+                  <button className="rounded-full border border-orange-200 px-3 py-1 text-xs font-semibold text-slate-600 hover:border-[color:rgb(var(--color-orange))] hover:text-[color:rgb(var(--color-orange))]">
                     Menu
                   </button>
                 </td>
                 <td className="px-4 py-4 text-slate-500">
-                  <button className="rounded-full border border-orange-200 px-3 py-1 text-xs font-semibold text-slate-600 hover:border-[#f88c43] hover:text-[#f88c43]">
+                  <button className="rounded-full border border-orange-200 px-3 py-1 text-xs font-semibold text-slate-600 hover:border-[color:rgb(var(--color-orange))] hover:text-[color:rgb(var(--color-orange))]">
                     Edit
                   </button>
                 </td>

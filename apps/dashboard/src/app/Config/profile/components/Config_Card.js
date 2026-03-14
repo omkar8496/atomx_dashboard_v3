@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const RETURN_TOGGLES = [
   "Return Card Fee",
@@ -9,11 +9,31 @@ const RETURN_TOGGLES = [
   "Return Card Fee In Cash"
 ];
 
-export default function ConfigCard() {
+const RETURN_FIELDS = {
+  "Return Card Fee": "event.returnCardFee",
+  "Return Balance": "event.returnCartValue",
+  "Return Bank Card Balance": "event.returnCardFull",
+  "Return Card Fee In Cash": "event.returnCardFeeCash"
+};
+
+export default function ConfigCard({ event, onFieldChange }) {
   const [toggles, setToggles] = useState({});
+
+  useEffect(() => {
+    if (!event) return;
+    setToggles({
+      "Return Card Fee": Boolean(event.returnCardFee),
+      "Return Balance": Boolean(event.returnCartValue),
+      "Return Bank Card Balance": Boolean(event.returnCardFull),
+      "Return Card Fee In Cash": Boolean(event.returnCardFeeCash)
+    });
+  }, [event]);
 
   const toggle = (key) => {
     setToggles((prev) => ({ ...prev, [key]: !prev[key] }));
+    if (onFieldChange) {
+      requestAnimationFrame(() => onFieldChange());
+    }
   };
 
   return (
@@ -24,7 +44,9 @@ export default function ConfigCard() {
           <input
             type="number"
             inputMode="decimal"
-            className="border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[#f88c43]"
+            name="event.cardFee"
+            defaultValue={event?.cardFee ?? ""}
+            className="border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[color:rgb(var(--color-orange))]"
             placeholder="0.00"
           />
         </label>
@@ -34,7 +56,9 @@ export default function ConfigCard() {
           <input
             type="number"
             inputMode="decimal"
-            className="border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[#f88c43]"
+            name="event.minTopup"
+            defaultValue={event?.minTopup ?? ""}
+            className="border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[color:rgb(var(--color-orange))]"
             placeholder="0.00"
           />
         </label>
@@ -44,7 +68,9 @@ export default function ConfigCard() {
           <input
             type="number"
             inputMode="numeric"
-            className="border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[#f88c43]"
+            name="event.maxTopupWallet"
+            defaultValue={event?.maxTopupWallet ?? ""}
+            className="border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[color:rgb(var(--color-orange))]"
             placeholder="100000"
           />
         </label>
@@ -67,7 +93,7 @@ export default function ConfigCard() {
             >
               <span
                 className={`relative h-5 w-10 rounded-full transition ${
-                  isOn ? "bg-[#1495ab]" : "bg-slate-200"
+                  isOn ? "bg-[color:rgb(var(--color-teal))]" : "bg-slate-200"
                 }`}
               >
                 <span
@@ -77,6 +103,11 @@ export default function ConfigCard() {
                 />
               </span>
               <span className="text-sm font-medium text-slate-700">{label}</span>
+              <input
+                type="hidden"
+                name={RETURN_FIELDS[label]}
+                value={isOn ? "1" : "0"}
+              />
             </button>
           );
         })}
@@ -88,7 +119,9 @@ export default function ConfigCard() {
           <input
             type="number"
             inputMode="decimal"
-            className="border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[#f88c43]"
+            name="event.returnMinAmount"
+            defaultValue={event?.returnMinAmount ?? ""}
+            className="border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[color:rgb(var(--color-orange))]"
             placeholder="0.00"
           />
         </label>
@@ -98,7 +131,9 @@ export default function ConfigCard() {
           <input
             type="number"
             inputMode="decimal"
-            className="border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[#f88c43]"
+            name="event.returnMaxAmount"
+            defaultValue={event?.returnMaxAmount ?? ""}
+            className="border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[color:rgb(var(--color-orange))]"
             placeholder="0.00"
           />
         </label>

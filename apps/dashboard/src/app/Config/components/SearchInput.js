@@ -22,7 +22,7 @@ export default function SearchInput({ placeholder }) {
       />
       <button
         type="button"
-        className="rounded-full bg-[#1495ab] px-4 py-1.5 text-xs font-semibold text-white shadow-sm"
+        className="rounded-full bg-[color:rgb(var(--color-teal))] px-4 py-1.5 text-xs font-semibold text-white shadow-sm"
       >
         Search
       </button>

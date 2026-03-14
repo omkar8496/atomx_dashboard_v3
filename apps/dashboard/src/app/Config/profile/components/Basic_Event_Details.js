@@ -7,7 +7,33 @@ const FieldLabel = ({ icon, text }) => (
   </div>
 );
 
-export default function BasicEventDetails() {
+const DEFAULT_COUNTRIES = ["India", "United States", "United Kingdom"];
+const DEFAULT_CITIES = ["Mumbai", "Pune", "Delhi"];
+const DEFAULT_TIMEZONES = ["UTC+05:30 (IST)", "UTC+00:00 (GMT)", "UTC-05:00 (EST)"];
+const DEFAULT_CURRENCIES = ["INR", "USD", "EUR"];
+
+function ensureOption(list, value) {
+  if (!value) return list;
+  const normalized = String(value).trim();
+  if (!normalized) return list;
+  return list.some((item) => item.toLowerCase() === normalized.toLowerCase())
+    ? list
+    : [normalized, ...list];
+}
+
+function formatDateInput(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toISOString().slice(0, 10);
+}
+
+export default function BasicEventDetails({ event }) {
+  const countryOptions = ensureOption(DEFAULT_COUNTRIES, event?.country);
+  const cityOptions = ensureOption(DEFAULT_CITIES, event?.locationCity);
+  const timezoneOptions = ensureOption(DEFAULT_TIMEZONES, event?.tz);
+  const currencyOptions = ensureOption(DEFAULT_CURRENCIES, event?.currency?.toUpperCase());
+
   return (
     <section className="px-1">
       <div className="grid gap-6">
@@ -26,7 +52,9 @@ export default function BasicEventDetails() {
             <input
               type="text"
               placeholder="Event name"
-              className="border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[#f88c43]"
+              name="event.name"
+              defaultValue={event?.name ?? ""}
+              className="border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[color:rgb(var(--color-orange))]"
             />
           </label>
 
@@ -41,11 +69,15 @@ export default function BasicEventDetails() {
                 </svg>
               }
             />
-            <select className="border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[#f88c43]">
+            <select
+              name="event.country"
+              className="border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[color:rgb(var(--color-orange))]"
+              defaultValue={event?.country ?? "Select country"}
+            >
               <option>Select country</option>
-              <option>India</option>
-              <option>United States</option>
-              <option>United Kingdom</option>
+              {countryOptions.map((option) => (
+                <option key={option}>{option}</option>
+              ))}
             </select>
           </label>
 
@@ -60,11 +92,15 @@ export default function BasicEventDetails() {
                 </svg>
               }
             />
-            <select className="border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[#f88c43]">
+            <select
+              name="event.locationCity"
+              className="border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[color:rgb(var(--color-orange))]"
+              defaultValue={event?.locationCity ?? "Select city"}
+            >
               <option>Select city</option>
-              <option>Mumbai</option>
-              <option>Pune</option>
-              <option>Delhi</option>
+              {cityOptions.map((option) => (
+                <option key={option}>{option}</option>
+              ))}
             </select>
           </label>
 
@@ -78,11 +114,15 @@ export default function BasicEventDetails() {
                 </svg>
               }
             />
-            <select className="border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[#f88c43]">
+            <select
+              name="event.tz"
+              className="border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[color:rgb(var(--color-orange))]"
+              defaultValue={event?.tz ?? "Select timezone"}
+            >
               <option>Select timezone</option>
-              <option>UTC+05:30 (IST)</option>
-              <option>UTC+00:00 (GMT)</option>
-              <option>UTC-05:00 (EST)</option>
+              {timezoneOptions.map((option) => (
+                <option key={option}>{option}</option>
+              ))}
             </select>
           </label>
         </div>
@@ -101,7 +141,9 @@ export default function BasicEventDetails() {
             <input
               type="text"
               placeholder="Organizer"
-              className="border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[#f88c43]"
+              name="event.organizer"
+              defaultValue={event?.organizer ?? ""}
+              className="border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[color:rgb(var(--color-orange))]"
             />
           </label>
 
@@ -118,7 +160,9 @@ export default function BasicEventDetails() {
             <input
               type="text"
               placeholder="Client"
-              className="border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[#f88c43]"
+              name="event.client"
+              defaultValue={event?.client ?? ""}
+              className="border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[color:rgb(var(--color-orange))]"
             />
           </label>
 
@@ -135,7 +179,9 @@ export default function BasicEventDetails() {
             <input
               type="text"
               placeholder="Venue"
-              className="border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[#f88c43]"
+              name="event.venue"
+              defaultValue={event?.venue ?? ""}
+              className="border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[color:rgb(var(--color-orange))]"
             />
           </label>
 
@@ -149,11 +195,15 @@ export default function BasicEventDetails() {
                 </svg>
               }
             />
-            <select className="border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[#f88c43]">
+            <select
+              name="event.currency"
+              className="border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[color:rgb(var(--color-orange))]"
+              defaultValue={event?.currency?.toUpperCase() ?? "Select currency"}
+            >
               <option>Select currency</option>
-              <option>INR</option>
-              <option>USD</option>
-              <option>EUR</option>
+              {currencyOptions.map((option) => (
+                <option key={option}>{option}</option>
+              ))}
             </select>
           </label>
         </div>
@@ -174,11 +224,15 @@ export default function BasicEventDetails() {
             <div className="flex flex-wrap gap-3">
               <input
                 type="date"
-                className="w-full max-w-[170px] border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[#f88c43]"
+                name="event.startAt"
+                defaultValue={formatDateInput(event?.startAt)}
+                className="w-full max-w-[170px] border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[color:rgb(var(--color-orange))]"
               />
               <input
                 type="date"
-                className="w-full max-w-[170px] border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[#f88c43]"
+                name="event.endAt"
+                defaultValue={formatDateInput(event?.endAt)}
+                className="w-full max-w-[170px] border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[color:rgb(var(--color-orange))]"
               />
             </div>
           </label>
@@ -197,7 +251,9 @@ export default function BasicEventDetails() {
             <input
               type="text"
               placeholder="ETCODE"
-              className="border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[#f88c43]"
+              name="dashSettings.etcode"
+              defaultValue={event?.dashSettings?.etcode ?? ""}
+              className="border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[color:rgb(var(--color-orange))]"
             />
           </label>
         </div>

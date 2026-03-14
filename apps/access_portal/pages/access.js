@@ -1,16 +1,17 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
-import { decodeJwt, getInitials } from "@atomx/lib";
+import { decodeJwt, getBaseUrl, getInitials } from "@atomx/lib";
 import { HeaderBar } from "../components/HeaderBar/HeaderBar";
 import { WelcomePanel } from "../components/WelcomePanel/WelcomePanel";
-import { AssignmentCard } from "../components/AssignmentCard/AssignmentCard";
-import { Add_Role } from "../components/Add_Role/Add_Role";
 
 const moduleLinks = {
   livelink: process.env.NEXT_PUBLIC_LIVELINK_URL ?? "/livelink",
   "tag-series": process.env.NEXT_PUBLIC_TAG_SERIES_URL ?? "/tag_series"
 };
+const dashboardBase = (process.env.NEXT_PUBLIC_DASHBOARD_URL ?? "/dashboard").replace(/\/$/, "");
+const dashboardConfigPath = "/Config/operations";
+const accessAdminUrl = process.env.NEXT_PUBLIC_ACCESS_ADMIN_URL ?? `${dashboardBase}/admin`;
 
 const MODULE_CATALOG = {
   "tag-series": {
@@ -35,6 +36,56 @@ const FALLBACK_MODULE = {
   color: "#d1d5db",
   variant: "teal"
 };
+
+function formatSessionExpiry(expirySeconds) {
+  if (!expirySeconds) return null;
+  const expiryDate = new Date(expirySeconds * 1000);
+  if (Number.isNaN(expiryDate.getTime())) return null;
+
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfTomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  const startOfYesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+
+  let prefix = "";
+  if (expiryDate >= startOfToday && expiryDate < startOfTomorrow) {
+    prefix = "Today";
+  } else if (expiryDate >= startOfTomorrow && expiryDate < new Date(startOfTomorrow.getTime() + 86400000)) {
+    prefix = "Tomorrow";
+  } else if (expiryDate >= startOfYesterday && expiryDate < startOfToday) {
+    prefix = "Yesterday";
+  }
+
+  const formatted = new Intl.DateTimeFormat("en-IN", {
+    dateStyle: "medium",
+    timeStyle: "short"
+  }).format(expiryDate);
+
+  return prefix ? `${prefix}, ${formatted}` : formatted;
+}
+
+function sanitizeReturnTo(value) {
+  try {
+    const parsed = new URL(value, window.location.origin);
+    parsed.searchParams.delete("returnTo");
+    return parsed.toString();
+  } catch (err) {
+    return value;
+  }
+}
+
+function mapServiceParam(type) {
+  const normalized = String(type || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[_\s]+/g, "-");
+  if (normalized.includes("tag-series") || normalized.includes("tagseries")) {
+    return "tag-series";
+  }
+  if (normalized.includes("cashless")) return "cashless";
+  if (normalized.includes("inventory")) return "inventory";
+  return normalized;
+}
 
 function sanitizeModules(roles = []) {
   const seen = new Set();
@@ -67,6 +118,9 @@ export default function AccessPage() {
   const [token, setToken] = useState(null);
   const [selecting, setSelecting] = useState(null);
   const [selectError, setSelectError] = useState(null);
+  const [hideErrorBanner, setHideErrorBanner] = useState(false);
+  const [hideEmptyBanner, setHideEmptyBanner] = useState(false);
+  const reauthHandledRef = useRef(false);
 
   useEffect(() => {
     if (!router.isReady) return;
@@ -117,6 +171,11 @@ export default function AccessPage() {
     }
   }, [router]);
 
+  useEffect(() => {
+    setHideErrorBanner(false);
+    setHideEmptyBanner(false);
+  }, [status, error]);
+
   const user = useMemo(() => {
     if (!profile) {
       return {
@@ -136,70 +195,90 @@ export default function AccessPage() {
     };
   }, [profile]);
 
-  const assignment = useMemo(() => {
-    if (!profile) {
-      return {
-        event: "Sign in to view assignments",
-        email: "login@atomx.in",
-        period: "—",
-        permissions: []
-      };
-    }
-    const expiry = profile.exp ? new Date(profile.exp * 1000).toLocaleString() : "Active";
-    return {
-      event: "AtomX Universal Access",
-      email: profile.email,
-      period: `Session expires ${expiry}`,
-      permissions: modules.length
-        ? modules.map((module) => ({
-            label: module.title,
-            type: module.type,
-            href: module.href ?? moduleLinks[module.type]
-          }))
-        : [
-            {
-              label: "Tag Series",
-              type: "tag-series",
-              href: moduleLinks["tag-series"]
-            }
-          ]
-    };
-  }, [profile, modules]);
+  const sessionExpiry = useMemo(() => {
+    return formatSessionExpiry(profile?.exp);
+  }, [profile]);
+
+  const roleCards = useMemo(() => {
+    if (!Array.isArray(profile?.roles)) return [];
+    return profile.roles.map((role, index) => ({
+      id: role?.id ?? `${role?.type ?? "role"}-${index}`,
+      type: role?.type ?? "Unknown",
+      expiryAt: role?.expiryAt ?? null,
+      eventName: role?.eventName ?? null,
+      eventId: role?.eventId ?? null,
+      adminName: role?.adminName ?? null,
+      adminId: role?.adminId ?? null
+    }));
+  }, [profile]);
+
+  const adminRoles = useMemo(() => {
+    return roleCards.filter(
+      (role) => String(role.type || "").toLowerCase() === "admin"
+    );
+  }, [roleCards]);
+
+  const eventRoles = useMemo(() => {
+    return roleCards.filter(
+      (role) => String(role.type || "").toLowerCase() !== "admin"
+    );
+  }, [roleCards]);
 
   const highlightActions = useMemo(() => [], []);
 
   const handlePermissionClick = async (permission) => {
     if (typeof window === "undefined") return;
     setSelectError(null);
-    const apiBase = (process.env.NEXT_PUBLIC_BASE_URL ?? "https://dapi.atomx.in").replace(/\/$/, "");
+    const apiBase = getBaseUrl();
     const moduleMeta =
       modules.find((module) => module.type === permission.type) ??
       modules.find((module) => module.title === permission.label);
-    const destination = permission.href ?? moduleMeta?.href ?? moduleLinks[permission.type];
+    const destination =
+      permission.destination ?? permission.href ?? moduleMeta?.href ?? moduleLinks[permission.type];
     const roleMatch =
       profile?.roles?.find((role) => role.type === permission.type) ??
       profile?.roles?.find((role) => role.type === permission.label);
     const adminId = roleMatch?.adminId;
     const apiType = permission.type ?? roleMatch?.type;
+    const normalizedType = String(apiType || "").toLowerCase();
+    const isAdminType = normalizedType === "admin";
+    const needsEventId =
+      normalizedType &&
+      normalizedType !== "tag-series" &&
+      normalizedType !== "tag_series" &&
+      normalizedType !== "tag series" &&
+      !isAdminType;
+    const eventId = roleMatch?.eventId ?? permission.eventId ?? null;
 
     if (!apiBase) {
       setSelectError("Missing API base URL (NEXT_PUBLIC_BASE_URL)");
       return;
     }
-    if (!adminId || !apiType) {
-      setSelectError("Module is missing admin access details.");
+    if (!apiType) {
+      setSelectError("Module type is missing.");
+      return;
+    }
+    if (needsEventId && !eventId) {
+      setSelectError("Event ID is required for this module.");
+      return;
+    }
+    if (!needsEventId && !adminId) {
+      setSelectError("Admin ID is required for this module.");
       return;
     }
 
     try {
       setSelecting(permission.type || permission.label || "switching");
+      const payload = needsEventId
+        ? { type: apiType, eventId }
+        : { type: apiType, adminId };
       const res = await fetch(`${apiBase}/auth/select`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           ...(token ? { Authorization: `Bearer ${token}` } : {})
         },
-        body: JSON.stringify({ adminId, type: apiType })
+        body: JSON.stringify(payload)
       });
 
       if (!res.ok) {
@@ -230,7 +309,27 @@ export default function AccessPage() {
         const target = destination.startsWith("http")
           ? new URL(destination)
           : new URL(destination, window.location.origin);
+        if (permission.returnMode === "message" && window.opener && !window.opener.closed) {
+          try {
+            window.opener.postMessage(
+              {
+                type: "atomx.auth",
+                token: nextToken,
+                service: permission.service ?? permission.type,
+                eventId
+              },
+              target.origin
+            );
+            window.close();
+            return;
+          } catch (err) {
+            console.error("Failed to post auth token", err);
+          }
+        }
         target.searchParams.set("token", nextToken);
+        if (permission.service) {
+          target.searchParams.set("service", permission.service);
+        }
         window.location.href = target.toString();
       }
     } catch (err) {
@@ -244,6 +343,56 @@ export default function AccessPage() {
       setSelecting(null);
     }
   };
+
+  useEffect(() => {
+    if (status !== "ready" || !profile || reauthHandledRef.current) return;
+    if (typeof window === "undefined") return;
+
+    const returnToParamRaw = router.query.returnTo;
+    const returnToParam = Array.isArray(returnToParamRaw)
+      ? returnToParamRaw[0]
+      : returnToParamRaw;
+    const sanitizedReturnToParam =
+      returnToParam && typeof window !== "undefined"
+        ? sanitizeReturnTo(returnToParam)
+        : returnToParam;
+
+    let context = null;
+    try {
+      const stored = window.localStorage.getItem("atomx.portal.reauth");
+      if (stored) {
+        context = JSON.parse(stored);
+        window.localStorage.removeItem("atomx.portal.reauth");
+      }
+    } catch (err) {
+      console.error("Failed to parse reauth context", err);
+    }
+
+    const returnTo = context?.returnTo || sanitizedReturnToParam || null;
+    const type = context?.type || null;
+    const eventId = context?.eventId || null;
+
+    if (type) {
+      const hasRole = profile?.roles?.some((role) => role?.type === type);
+      if (hasRole) {
+        reauthHandledRef.current = true;
+        handlePermissionClick({
+          type,
+          label: type,
+          eventId,
+          destination: returnTo,
+          service: type,
+          returnMode: "message"
+        });
+        return;
+      }
+    }
+
+    if (returnTo && returnTo !== window.location.href) {
+      reauthHandledRef.current = true;
+      window.location.assign(returnTo);
+    }
+  }, [status, profile, router.query.returnTo, handlePermissionClick]);
 
   const handleSignOut = () => {
     if (typeof window !== "undefined") {
@@ -274,6 +423,112 @@ export default function AccessPage() {
     router.replace("/");
   };
 
+  const handleEventRoleClick = (role) => {
+    const service = mapServiceParam(role?.type);
+    const destination = `${dashboardBase}${dashboardConfigPath}`;
+    handlePermissionClick({
+      type: role.type,
+      label: role.type,
+      destination,
+      service,
+      eventId: role.eventId
+    });
+  };
+
+  const handleAdminRoleClick = (role) => {
+    handlePermissionClick({
+      type: role.type,
+      label: role.type,
+      destination: accessAdminUrl
+    });
+  };
+
+  const renderRoleCards = (roles, emptyLabel, options = {}) => {
+    const { onCardClick, showOpenIcon = false } = options;
+    const isAdminSection = options.section === "admin";
+    if (!roles.length) {
+      return (
+        <div className="rounded-lg border border-[#e8d9d3] bg-white px-5 py-4 text-sm text-slate-600 shadow-[0_8px_18px_rgba(15,23,42,0.08)]">
+          {emptyLabel}
+        </div>
+      );
+    }
+
+    return (
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {roles.map((role) => (
+          <article
+            key={role.id}
+            className={`group rounded-lg border border-[#e8d9d3] bg-white px-5 py-4 shadow-[0_8px_18px_rgba(15,23,42,0.08)] transition hover:border-[#1495ab]/40 hover:bg-[#f8fbfd] hover:shadow-[0_12px_22px_rgba(15,23,42,0.12)] ${
+              onCardClick ? "cursor-pointer" : ""
+            }`}
+            onClick={
+              onCardClick
+                ? () => {
+                    if (!role?.type) return;
+                    onCardClick(role);
+                  }
+                : undefined
+            }
+          >
+            <div className="flex items-start justify-between gap-3 text-sm font-semibold text-slate-700">
+              <div className="flex flex-col gap-1">
+                <span className="uppercase tracking-[0.12em] text-slate-500">
+                  {role.type}
+                </span>
+                <span className="text-xs font-medium text-slate-500">
+                  {role.expiryAt ? formatSessionExpiry(role.expiryAt) : "No expiry"}
+                </span>
+              </div>
+              {showOpenIcon ? (
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 text-slate-500 opacity-0 transition group-hover:opacity-100"
+                    aria-label="Open role"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      className="h-4 w-4"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden
+                    >
+                      <path d="M7 17l10-10" />
+                      <path d="M9 7h8v8" />
+                    </svg>
+                  </button>
+                </div>
+              ) : null}
+            </div>
+            <div className="mt-3 h-px bg-slate-200" />
+            <div className="mt-3 grid gap-2 text-sm text-slate-600">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[0.7rem] uppercase tracking-[0.2em] text-slate-400">
+                  {isAdminSection ? "Admin Name" : "Event Name"}
+                </span>
+                <span className="text-sm font-semibold text-slate-700">
+                  {isAdminSection ? role.adminName || "—" : role.eventName || "—"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[0.7rem] uppercase tracking-[0.2em] text-slate-400">
+                  {isAdminSection ? "Admin Id" : "Event Id"}
+                </span>
+                <span className="text-sm font-semibold text-slate-700">
+                  {isAdminSection ? role.adminId ?? "—" : role.eventId ?? "—"}
+                </span>
+              </div>
+            </div>
+          </article>
+        ))}
+      </section>
+    );
+  };
+
   return (
     <>
       <Head>
@@ -283,28 +538,96 @@ export default function AccessPage() {
           content="Pick the AtomX module you need in one click."
         />
       </Head>
-      <main className="mx-auto flex max-w-5xl flex-col gap-3 px-4 pb-10 pt-6 md:px-6 md:pt-8">
-        <HeaderBar user={user} onSignOut={handleSignOut} />
+      <main className="mx-auto flex w-full flex-col gap-3 px-4 pb-10 md:px-6">
+        <HeaderBar
+          user={user}
+          onSignOut={handleSignOut}
+          sessionLabel={sessionExpiry ? `Session expires ${sessionExpiry}` : null}
+        />
 
-        {status === "error" && (
-          <div className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
+        {status === "error" && !hideErrorBanner && (
+          <div className="relative rounded-2xl border border-red-200 bg-red-50 px-5 py-4 pr-12 text-sm text-red-700">
             {error}
+            <button
+              type="button"
+              className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full border border-red-200 text-red-500 transition hover:bg-red-100"
+              onClick={() => setHideErrorBanner(true)}
+              aria-label="Dismiss error"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <path d="M18 6L6 18" />
+                <path d="M6 6l12 12" />
+              </svg>
+            </button>
           </div>
         )}
 
-        {status === "empty" && (
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-700">
+        {status === "empty" && !hideEmptyBanner && (
+          <div className="relative rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 pr-12 text-sm text-amber-700">
             No active session detected. Please log in first.
+            <button
+              type="button"
+              className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full border border-amber-200 text-amber-600 transition hover:bg-amber-100"
+              onClick={() => setHideEmptyBanner(true)}
+              aria-label="Dismiss notice"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <path d="M18 6L6 18" />
+                <path d="M6 6l12 12" />
+              </svg>
+            </button>
           </div>
         )}
 
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <WelcomePanel user={user} actions={highlightActions} />
-          <div className="flex justify-start md:justify-end px-1 md:px-2">
-            <Add_Role labels={["Admin", "Operator"]} />
-          </div>
         </div>
-        <AssignmentCard assignment={assignment} onPermissionClick={handlePermissionClick} />
+
+        {roleCards.length ? (
+          <div className="flex flex-col gap-6">
+            <div className="flex items-center gap-4">
+              <h2 className="text-lg font-semibold text-slate-800">Admin</h2>
+              <div className="h-px flex-1 bg-slate-300" />
+            </div>
+            {renderRoleCards(adminRoles, "No admin roles assigned yet.", {
+              onCardClick: handleAdminRoleClick,
+              showOpenIcon: true,
+              section: "admin"
+            })}
+
+            <div className="flex items-center gap-4">
+              <h2 className="text-lg font-semibold text-slate-800">Events</h2>
+              <div className="h-px flex-1 bg-slate-300" />
+            </div>
+            {renderRoleCards(eventRoles, "No event roles assigned yet.", {
+              onCardClick: handleEventRoleClick,
+              showOpenIcon: true,
+              section: "event"
+            })}
+          </div>
+        ) : (
+          <div className="rounded-lg border border-[#e8d9d3] bg-white px-5 py-4 text-sm text-slate-600 shadow-[0_8px_18px_rgba(15,23,42,0.08)]">
+            No roles assigned yet.
+          </div>
+        )}
       </main>
 
       {selecting && (
@@ -319,6 +642,26 @@ export default function AccessPage() {
       {selectError && !modalApp && (
         <div className="fixed bottom-4 left-1/2 z-40 w-[90%] max-w-md -translate-x-1/2 rounded-2xl bg-red-50 px-4 py-3 text-center text-sm font-medium text-red-700 shadow-lg">
           {selectError}
+          <button
+            type="button"
+            className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full border border-red-200 text-red-500 transition hover:bg-red-100"
+            onClick={() => setSelectError(null)}
+            aria-label="Dismiss error"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              className="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden
+            >
+              <path d="M18 6L6 18" />
+              <path d="M6 6l12 12" />
+            </svg>
+          </button>
         </div>
       )}
 

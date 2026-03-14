@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const PRINTERS = [
   "NONE",
@@ -19,14 +19,17 @@ const PRINTERS = [
   "USB-3INCH"
 ];
 
-const TOPUP_ROWS = [
-  { id: "#1", wallet: "50", cash: "50" },
-  { id: "#2", wallet: "100", cash: "100" },
-  { id: "#3", wallet: "500", cash: "500" },
-  { id: "#4", wallet: "1000", cash: "1000" }
-];
+const TOPUP_ROWS_FALLBACK = ["50", "100", "500", "1000"];
 
-export default function ConfigPos() {
+const TOGGLE_FIELDS = {
+  happyhour: "event.happyHour",
+  roundoff: "event.roundOff",
+  manualTopup: "event.topupManual",
+  linkMobile: "event.linkUser",
+  useClubCard: "event.useClubCard"
+};
+
+export default function ConfigPos({ event, onFieldChange }) {
   const [toggles, setToggles] = useState({
     happyhour: false,
     roundoff: false,
@@ -36,10 +39,38 @@ export default function ConfigPos() {
   });
   const [showTopupPass, setShowTopupPass] = useState(false);
   const [showSalePass, setShowSalePass] = useState(false);
+  const topupRows = useMemo(() => {
+    const values = event?.topupValues ? String(event.topupValues).split(",") : [];
+    const names = event?.topupNames ? String(event.topupNames).split(",") : [];
+    const rows = Array.from({ length: 4 }).map((_, index) => ({
+      id: `#${index + 1}`,
+      wallet: names[index] ?? values[index] ?? TOPUP_ROWS_FALLBACK[index],
+      cash: values[index] ?? names[index] ?? TOPUP_ROWS_FALLBACK[index]
+    }));
+    return rows;
+  }, [event]);
+
+  useEffect(() => {
+    if (!event) return;
+    setToggles({
+      happyhour: Boolean(event.happyHour),
+      roundoff: Boolean(event.roundOff),
+      manualTopup: Boolean(event.topupManual),
+      linkMobile: Boolean(event.linkUser),
+      useClubCard: Boolean(event.useClubCard)
+    });
+  }, [event]);
 
   const toggleSwitch = (key) => {
     setToggles((prev) => ({ ...prev, [key]: !prev[key] }));
+    if (onFieldChange) {
+      requestAnimationFrame(() => onFieldChange());
+    }
   };
+
+  const printerValue = event?.printer ? String(event.printer).toUpperCase() : "NONE";
+  const TOPUP_PASSWORD = event?.devicePasswordTopup ?? "";
+  const SALE_PASSWORD = event?.devicePassword ?? "";
 
   return (
     <div className="h-full rounded-lg border border-[#f1cbb0] bg-[#fff4ec] px-6 py-5 shadow-[0_8px_18px_rgba(15,23,42,0.08)]">
@@ -61,7 +92,7 @@ export default function ConfigPos() {
             >
               <span
                 className={`relative h-5 w-10 rounded-full transition ${
-                  isOn ? "bg-[#1495ab]" : "bg-slate-200"
+                  isOn ? "bg-[color:rgb(var(--color-teal))]" : "bg-slate-200"
                 }`}
               >
                 <span
@@ -71,6 +102,11 @@ export default function ConfigPos() {
                 />
               </span>
               <span className="text-sm font-medium text-slate-700">{item.label}</span>
+              <input
+                type="hidden"
+                name={TOGGLE_FIELDS[item.key]}
+                value={isOn ? "1" : "0"}
+              />
             </button>
           );
         })}
@@ -79,7 +115,11 @@ export default function ConfigPos() {
       <div className="mt-4">
         <label className="flex items-center justify-between gap-4 text-sm text-slate-600">
           <span className="font-semibold">Printer:</span>
-          <select className="flex-1 border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[#f88c43]">
+          <select
+            name="event.printer"
+            className="flex-1 border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[color:rgb(var(--color-orange))]"
+            defaultValue={printerValue}
+          >
             {PRINTERS.map((option) => (
               <option key={option}>{option}</option>
             ))}
@@ -90,7 +130,7 @@ export default function ConfigPos() {
       <div className="mt-5">
         <div className="text-sm font-semibold text-slate-700">Topup Buttons</div>
         <div className="mt-3 grid gap-3">
-          {TOPUP_ROWS.map((row) => (
+          {topupRows.map((row) => (
             <div key={row.id} className="grid items-center gap-3 md:grid-cols-[48px_1fr_1fr]">
               <div className="text-sm font-semibold text-[#258d9c]">{row.id}</div>
               <div className="flex items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-600">
@@ -123,7 +163,9 @@ export default function ConfigPos() {
             <div className="relative">
               <input
                 type={showTopupPass ? "text" : "password"}
-                className="border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[#f88c43]"
+                name="event.devicePasswordTopup"
+                defaultValue={TOPUP_PASSWORD}
+                className="border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[color:rgb(var(--color-orange))]"
                 placeholder="Password"
               />
               <button
@@ -154,7 +196,9 @@ export default function ConfigPos() {
             <div className="relative">
               <input
                 type={showSalePass ? "text" : "password"}
-                className="border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[#f88c43]"
+                name="event.devicePassword"
+                defaultValue={SALE_PASSWORD}
+                className="border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[color:rgb(var(--color-orange))]"
                 placeholder="Password"
               />
               <button

@@ -16,7 +16,7 @@ const uploads = [
 ];
 
 const FileIcon = () => (
-  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#e2f7fb] text-[#1495ab]">
+  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#e2f7fb] text-[color:rgb(var(--color-teal))]">
     <svg
       viewBox="0 0 24 24"
       className="h-6 w-6"

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const TOGGLES = [
   "Show Activation Data",
@@ -9,12 +9,32 @@ const TOGGLES = [
   "Auto Reset Dashboard"
 ];
 
-export default function ConfigDashSettings() {
+const TOGGLE_FIELDS = {
+  "Show Activation Data": "dashSettings.addActivationTopup",
+  "Show Coupon Data": "dashSettings.addCouponTopup",
+  "Show Comp Data": "dashSettings.addCompTopup",
+  "Auto Reset Dashboard": "dashSettings.autoDayClose"
+};
+
+export default function ConfigDashSettings({ event, onFieldChange }) {
   const [states, setStates] = useState({});
 
   const toggle = (key) => {
     setStates((prev) => ({ ...prev, [key]: !prev[key] }));
+    if (onFieldChange) {
+      requestAnimationFrame(() => onFieldChange());
+    }
   };
+
+  useEffect(() => {
+    if (!event) return;
+    setStates({
+      "Show Activation Data": Boolean(event?.dashSettings?.addActivationTopup),
+      "Show Coupon Data": Boolean(event?.dashSettings?.addCouponTopup),
+      "Show Comp Data": Boolean(event?.dashSettings?.addCompTopup),
+      "Auto Reset Dashboard": Boolean(event?.dashSettings?.autoDayClose)
+    });
+  }, [event]);
 
   return (
     <section className="h-full flex flex-col">
@@ -29,7 +49,9 @@ export default function ConfigDashSettings() {
             Dashboard Password
             <input
               type="password"
-              className="border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[#f88c43]"
+              name="event.password"
+              defaultValue={event?.password ?? ""}
+              className="border-b border-slate-200 bg-transparent px-1 py-2 text-sm text-slate-700 outline-none focus:border-[color:rgb(var(--color-orange))]"
               placeholder="Password"
             />
           </label>
@@ -46,7 +68,7 @@ export default function ConfigDashSettings() {
                 >
                   <span
                     className={`relative h-5 w-10 rounded-full transition ${
-                      isOn ? "bg-[#1495ab]" : "bg-slate-200"
+                      isOn ? "bg-[color:rgb(var(--color-teal))]" : "bg-slate-200"
                     }`}
                   >
                     <span
@@ -56,6 +78,11 @@ export default function ConfigDashSettings() {
                     />
                   </span>
                   <span className="text-sm font-medium text-slate-700">{label}</span>
+                  <input
+                    type="hidden"
+                    name={TOGGLE_FIELDS[label]}
+                    value={isOn ? "1" : "0"}
+                  />
                 </button>
               );
             })}
@@ -64,7 +91,7 @@ export default function ConfigDashSettings() {
           <div className="pt-1 mt-auto">
             <button
               type="button"
-              className="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-[#f88c43] hover:text-[#f88c43]"
+              className="rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-[color:rgb(var(--color-orange))] hover:text-[color:rgb(var(--color-orange))]"
             >
               Get new balance setting
             </button>

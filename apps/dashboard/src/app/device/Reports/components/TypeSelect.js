@@ -3,7 +3,7 @@
 export default function TypeSelect() {
   return (
     <div className="rounded-2xl bg-white px-5 py-5 shadow-sm ring-1 ring-slate-100">
-      <div className="flex items-center gap-4 text-[#1495ab]">
+      <div className="flex items-center gap-4 text-[color:rgb(var(--color-teal))]">
         <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#eaf8fb]">
           <svg
             viewBox="0 0 24 24"
@@ -25,7 +25,7 @@ export default function TypeSelect() {
       </div>
       <button
         type="button"
-        className="mt-4 flex w-full items-center justify-between rounded-2xl bg-[#f88c43] px-5 py-4 text-left text-base font-semibold text-white shadow-[0_12px_30px_rgba(248,140,67,0.35)]"
+        className="mt-4 flex w-full items-center justify-between rounded-2xl bg-[color:rgb(var(--color-orange))] px-5 py-4 text-left text-base font-semibold text-white shadow-[0_12px_30px_rgb(var(--color-orange)/0.35)]"
       >
         Summary
         <svg

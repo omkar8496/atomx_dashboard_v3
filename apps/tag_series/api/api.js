@@ -1,8 +1,11 @@
-const CARD_CLIENTS_ENDPOINT = "https://dapi.atomx.in/v1/TagSeries/CardClients";
-const SERIES_ENDPOINT = "https://dapi.atomx.in/v1/TagSeries/Series";
-const LOGS_ENDPOINT = "https://dapi.atomx.in/v1/TagSeries/Logs";
-const BATCH_RECORDS_ENDPOINT = "https://dapi.atomx.in/v1/TagSeries/BatchRecords";
-const EVENTS_ENDPOINT = "https://dapi.atomx.in/v1/TagSeries/Events";
+import { getBaseUrl } from "@atomx/lib";
+
+const BASE_URL = getBaseUrl();
+const CARD_CLIENTS_ENDPOINT = `${BASE_URL}/v1/TagSeries/CardClients`;
+const SERIES_ENDPOINT = `${BASE_URL}/v1/TagSeries/Series`;
+const LOGS_ENDPOINT = `${BASE_URL}/v1/TagSeries/Logs`;
+const BATCH_RECORDS_ENDPOINT = `${BASE_URL}/v1/TagSeries/BatchRecords`;
+const EVENTS_ENDPOINT = `${BASE_URL}/v1/TagSeries/Events`;
 const TAG_SERIES_API_KEY = "pZebJlF_.dv3_prod.Iu7Zitu3X30C2R6-bVZtRXRu0DeiHY-j";
 
 function buildHeaders(token) {

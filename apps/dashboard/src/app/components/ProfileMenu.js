@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useDashboardStore } from "../../store/dashboardStore";
 
 const SERVICES = [
   {
+    id: "cashless",
     label: "Cashless Payments",
     icon: (
       <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -14,6 +16,7 @@ const SERVICES = [
     ),
   },
   {
+    id: "crew",
     label: "Crew Meal",
     icon: (
       <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -26,6 +29,7 @@ const SERVICES = [
     ),
   },
   {
+    id: "access",
     label: "Access Control",
     icon: (
       <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -38,6 +42,7 @@ const SERVICES = [
     ),
   },
   {
+    id: "inventory",
     label: "InventoryX",
     icon: (
       <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -48,6 +53,16 @@ const SERVICES = [
       </svg>
     ),
   },
+  {
+    id: "tag-series",
+    label: "Tag Series",
+    icon: (
+      <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="1.8">
+        <path d="M3 7h10l8 5-8 5H3z" />
+        <circle cx="7" cy="12" r="2" />
+      </svg>
+    ),
+  }
 ];
 
 export default function ProfileMenu({
@@ -57,6 +72,7 @@ export default function ProfileMenu({
 }) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
+  const selectedService = useDashboardStore((state) => state.selectedService);
 
   useEffect(() => {
     const handler = (event) => {
@@ -102,7 +118,7 @@ export default function ProfileMenu({
             </div>
             <button
               type="button"
-              className="text-xs font-semibold text-slate-500 hover:text-[#f88c43]"
+              className="text-xs font-semibold text-slate-500 hover:text-[color:rgb(var(--color-orange))]"
             >
               Log out
             </button>
@@ -111,18 +127,29 @@ export default function ProfileMenu({
           <div className="my-3 h-px bg-slate-200" />
 
           <div className="grid grid-cols-2 gap-3">
-            {SERVICES.map((service) => (
+            {SERVICES.map((service) => {
+              const isSelected = selectedService === service.id;
+              return (
               <button
                 key={service.label}
                 type="button"
-                className="flex flex-col items-center gap-2 rounded-2xl border border-slate-200 px-2 py-3 text-center text-xs font-semibold text-slate-600 transition hover:border-[#258d9c] hover:text-[#258d9c]"
+                className={`flex flex-col items-center gap-2 rounded-2xl border px-2 py-3 text-center text-xs font-semibold transition ${
+                  isSelected
+                    ? "border-[#258d9c] bg-[#f0f8fa] text-[#258d9c]"
+                    : "border-slate-200 text-slate-600 hover:border-[#258d9c] hover:text-[#258d9c]"
+                }`}
+                aria-pressed={isSelected}
               >
-                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f2f6f9] text-[#258d9c]">
+                <span
+                  className={`flex h-12 w-12 items-center justify-center rounded-2xl ${
+                    isSelected ? "bg-[#dff3f6] text-[#258d9c]" : "bg-[#f2f6f9] text-[#258d9c]"
+                  }`}
+                >
                   {service.icon}
                 </span>
                 <span className="leading-tight">{service.label}</span>
               </button>
-            ))}
+            )})}
           </div>
         </div>
       )}

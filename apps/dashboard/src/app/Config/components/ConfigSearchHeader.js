@@ -27,7 +27,7 @@ export default function ConfigSearchHeader({ placeholder, actionLabel }) {
         {actionLabel ? (
           <button
             type="button"
-            className="rounded-xl bg-[#f88c43] px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white shadow-[0_12px_30px_rgba(248,140,67,0.35)]"
+            className="rounded-xl bg-[color:rgb(var(--color-orange))] px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white shadow-[0_12px_30px_rgb(var(--color-orange)/0.35)]"
           >
             + {actionLabel}
           </button>
