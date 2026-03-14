@@ -48,7 +48,11 @@ function main() {
     // Force webpack build to avoid Turbopack port-binding panic in this environment.
     run("npx", ["next", "build", "--webpack"], appDir, `Building ${app.name}`);
 
-    const sourceOut = path.join(appDir, "out");
+    let sourceOut = path.join(appDir, "out");
+    const nestedOut = path.join(sourceOut, app.outLabel);
+    if (fs.existsSync(nestedOut)) {
+      sourceOut = nestedOut;
+    }
     const targetOut = path.join(outRoot, app.outLabel);
     fs.rmSync(targetOut, { recursive: true, force: true });
     fs.mkdirSync(targetOut, { recursive: true });

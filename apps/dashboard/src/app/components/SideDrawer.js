@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 const ITEMS = [
   { id: "analytics", label: "Analytics" },
@@ -69,6 +69,7 @@ const ICONS = {
 
 export default function SideDrawer({ open, onClose, eventName = "SUNBURN" }) {
   const pathname = usePathname();
+  const router = useRouter();
   const isAdminArea = pathname?.startsWith("/admin");
   const visibleItems = isAdminArea
     ? ITEMS.filter((item) => item.id === "admin" || item.id === "create-event")
@@ -103,7 +104,7 @@ export default function SideDrawer({ open, onClose, eventName = "SUNBURN" }) {
                 type="button"
                 onClick={() => {
                   if (item.href && typeof window !== "undefined") {
-                    window.location.replace(item.href);
+                    router.push(item.href);
                   }
                 }}
                 className={`flex items-center gap-3 rounded-2xl px-2 py-2 text-sm font-semibold transition-colors duration-300 ease-in-out ${

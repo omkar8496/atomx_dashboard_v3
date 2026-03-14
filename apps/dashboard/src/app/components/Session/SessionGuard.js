@@ -21,12 +21,6 @@ function resolvePortalBase() {
   const envBase =
     process.env.NEXT_PUBLIC_PORTAL_URL || process.env.NEXT_PUBLIC_ACCESS_PORTAL_URL;
   if (envBase) return envBase;
-  if (typeof window !== "undefined") {
-    const { protocol, hostname, port } = window.location;
-    if (hostname === "localhost" && port === "3000") {
-      return `${protocol}//${hostname}:3003/`;
-    }
-  }
   return "/";
 }
 
