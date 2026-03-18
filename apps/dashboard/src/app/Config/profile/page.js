@@ -12,6 +12,7 @@ import ConfigBankDetails from "./components/Config_Bank_Details";
 import ConfigDashSettings from "./components/Config_Dash_Settings";
 import SaveButton from "../../components/Buttons/SaveButton";
 import Toast from "../../components/Popups/Toast";
+import { AtomXLoader } from "@atomx/global-components";
 import { useDashboardStore } from "../../../store/dashboardStore";
 import { fetchEventDetails, updateEventDetails } from "../../../lib/dashboardApi";
 import { useFormAutosave } from "../../../lib/useFormAutosave";
@@ -425,19 +426,8 @@ export default function ConfigProfilePage() {
       />
       {isLoadingDetails ? (
         <div className="w-full pr-4 pl-16 md:pr-8 md:pl-20 mt-6">
-          <div className="space-y-6 animate-pulse">
-            <div className="h-40 rounded-2xl border border-slate-100 bg-white/70" />
-            <div className="grid gap-6 lg:grid-cols-[1fr_1.4fr] items-stretch">
-              <div className="space-y-6">
-                <div className="h-32 rounded-2xl border border-slate-100 bg-white/70" />
-                <div className="h-32 rounded-2xl border border-slate-100 bg-white/70" />
-              </div>
-              <div className="h-72 rounded-2xl border border-slate-100 bg-white/70" />
-            </div>
-            <div className="grid gap-8 lg:grid-cols-[1.35fr_1fr] items-stretch">
-              <div className="h-44 rounded-2xl border border-slate-100 bg-white/70" />
-              <div className="h-44 rounded-2xl border border-slate-100 bg-white/70" />
-            </div>
+          <div className="rounded-2xl border border-[#e8d9d3] bg-white/80 shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
+            <AtomXLoader label="Loading configuration..." size={70} className="min-h-[340px]" />
           </div>
         </div>
       ) : (

@@ -6,6 +6,7 @@ import Header from "../../components/Header";
 import ConfigTransition from "../components/ConfigTransition";
 import CEVendor from "./components/C_E_Vendor";
 import EditStall from "./components/Edit_Stall";
+import { AtomXLoader } from "@atomx/global-components";
 import { useDashboardStore } from "../../../store/dashboardStore";
 import { fetchStalls, fetchVendors } from "../../../lib/dashboardApi";
 import Toast from "../../components/Popups/Toast";
@@ -254,7 +255,7 @@ export default function OperationsPage() {
               <div className="mt-2 border-t border-[#e7e0dc]" />
               <div className="max-h-[264px] overflow-y-auto divide-y divide-[#e7e0dc] pr-1">
                 {vendorsLoading ? (
-                  <div className="py-6 text-center text-sm text-slate-500">Loading vendors...</div>
+                  <AtomXLoader label="Loading vendors..." size={52} />
                 ) : vendorsError ? (
                   <div className="py-6 text-center text-sm text-rose-500">{vendorsError}</div>
                 ) : filteredVendors.length === 0 ? (
@@ -396,7 +397,7 @@ export default function OperationsPage() {
               <div className="mt-2 border-t border-[#e7e0dc]" />
               <div className="max-h-[264px] overflow-y-auto divide-y divide-[#e7e0dc] pr-1">
                 {stallsLoading ? (
-                  <div className="py-6 text-center text-sm text-slate-500">Loading stalls...</div>
+                  <AtomXLoader label="Loading stalls..." size={52} />
                 ) : stallsError ? (
                   <div className="py-6 text-center text-sm text-rose-500">{stallsError}</div>
                 ) : filteredStalls.length === 0 ? (

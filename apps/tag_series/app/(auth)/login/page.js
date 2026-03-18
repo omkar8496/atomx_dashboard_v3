@@ -9,7 +9,7 @@ export const metadata = {
 export default function LoginPage() {
   return (
     <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-[#f6f7fb]">Loading…</div>}>
-      <UniversalLoginPage appId="tag_series" redirectPath="/" />
+      <UniversalLoginPage appId="tag-series" redirectPath="/" />
     </Suspense>
   );
 }

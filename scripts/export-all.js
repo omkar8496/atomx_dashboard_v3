@@ -72,6 +72,25 @@ function main() {
     console.log("✔ Root /out now serves the access portal build (index.html, assets, etc.)");
   }
 
+  const dashboardOut = path.join(outRoot, "dashboard");
+  if (fs.existsSync(dashboardOut)) {
+    console.log("\n➜ Overlaying dashboard routes at root /out (for /admin and /Config)");
+    for (const entry of fs.readdirSync(dashboardOut)) {
+      // Keep access portal shell at root while exposing dashboard routes at root.
+      if (entry === "index.html" || entry === "404.html") continue;
+      const from = path.join(dashboardOut, entry);
+      const to = path.join(outRoot, entry);
+      if (entry === "_next" && fs.existsSync(to)) {
+        // Merge chunk trees so assets from both apps are available.
+        fs.cpSync(from, to, { recursive: true, force: true });
+        continue;
+      }
+      fs.rmSync(to, { recursive: true, force: true });
+      fs.cpSync(from, to, { recursive: true, force: true });
+    }
+    console.log("✔ Root /out now includes dashboard routes (/admin, /Config, etc.)");
+  }
+
   console.log(`\nAll exports completed. Combined output lives in ${path.relative(root, outRoot)}`);
 }
 

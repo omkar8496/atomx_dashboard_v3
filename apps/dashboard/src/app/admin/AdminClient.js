@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Header from "../components/Header";
+import { AtomXLoader } from "@atomx/global-components";
 import { useDashboardStore } from "../../store/dashboardStore";
 import { fetchEventDetails, fetchEventsList } from "../../lib/dashboardApi";
 
@@ -112,31 +113,33 @@ export default function AdminClient() {
       <div className="w-full pr-3 pl-12 md:pr-6 md:pl-16 mt-2">
         <div className="rounded-lg border border-[#e8d9d3] bg-white px-6 py-6 shadow-[0_10px_24px_rgba(15,23,42,0.08)]">
           <div className="text-sm font-semibold text-slate-700">Select Event</div>
-          <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center">
-            <select
-              className="flex-1 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:border-[color:rgb(var(--color-teal))] focus:outline-none"
-              value={selectedEventId}
-              onChange={(event) => setSelectedEventId(event.target.value)}
-              disabled={loading || !authToken}
-            >
-              <option value="">
-                {loading ? "Loading events..." : "Select an event"}
-              </option>
-              {options.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            <button
-              type="button"
-              onClick={handleSelect}
-              disabled={loading || submitting || !selectedEventId}
-              className="rounded-md bg-[color:rgb(var(--color-teal))] px-4 py-2 text-sm font-semibold text-white shadow-[0_6px_12px_rgb(var(--color-teal)/0.25)] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {submitting ? "Opening..." : "Continue"}
-            </button>
-          </div>
+          {loading && options.length === 0 ? (
+            <AtomXLoader label="Loading events..." size={56} className="mt-4" />
+          ) : (
+            <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center">
+              <select
+                className="flex-1 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:border-[color:rgb(var(--color-teal))] focus:outline-none"
+                value={selectedEventId}
+                onChange={(event) => setSelectedEventId(event.target.value)}
+                disabled={loading || !authToken}
+              >
+                <option value="">Select an event</option>
+                {options.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={handleSelect}
+                disabled={loading || submitting || !selectedEventId}
+                className="rounded-md bg-[color:rgb(var(--color-teal))] px-4 py-2 text-sm font-semibold text-white shadow-[0_6px_12px_rgb(var(--color-teal)/0.25)] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {submitting ? "Opening..." : "Continue"}
+              </button>
+            </div>
+          )}
           {error ? (
             <div className="mt-3 text-sm text-rose-500">{error}</div>
           ) : null}

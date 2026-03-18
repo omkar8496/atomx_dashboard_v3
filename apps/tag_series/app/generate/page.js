@@ -47,10 +47,16 @@ function buildTagUrl({ eventId, formType, tag }) {
 
 function getTagSeriesToken() {
   if (typeof window === "undefined") return null;
-  return (
-    window.localStorage.getItem("atomx.auth.tag-series") ||
-    window.localStorage.getItem("atomx.auth.tag_series")
-  );
+  const canonical = window.localStorage.getItem("atomx.auth.tag-series");
+  if (canonical) return canonical;
+
+  const legacy = window.localStorage.getItem("atomx.auth.tag_series");
+  if (legacy) {
+    // Migrate old key to canonical key to keep all apps in sync.
+    window.localStorage.setItem("atomx.auth.tag-series", legacy);
+    return legacy;
+  }
+  return null;
 }
 
 function normalizeBatchRecords(response) {

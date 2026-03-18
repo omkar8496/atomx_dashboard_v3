@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/router";
 import { decodeJwt } from "@atomx/lib";
 
 const WARNING_WINDOW_MS = 10 * 60 * 1000;
@@ -34,7 +35,22 @@ function formatCountdown(ms) {
   return `${minutes}:${seconds}`;
 }
 
+function clearPortalAuthCache() {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem("atomx.portal.token");
+  const keysToRemove = [];
+  for (let i = 0; i < window.localStorage.length; i += 1) {
+    const key = window.localStorage.key(i);
+    if (key && key.startsWith("atomx.auth.")) {
+      keysToRemove.push(key);
+    }
+  }
+  keysToRemove.forEach((key) => window.localStorage.removeItem(key));
+}
+
 export default function SessionGuard() {
+  const router = useRouter();
+  const isLoginRoute = router.pathname === "/";
   const [token, setToken] = useState(null);
   const [warningOpen, setWarningOpen] = useState(false);
   const [expiredOpen, setExpiredOpen] = useState(false);
@@ -75,24 +91,13 @@ export default function SessionGuard() {
     if (reloginRef.current) return;
     const returnTo = sanitizeReturnTo(window.location.href);
     const loginUrl = getLoginUrl(returnTo);
-    const popup = window.open(loginUrl, "_blank", "width=520,height=640");
-    if (!popup) {
-      const currentBase = `${window.location.origin}${window.location.pathname}`;
-      const loginTarget = new URL(loginUrl, window.location.origin);
-      const loginBase = `${loginTarget.origin}${loginTarget.pathname}`;
-      if (loginBase !== currentBase) {
-        reloginRef.current = true;
-        window.location.assign(loginUrl);
-        return;
-      }
-      reloginRef.current = false;
-      return;
-    }
     reloginRef.current = true;
+    clearPortalAuthCache();
+    window.location.assign(loginUrl);
   }, []);
 
   const scheduleTimers = useCallback(() => {
-    if (!expiresAt) return;
+    if (!expiresAt || isLoginRoute) return;
     const now = Date.now();
     const warnAt = expiresAt - WARNING_WINDOW_MS;
     const warnDelay = Math.max(warnAt - now, 0);
@@ -108,7 +113,6 @@ export default function SessionGuard() {
 
     timersRef.current.expire = setTimeout(() => {
       setExpiredOpen(true);
-      startRelogin();
     }, expireDelay);
 
     timersRef.current.tick = setInterval(() => {
@@ -119,7 +123,18 @@ export default function SessionGuard() {
       }
       setCountdown(formatCountdown(remaining));
     }, 1000);
-  }, [expiresAt, startRelogin]);
+  }, [expiresAt, isLoginRoute]);
+
+  useEffect(() => {
+    if (!isLoginRoute) return;
+    setWarningOpen(false);
+    setExpiredOpen(false);
+    reloginRef.current = false;
+    if (token && expiresAt && expiresAt <= Date.now()) {
+      clearPortalAuthCache();
+      setToken(null);
+    }
+  }, [isLoginRoute, token, expiresAt]);
 
   useEffect(() => {
     if (!expiresAt) return;
@@ -131,7 +146,7 @@ export default function SessionGuard() {
     };
   }, [expiresAt, scheduleTimers]);
 
-  if (!expiresAt) return null;
+  if (!expiresAt || isLoginRoute) return null;
 
   return (
     <>

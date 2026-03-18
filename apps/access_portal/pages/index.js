@@ -1,6 +1,6 @@
-import { Suspense, useMemo } from "react";
+import { useMemo } from "react";
 import { useRouter } from "next/router";
-import { UniversalLoginPage } from "@atomx/global-components";
+import LoginScreen from "../components/LoginScreen/LoginScreen";
 
 function sanitizeReturnTo(value) {
   try {
@@ -25,15 +25,5 @@ export default function PortalLogin() {
     ? `/access?returnTo=${encodeURIComponent(returnTo)}`
     : "/access";
 
-  return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-screen items-center justify-center bg-[#f6f7fb] text-sm text-slate-600">
-          Loading AtomX portal…
-        </div>
-      }
-    >
-      <UniversalLoginPage appId="portal" redirectPath={redirectPath} />
-    </Suspense>
-  );
+  return <LoginScreen appId="portal" redirectPath={redirectPath} />;
 }

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import { decodeJwt, getBaseUrl, getInitials } from "@atomx/lib";
+import { AtomXLoader } from "@atomx/global-components";
 import { HeaderBar } from "../components/HeaderBar/HeaderBar";
 import { WelcomePanel } from "../components/WelcomePanel/WelcomePanel";
 
@@ -9,9 +10,31 @@ const moduleLinks = {
   livelink: process.env.NEXT_PUBLIC_LIVELINK_URL ?? "/livelink",
   "tag-series": process.env.NEXT_PUBLIC_TAG_SERIES_URL ?? "/tag_series"
 };
-const dashboardBase = (process.env.NEXT_PUBLIC_DASHBOARD_URL ?? "/dashboard").replace(/\/$/, "");
-const dashboardConfigPath = "/Config/operations";
-const accessAdminUrl = process.env.NEXT_PUBLIC_ACCESS_ADMIN_URL ?? `${dashboardBase}/admin`;
+const dashboardBase = (process.env.NEXT_PUBLIC_DASHBOARD_URL ?? "").replace(/\/$/, "");
+const dashboardConfigPath = "/Config/operations/";
+
+function ensureTrailingSlashForRoute(value) {
+  if (!value) return value;
+  try {
+    const isAbsolute = /^https?:\/\//i.test(value);
+    const parsed = isAbsolute ? new URL(value) : new URL(value, "http://atomx.local");
+    const pathname = parsed.pathname || "/";
+    const lastSegment = pathname.split("/").pop() || "";
+    const hasFileExtension = lastSegment.includes(".");
+    if (!hasFileExtension && !pathname.endsWith("/")) {
+      parsed.pathname = `${pathname}/`;
+    }
+    return isAbsolute
+      ? parsed.toString()
+      : `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return value;
+  }
+}
+
+const accessAdminUrl = ensureTrailingSlashForRoute(
+  process.env.NEXT_PUBLIC_ACCESS_ADMIN_URL ?? `${dashboardBase}/admin`
+);
 
 const MODULE_CATALOG = {
   "tag-series": {
@@ -228,6 +251,7 @@ export default function AccessPage() {
 
   const handlePermissionClick = async (permission) => {
     if (typeof window === "undefined") return;
+    if (selecting) return;
     setSelectError(null);
     const apiBase = getBaseUrl();
     const moduleMeta =
@@ -267,6 +291,7 @@ export default function AccessPage() {
       return;
     }
 
+    let didNavigateAway = false;
     try {
       setSelecting(permission.type || permission.label || "switching");
       const payload = needsEventId
@@ -330,7 +355,9 @@ export default function AccessPage() {
         if (permission.service) {
           target.searchParams.set("service", permission.service);
         }
-        window.location.href = target.toString();
+        didNavigateAway = true;
+        window.location.assign(target.toString());
+        return;
       }
     } catch (err) {
       console.error(err);
@@ -340,7 +367,9 @@ export default function AccessPage() {
         description: "We could not refresh your access token. Please try again."
       });
     } finally {
-      setSelecting(null);
+      if (!didNavigateAway) {
+        setSelecting(null);
+      }
     }
   };
 
@@ -425,7 +454,10 @@ export default function AccessPage() {
 
   const handleEventRoleClick = (role) => {
     const service = mapServiceParam(role?.type);
-    const destination = `${dashboardBase}${dashboardConfigPath}`;
+    const isTagSeries = service === "tag-series";
+    const destination = isTagSeries
+      ? ensureTrailingSlashForRoute(moduleLinks["tag-series"])
+      : `${dashboardBase}${dashboardConfigPath}`;
     handlePermissionClick({
       type: role.type,
       label: role.type,
@@ -632,9 +664,8 @@ export default function AccessPage() {
 
       {selecting && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/70 backdrop-blur-sm">
-          <div className="flex flex-col items-center gap-3 rounded-2xl bg-white px-6 py-5 shadow-[0_20px_45px_rgba(15,23,42,0.18)]">
-            <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#0f9ca3] border-t-transparent" />
-            <p className="m-0 text-sm font-semibold text-slate-700">Switching access…</p>
+          <div className="rounded-2xl bg-white px-6 py-4 shadow-[0_20px_45px_rgba(15,23,42,0.18)]">
+            <AtomXLoader label="Switching access..." size={62} />
           </div>
         </div>
       )}

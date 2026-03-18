@@ -45,7 +45,12 @@ export function TokenGate({
       if (searchParams.get("token") && typeof window !== "undefined") {
         const url = new URL(window.location.href);
         url.searchParams.delete("token");
-        router.replace(url.pathname);
+        // Avoid router basePath re-prefix issues by rewriting URL in place.
+        window.history.replaceState(
+          window.history.state,
+          "",
+          `${url.pathname}${url.search}${url.hash}`
+        );
       }
       return;
     }

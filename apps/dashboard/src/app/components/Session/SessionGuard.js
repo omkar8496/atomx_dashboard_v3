@@ -48,6 +48,20 @@ function formatCountdown(ms) {
   return `${minutes}:${seconds}`;
 }
 
+function clearDashboardAuthCache() {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem("atomx.portal.token");
+  window.localStorage.removeItem("atomx.dashboard.store");
+  const keysToRemove = [];
+  for (let i = 0; i < window.localStorage.length; i += 1) {
+    const key = window.localStorage.key(i);
+    if (key && key.startsWith("atomx.auth.")) {
+      keysToRemove.push(key);
+    }
+  }
+  keysToRemove.forEach((key) => window.localStorage.removeItem(key));
+}
+
 export default function SessionGuard() {
   const token = useDashboardStore((state) => state.token);
   const selectedService = useDashboardStore((state) => state.selectedService);
@@ -87,21 +101,12 @@ export default function SessionGuard() {
       console.error("Failed to persist reauth context", err);
     }
     const loginUrl = getLoginUrl(returnTo);
-    const popup = window.open(loginUrl, "_blank", "width=520,height=640");
-    if (!popup) {
-      const currentBase = `${window.location.origin}${window.location.pathname}`;
-      const loginTarget = new URL(loginUrl, window.location.origin);
-      const loginBase = `${loginTarget.origin}${loginTarget.pathname}`;
-      if (loginBase !== currentBase) {
-        reloginRef.current = true;
-        window.location.assign(loginUrl);
-        return;
-      }
-      reloginRef.current = false;
-      return;
-    }
     reloginRef.current = true;
-  }, [selectedService, eventMeta]);
+    clearDashboardAuthCache();
+    setToken(null);
+    setSelectedService(null);
+    window.location.assign(loginUrl);
+  }, [eventMeta, selectedService, setSelectedService, setToken]);
 
   const scheduleTimers = useCallback(() => {
     if (!expiresAt) return;
@@ -120,7 +125,6 @@ export default function SessionGuard() {
 
     timersRef.current.expire = setTimeout(() => {
       setExpiredOpen(true);
-      startRelogin();
     }, expireDelay);
 
     timersRef.current.tick = setInterval(() => {

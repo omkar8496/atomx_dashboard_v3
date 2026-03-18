@@ -8,6 +8,20 @@ import AddFormFactorPage from "./Admin/AddFormFactor/page";
 import AddProductPage from "./Admin/AddProduct/page";
 import ViewPage from "./Admin/View/page";
 
+function getTagSeriesAuthToken() {
+  if (typeof window === "undefined") return null;
+  const canonical = window.localStorage.getItem("atomx.auth.tag-series");
+  if (canonical) return canonical;
+
+  const legacy = window.localStorage.getItem("atomx.auth.tag_series");
+  if (legacy) {
+    // Migrate old key to canonical key to keep all apps in sync.
+    window.localStorage.setItem("atomx.auth.tag-series", legacy);
+    return legacy;
+  }
+  return null;
+}
+
 export default function EventIdPage() {
   const router = useRouter();
   const [eventId, setEventId] = useState("");
@@ -83,9 +97,7 @@ export default function EventIdPage() {
       if (typeof window === "undefined") return;
       setEventsLoading(true);
       try {
-        const token =
-          window.localStorage.getItem("atomx.auth.tag-series") ||
-          window.localStorage.getItem("atomx.auth.tag_series");
+        const token = getTagSeriesAuthToken();
         const response = await fetchTagSeriesEvents(token);
         const raw = response?.events ?? response?.data ?? response?.result ?? response;
         const list = Array.isArray(raw) ? raw : [];
@@ -148,9 +160,7 @@ export default function EventIdPage() {
       if (typeof window === "undefined") return;
       setClientsLoading(true);
       try {
-        const token =
-          window.localStorage.getItem("atomx.auth.tag-series") ||
-          window.localStorage.getItem("atomx.auth.tag_series");
+        const token = getTagSeriesAuthToken();
         const response = await fetchCardClients(token);
         if (!cancelled) {
           const fetchedClients = response?.cardClients ?? [];
@@ -212,7 +222,7 @@ export default function EventIdPage() {
 
     try {
       setSubmitting(true);
-      const token = window.localStorage.getItem("atomx.auth.tag-series");
+      const token = getTagSeriesAuthToken();
       if (!token) {
         throw new Error("Missing auth token");
       }
