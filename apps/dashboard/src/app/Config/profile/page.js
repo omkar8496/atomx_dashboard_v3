@@ -352,7 +352,7 @@ export default function ConfigProfilePage() {
     setIsSaving(true);
     try {
       await updateEventDetails({ eventId, token, payload: diff.payload });
-      const refreshed = await fetchEventDetails({ eventId, token });
+      const refreshed = await fetchEventDetails({ eventId, token, dedupe: false });
       if (refreshed) {
         const merged = { ...(eventDetails ?? {}) };
         if (diff.payload.event) {

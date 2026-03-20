@@ -83,8 +83,6 @@ export default function EditStall({
     draftAppliedRef.current = false;
   }, [stallId, open]);
 
-  if (!open) return null;
-
   const toggleModeOption = (option) => {
     setModeOptions((prev) =>
       prev.includes(option) ? prev.filter((item) => item !== option) : [...prev, option]
@@ -116,7 +114,7 @@ export default function EditStall({
 
   const applyDraftToForm = useCallback((values) => {
     const form = formRef.current;
-    if (!form || !values) return;
+    if (!form || !values || typeof values !== "object" || Array.isArray(values)) return;
     const escapeName = (name) => {
       if (typeof CSS !== "undefined" && CSS.escape) {
         return CSS.escape(name);
@@ -164,14 +162,22 @@ export default function EditStall({
     ],
     onRestore: (values) => {
       if (draftAppliedRef.current) return;
-      if (!values) return;
-      if (values.paymentMode) setPaymentMode(values.paymentMode);
-      if (values.modeOptions) {
-        setModeOptions(values.modeOptions.split(",").filter(Boolean));
+      if (!values || typeof values !== "object" || Array.isArray(values)) return;
+      if (values.paymentMode === "NFC" || values.paymentMode === "ALL") {
+        setPaymentMode(values.paymentMode);
       }
-      if (values.stallType) setStallType(values.stallType);
-      if (values.bankPayment) setBankPayment(values.bankPayment);
-      if (values.scanMode) setScanMode(values.scanMode);
+      if (values.modeOptions) {
+        const parsedOptions = Array.isArray(values.modeOptions)
+          ? values.modeOptions.map((item) => String(item))
+          : String(values.modeOptions)
+              .split(",")
+              .map((item) => item.trim())
+              .filter(Boolean);
+        setModeOptions(parsedOptions);
+      }
+      if (values.stallType) setStallType(String(values.stallType));
+      if (values.bankPayment) setBankPayment(String(values.bankPayment));
+      if (values.scanMode) setScanMode(String(values.scanMode));
       const nextToggles = { ...toggles };
       Object.keys(nextToggles).forEach((key) => {
         if (values[`toggle.${key}`] !== undefined) {
@@ -219,6 +225,8 @@ export default function EditStall({
       setSaving(false);
     }
   };
+
+  if (!open) return null;
 
   return (
     <div

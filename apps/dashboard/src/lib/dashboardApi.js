@@ -1,6 +1,49 @@
 import { getBaseUrl } from "@atomx/lib";
 import { DASHBOARD_API_KEY } from "./apiConfig";
 
+const inFlightGetRequests = new Map();
+
+function buildGetRequestKey(url, token) {
+  return `${url}::${token || ""}`;
+}
+
+async function fetchGetJson({ url, token }) {
+  const res = await fetch(url, {
+    method: "GET",
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(DASHBOARD_API_KEY ? { "x-api-key": DASHBOARD_API_KEY } : {})
+    },
+    cache: "no-store"
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => res.statusText);
+    throw new Error(text || `Request failed (${res.status})`);
+  }
+
+  return res.json();
+}
+
+async function fetchGetJsonDeduped({ url, token, dedupe = true }) {
+  if (!dedupe) {
+    return fetchGetJson({ url, token });
+  }
+
+  const key = buildGetRequestKey(url, token);
+  const existing = inFlightGetRequests.get(key);
+  if (existing) {
+    return existing;
+  }
+
+  const request = fetchGetJson({ url, token }).finally(() => {
+    inFlightGetRequests.delete(key);
+  });
+
+  inFlightGetRequests.set(key, request);
+  return request;
+}
+
 export async function linkOperator({ email, adminId, token }) {
   const baseUrl = getBaseUrl();
   const res = await fetch(`${baseUrl}/v1/Operators/Link`, {
@@ -25,46 +68,26 @@ export async function linkOperator({ email, adminId, token }) {
   return res.json();
 }
 
-export async function fetchEventDetails({ eventId, token }) {
+export async function fetchEventDetails({ eventId, token, dedupe = true }) {
   if (!eventId) {
     throw new Error("Missing eventId");
   }
   const baseUrl = getBaseUrl();
-  const res = await fetch(`${baseUrl}/v1/Events/Details/${encodeURIComponent(eventId)}`, {
-    method: "GET",
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(DASHBOARD_API_KEY ? { "x-api-key": DASHBOARD_API_KEY } : {})
-    },
-    cache: "no-store"
+  const data = await fetchGetJsonDeduped({
+    url: `${baseUrl}/v1/Events/Details/${encodeURIComponent(eventId)}`,
+    token,
+    dedupe
   });
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => res.statusText);
-    throw new Error(text || `Request failed (${res.status})`);
-  }
-
-  const data = await res.json();
   return data?.event ?? data?.data?.event ?? null;
 }
 
-export async function fetchEventsList({ token }) {
+export async function fetchEventsList({ token, dedupe = true }) {
   const baseUrl = getBaseUrl();
-  const res = await fetch(`${baseUrl}/v1/Events/List`, {
-    method: "GET",
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(DASHBOARD_API_KEY ? { "x-api-key": DASHBOARD_API_KEY } : {})
-    },
-    cache: "no-store"
+  const data = await fetchGetJsonDeduped({
+    url: `${baseUrl}/v1/Events/List`,
+    token,
+    dedupe
   });
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => res.statusText);
-    throw new Error(text || `Request failed (${res.status})`);
-  }
-
-  const data = await res.json();
   return data?.events ?? data?.data?.events ?? data?.data ?? data?.list ?? [];
 }
 
@@ -111,26 +134,16 @@ export async function createVendor({ token, vendor }) {
   return res.json();
 }
 
-export async function fetchVendors({ eventId, token }) {
+export async function fetchVendors({ eventId, token, dedupe = true }) {
   if (!eventId) {
     throw new Error("Missing eventId");
   }
   const baseUrl = getBaseUrl();
-  const res = await fetch(`${baseUrl}/v1/Vendors/List/${encodeURIComponent(eventId)}`, {
-    method: "GET",
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(DASHBOARD_API_KEY ? { "x-api-key": DASHBOARD_API_KEY } : {})
-    },
-    cache: "no-store"
+  const data = await fetchGetJsonDeduped({
+    url: `${baseUrl}/v1/Vendors/List/${encodeURIComponent(eventId)}`,
+    token,
+    dedupe
   });
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => res.statusText);
-    throw new Error(text || `Request failed (${res.status})`);
-  }
-
-  const data = await res.json();
   return data?.vendors ?? data?.data?.vendors ?? data?.data ?? data?.list ?? [];
 }
 
@@ -177,25 +190,15 @@ export async function createStall({ token, stall }) {
   return res.json();
 }
 
-export async function fetchStalls({ eventId, token }) {
+export async function fetchStalls({ eventId, token, dedupe = true }) {
   if (!eventId) {
     throw new Error("Missing eventId");
   }
   const baseUrl = getBaseUrl();
-  const res = await fetch(`${baseUrl}/v1/Stalls/List/${encodeURIComponent(eventId)}`, {
-    method: "GET",
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(DASHBOARD_API_KEY ? { "x-api-key": DASHBOARD_API_KEY } : {})
-    },
-    cache: "no-store"
+  const data = await fetchGetJsonDeduped({
+    url: `${baseUrl}/v1/Stalls/List/${encodeURIComponent(eventId)}`,
+    token,
+    dedupe
   });
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => res.statusText);
-    throw new Error(text || `Request failed (${res.status})`);
-  }
-
-  const data = await res.json();
   return data?.stalls ?? data?.data?.stalls ?? data?.data ?? data?.list ?? [];
 }

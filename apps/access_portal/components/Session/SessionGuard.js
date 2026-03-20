@@ -3,6 +3,8 @@ import { useRouter } from "next/router";
 import { decodeJwt } from "@atomx/lib";
 
 const WARNING_WINDOW_MS = 10 * 60 * 1000;
+const REAUTH_CONTEXT_KEY = "atomx.portal.reauth";
+const REAUTH_CONTEXT_TTL_MS = 24 * 60 * 60 * 1000;
 
 function sanitizeReturnTo(value) {
   try {
@@ -25,6 +27,30 @@ function getLoginUrl(returnTo) {
     }
   }
   return baseUrl.toString();
+}
+
+function normalizeRoleType(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[_\s]+/g, "-");
+}
+
+function mapServiceParam(type) {
+  const normalized = normalizeRoleType(type);
+  if (normalized.includes("tag-series") || normalized.includes("tagseries")) {
+    return "tag-series";
+  }
+  if (normalized.includes("cashless")) return "cashless";
+  if (normalized.includes("inventory")) return "inventory";
+  if (normalized.includes("admin")) return "admin";
+  return normalized || null;
+}
+
+function coerceId(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const num = Number(value);
+  return Number.isFinite(num) ? num : value;
 }
 
 function formatCountdown(ms) {
@@ -90,11 +116,45 @@ export default function SessionGuard() {
   const startRelogin = useCallback(() => {
     if (reloginRef.current) return;
     const returnTo = sanitizeReturnTo(window.location.href);
+    let contextType = null;
+    let contextAdminId = null;
+    let contextEventId = null;
+    if (token) {
+      try {
+        const decoded = decodeJwt(token);
+        const roles = Array.isArray(decoded?.roles) ? decoded.roles : [];
+        const ctxType = decoded?.ctx?.type;
+        const normalizedCtxType = normalizeRoleType(ctxType);
+        const roleMatch = roles.find(
+          (role) => normalizeRoleType(role?.type) === normalizedCtxType
+        );
+        contextType = roleMatch?.type || ctxType || null;
+        contextAdminId = coerceId(decoded?.ctx?.adminId ?? roleMatch?.adminId);
+        contextEventId = coerceId(decoded?.ctx?.eventId ?? roleMatch?.eventId);
+      } catch (err) {
+        console.error("Failed to decode token for reauth context", err);
+      }
+    }
+    const payload = {
+      version: 1,
+      createdAt: Date.now(),
+      expiresAt: Date.now() + REAUTH_CONTEXT_TTL_MS,
+      returnTo,
+      type: contextType,
+      service: mapServiceParam(contextType),
+      adminId: contextAdminId,
+      eventId: contextEventId
+    };
+    try {
+      window.localStorage.setItem(REAUTH_CONTEXT_KEY, JSON.stringify(payload));
+    } catch (err) {
+      console.error("Failed to persist reauth context", err);
+    }
     const loginUrl = getLoginUrl(returnTo);
     reloginRef.current = true;
     clearPortalAuthCache();
     window.location.assign(loginUrl);
-  }, []);
+  }, [token]);
 
   const scheduleTimers = useCallback(() => {
     if (!expiresAt || isLoginRoute) return;

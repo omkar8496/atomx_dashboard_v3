@@ -12,6 +12,11 @@ const moduleLinks = {
 };
 const dashboardBase = (process.env.NEXT_PUBLIC_DASHBOARD_URL ?? "").replace(/\/$/, "");
 const dashboardConfigPath = "/Config/operations/";
+const REAUTH_CONTEXT_KEY = "atomx.portal.reauth";
+const REAUTH_CONTEXT_FALLBACK_TTL_MS = 24 * 60 * 60 * 1000;
+const DASHBOARD_API_KEY =
+  process.env.NEXT_PUBLIC_DASHBOARD_API_KEY ??
+  "pZebJlF_.dv3_prod.Iu7Zitu3X30C2R6-bVZtRXRu0DeiHY-j";
 
 function ensureTrailingSlashForRoute(value) {
   if (!value) return value;
@@ -91,17 +96,22 @@ function sanitizeReturnTo(value) {
   try {
     const parsed = new URL(value, window.location.origin);
     parsed.searchParams.delete("returnTo");
+    parsed.searchParams.delete("token");
     return parsed.toString();
   } catch (err) {
     return value;
   }
 }
 
-function mapServiceParam(type) {
-  const normalized = String(type || "")
+function normalizeRoleType(value) {
+  return String(value || "")
     .trim()
     .toLowerCase()
     .replace(/[_\s]+/g, "-");
+}
+
+function mapServiceParam(type) {
+  const normalized = normalizeRoleType(type);
   if (normalized.includes("tag-series") || normalized.includes("tagseries")) {
     return "tag-series";
   }
@@ -129,6 +139,97 @@ function sanitizeModules(roles = []) {
     });
     return acc;
   }, []);
+}
+
+function findRoleMatch(roles, type, eventId, adminId) {
+  if (!Array.isArray(roles) || !type) return null;
+  const typeNorm = normalizeRoleType(type);
+  const eventIdNorm =
+    eventId === null || eventId === undefined || eventId === ""
+      ? null
+      : String(eventId);
+  const adminIdNorm =
+    adminId === null || adminId === undefined || adminId === ""
+      ? null
+      : String(adminId);
+
+  const typedRoles = roles.filter((role) => normalizeRoleType(role?.type) === typeNorm);
+  if (!typedRoles.length) return null;
+
+  if (eventIdNorm) {
+    const byEvent = typedRoles.find((role) => String(role?.eventId) === eventIdNorm);
+    if (byEvent) return byEvent;
+  }
+
+  if (adminIdNorm) {
+    const byAdmin = typedRoles.find((role) => String(role?.adminId) === adminIdNorm);
+    if (byAdmin) return byAdmin;
+  }
+
+  return typedRoles[0] ?? null;
+}
+
+function readReauthContext() {
+  if (typeof window === "undefined") return null;
+  let parsed = null;
+  try {
+    const raw = window.localStorage.getItem(REAUTH_CONTEXT_KEY);
+    if (!raw) return null;
+    parsed = JSON.parse(raw);
+  } catch (err) {
+    console.error("Failed to parse reauth context", err);
+    window.localStorage.removeItem(REAUTH_CONTEXT_KEY);
+    return null;
+  }
+
+  if (!parsed || typeof parsed !== "object") {
+    window.localStorage.removeItem(REAUTH_CONTEXT_KEY);
+    return null;
+  }
+
+  const now = Date.now();
+  const expiresAt = Number(parsed.expiresAt);
+  const createdAt = Number(parsed.createdAt);
+  const hasExpiry = Number.isFinite(expiresAt);
+  const hasCreatedAt = Number.isFinite(createdAt);
+  const isExpired = hasExpiry
+    ? expiresAt <= now
+    : hasCreatedAt
+      ? now - createdAt > REAUTH_CONTEXT_FALLBACK_TTL_MS
+      : false;
+
+  if (isExpired) {
+    window.localStorage.removeItem(REAUTH_CONTEXT_KEY);
+    return null;
+  }
+
+  return parsed;
+}
+
+async function fetchSelectedEventDetails({ apiBase, eventId, token }) {
+  if (!apiBase || !eventId || !token) {
+    throw new Error("Missing data to load event details.");
+  }
+
+  const res = await fetch(
+    `${apiBase}/v1/Events/Details/${encodeURIComponent(eventId)}`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...(DASHBOARD_API_KEY ? { "x-api-key": DASHBOARD_API_KEY } : {})
+      },
+      cache: "no-store"
+    }
+  );
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(text || `Unable to load event details (${res.status})`);
+  }
+
+  const data = await res.json().catch(() => null);
+  return data?.event ?? data?.data?.event ?? null;
 }
 
 export default function AccessPage() {
@@ -259,12 +360,15 @@ export default function AccessPage() {
       modules.find((module) => module.title === permission.label);
     const destination =
       permission.destination ?? permission.href ?? moduleMeta?.href ?? moduleLinks[permission.type];
-    const roleMatch =
-      profile?.roles?.find((role) => role.type === permission.type) ??
-      profile?.roles?.find((role) => role.type === permission.label);
-    const adminId = roleMatch?.adminId;
+    const roleMatch = findRoleMatch(
+      profile?.roles,
+      permission.type ?? permission.label,
+      permission.eventId,
+      permission.adminId
+    );
+    const adminId = permission.adminId ?? roleMatch?.adminId;
     const apiType = permission.type ?? roleMatch?.type;
-    const normalizedType = String(apiType || "").toLowerCase();
+    const normalizedType = normalizeRoleType(apiType || "");
     const isAdminType = normalizedType === "admin";
     const needsEventId =
       normalizedType &&
@@ -272,7 +376,7 @@ export default function AccessPage() {
       normalizedType !== "tag_series" &&
       normalizedType !== "tag series" &&
       !isAdminType;
-    const eventId = roleMatch?.eventId ?? permission.eventId ?? null;
+    const eventId = permission.eventId ?? roleMatch?.eventId ?? null;
 
     if (!apiBase) {
       setSelectError("Missing API base URL (NEXT_PUBLIC_BASE_URL)");
@@ -290,6 +394,15 @@ export default function AccessPage() {
       setSelectError("Admin ID is required for this module.");
       return;
     }
+
+    const shouldFetchEventDetails = Boolean(
+      (permission.requireEventDetails ??
+        (needsEventId &&
+          normalizedType !== "tag-series" &&
+          normalizedType !== "tag_series" &&
+          normalizedType !== "tag series")) &&
+        eventId
+    );
 
     let didNavigateAway = false;
     try {
@@ -317,6 +430,10 @@ export default function AccessPage() {
         throw new Error("No token returned from auth/select");
       }
 
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem(REAUTH_CONTEXT_KEY);
+      }
+
       // persist and refresh state with new token
       window.localStorage.setItem("atomx.portal.token", nextToken);
       const decoded = decodeJwt(nextToken);
@@ -329,6 +446,15 @@ export default function AccessPage() {
           window.localStorage.setItem(`atomx.auth.${module.type}`, nextToken);
         }
       });
+
+      let eventDetails = null;
+      if (shouldFetchEventDetails) {
+        eventDetails = await fetchSelectedEventDetails({
+          apiBase,
+          eventId,
+          token: nextToken
+        });
+      }
 
       if (destination) {
         const target = destination.startsWith("http")
@@ -354,6 +480,26 @@ export default function AccessPage() {
         target.searchParams.set("token", nextToken);
         if (permission.service) {
           target.searchParams.set("service", permission.service);
+        }
+        if (shouldFetchEventDetails) {
+          const resolvedEventId = eventDetails?.id ?? eventId;
+          const resolvedEventName = eventDetails?.name ?? eventDetails?.eventName ?? null;
+          const resolvedVenue = eventDetails?.venue ?? null;
+          const resolvedCity =
+            eventDetails?.locationCity ?? eventDetails?.city ?? null;
+
+          if (resolvedEventId) {
+            target.searchParams.set("eventId", String(resolvedEventId));
+          }
+          if (resolvedEventName) {
+            target.searchParams.set("eventName", resolvedEventName);
+          }
+          if (resolvedVenue) {
+            target.searchParams.set("venue", resolvedVenue);
+          }
+          if (resolvedCity) {
+            target.searchParams.set("city", resolvedCity);
+          }
         }
         didNavigateAway = true;
         window.location.assign(target.toString());
@@ -386,39 +532,35 @@ export default function AccessPage() {
         ? sanitizeReturnTo(returnToParam)
         : returnToParam;
 
-    let context = null;
-    try {
-      const stored = window.localStorage.getItem("atomx.portal.reauth");
-      if (stored) {
-        context = JSON.parse(stored);
-        window.localStorage.removeItem("atomx.portal.reauth");
-      }
-    } catch (err) {
-      console.error("Failed to parse reauth context", err);
-    }
-
-    const returnTo = context?.returnTo || sanitizedReturnToParam || null;
+    const context = readReauthContext();
+    const rawReturnTo = context?.returnTo || sanitizedReturnToParam || null;
+    const returnTo = rawReturnTo ? sanitizeReturnTo(rawReturnTo) : null;
     const type = context?.type || null;
-    const eventId = context?.eventId || null;
+    const eventId = context?.eventId ?? null;
+    const adminId = context?.adminId ?? null;
+    const service = context?.service || mapServiceParam(type);
+    const currentUrl = sanitizeReturnTo(window.location.href);
 
     if (type) {
-      const hasRole = profile?.roles?.some((role) => role?.type === type);
+      const hasRole = Boolean(findRoleMatch(profile?.roles, type, eventId, adminId));
       if (hasRole) {
         reauthHandledRef.current = true;
         handlePermissionClick({
           type,
           label: type,
           eventId,
+          adminId,
           destination: returnTo,
-          service: type,
-          returnMode: "message"
+          service
         });
         return;
       }
+      window.localStorage.removeItem(REAUTH_CONTEXT_KEY);
     }
 
-    if (returnTo && returnTo !== window.location.href) {
+    if (returnTo && returnTo !== currentUrl) {
       reauthHandledRef.current = true;
+      window.localStorage.removeItem(REAUTH_CONTEXT_KEY);
       window.location.assign(returnTo);
     }
   }, [status, profile, router.query.returnTo, handlePermissionClick]);
@@ -427,6 +569,7 @@ export default function AccessPage() {
     if (typeof window !== "undefined") {
       try {
         window.localStorage.removeItem("atomx.portal.token");
+        window.localStorage.removeItem(REAUTH_CONTEXT_KEY);
         const keysToRemove = [];
         for (let i = 0; i < window.localStorage.length; i += 1) {
           const key = window.localStorage.key(i);
@@ -463,7 +606,8 @@ export default function AccessPage() {
       label: role.type,
       destination,
       service,
-      eventId: role.eventId
+      eventId: role.eventId,
+      requireEventDetails: !isTagSeries
     });
   };
 

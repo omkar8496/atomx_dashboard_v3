@@ -69,21 +69,37 @@ export const useDashboardStore = create(
       },
       setVendorsForEvent: (eventId, vendors) => {
         if (!eventId) return;
-        set((state) => ({
-          vendorsByEventId: {
-            ...(state.vendorsByEventId ?? {}),
-            [eventId]: Array.isArray(vendors) ? vendors : []
+        const normalized = Array.isArray(vendors) ? vendors : [];
+        set((state) => {
+          const current = state.vendorsByEventId?.[eventId];
+          if (current === normalized) return state;
+          if (Array.isArray(current) && current.length === 0 && normalized.length === 0) {
+            return state;
           }
-        }));
+          return {
+            vendorsByEventId: {
+              ...(state.vendorsByEventId ?? {}),
+              [eventId]: normalized
+            }
+          };
+        });
       },
       setStallsForEvent: (eventId, stalls) => {
         if (!eventId) return;
-        set((state) => ({
-          stallsByEventId: {
-            ...(state.stallsByEventId ?? {}),
-            [eventId]: Array.isArray(stalls) ? stalls : []
+        const normalized = Array.isArray(stalls) ? stalls : [];
+        set((state) => {
+          const current = state.stallsByEventId?.[eventId];
+          if (current === normalized) return state;
+          if (Array.isArray(current) && current.length === 0 && normalized.length === 0) {
+            return state;
           }
-        }));
+          return {
+            stallsByEventId: {
+              ...(state.stallsByEventId ?? {}),
+              [eventId]: normalized
+            }
+          };
+        });
       }
     }),
     {

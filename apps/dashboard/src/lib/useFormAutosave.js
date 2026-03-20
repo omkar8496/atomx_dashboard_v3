@@ -40,7 +40,16 @@ export function useFormAutosave({
         const draft = await idbGet(draftKey);
         if (!active || !draft?.values) return;
         restoringRef.current = true;
-        onRestore?.(draft.values, draft.updatedAt);
+        try {
+          onRestore?.(draft.values, draft.updatedAt);
+        } catch (restoreError) {
+          console.error("Failed to restore draft", restoreError);
+          try {
+            await idbDelete(draftKey);
+          } catch (cleanupError) {
+            console.error("Failed to remove invalid draft", cleanupError);
+          }
+        }
       } catch (err) {
         console.error("Failed to load draft", err);
       } finally {

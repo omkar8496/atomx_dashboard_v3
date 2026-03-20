@@ -1,7 +1,104 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { decodeJwt } from "@atomx/lib";
 import { useDashboardStore } from "../../store/dashboardStore";
+
+const REAUTH_CONTEXT_KEY = "atomx.portal.reauth";
+const REAUTH_CONTEXT_TTL_MS = 24 * 60 * 60 * 1000;
+
+function normalizeRoleType(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[_\s]+/g, "-");
+}
+
+function mapServiceParam(type) {
+  const normalized = normalizeRoleType(type);
+  if (normalized.includes("tag-series") || normalized.includes("tagseries")) {
+    return "tag-series";
+  }
+  if (normalized.includes("cashless")) return "cashless";
+  if (normalized.includes("inventory")) return "inventory";
+  if (normalized.includes("admin")) return "admin";
+  return normalized || null;
+}
+
+function coerceId(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const num = Number(value);
+  return Number.isFinite(num) ? num : value;
+}
+
+function sanitizeReturnTo(value) {
+  try {
+    const parsed = new URL(value, window.location.origin);
+    parsed.searchParams.delete("returnTo");
+    parsed.searchParams.delete("token");
+    return parsed.toString();
+  } catch {
+    return value;
+  }
+}
+
+function buildReturnToUrl(currentHref, eventMeta, selectedService) {
+  const sanitized = sanitizeReturnTo(currentHref);
+  try {
+    const parsed = new URL(sanitized, window.location.origin);
+    if (eventMeta?.eventId && !parsed.searchParams.get("eventId")) {
+      parsed.searchParams.set("eventId", String(eventMeta.eventId));
+    }
+    if (eventMeta?.eventName && !parsed.searchParams.get("eventName")) {
+      parsed.searchParams.set("eventName", eventMeta.eventName);
+    }
+    if (eventMeta?.venue && !parsed.searchParams.get("venue")) {
+      parsed.searchParams.set("venue", eventMeta.venue);
+    }
+    if (eventMeta?.city && !parsed.searchParams.get("city")) {
+      parsed.searchParams.set("city", eventMeta.city);
+    }
+    const service = mapServiceParam(selectedService);
+    if (service && !parsed.searchParams.get("service")) {
+      parsed.searchParams.set("service", service);
+    }
+    return parsed.toString();
+  } catch {
+    return sanitized;
+  }
+}
+
+function getLoginUrl(returnTo) {
+  const portalBase =
+    process.env.NEXT_PUBLIC_PORTAL_URL ||
+    process.env.NEXT_PUBLIC_ACCESS_PORTAL_URL ||
+    "/";
+  const baseUrl = portalBase.startsWith("http")
+    ? new URL(portalBase)
+    : new URL(portalBase, window.location.origin);
+  baseUrl.searchParams.delete("returnTo");
+  if (returnTo) {
+    const baseId = `${baseUrl.origin}${baseUrl.pathname}`;
+    if (returnTo !== baseId) {
+      baseUrl.searchParams.set("returnTo", returnTo);
+    }
+  }
+  return baseUrl.toString();
+}
+
+function clearAuthCache() {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem("atomx.portal.token");
+  window.localStorage.removeItem("atomx.dashboard.store");
+  const keysToRemove = [];
+  for (let i = 0; i < window.localStorage.length; i += 1) {
+    const key = window.localStorage.key(i);
+    if (key && key.startsWith("atomx.auth.")) {
+      keysToRemove.push(key);
+    }
+  }
+  keysToRemove.forEach((key) => window.localStorage.removeItem(key));
+}
 
 const SERVICES = [
   {
@@ -72,7 +169,12 @@ export default function ProfileMenu({
 }) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
+  const token = useDashboardStore((state) => state.token);
+  const profile = useDashboardStore((state) => state.profile);
+  const eventMeta = useDashboardStore((state) => state.eventMeta);
   const selectedService = useDashboardStore((state) => state.selectedService);
+  const setToken = useDashboardStore((state) => state.setToken);
+  const setSelectedService = useDashboardStore((state) => state.setSelectedService);
 
   useEffect(() => {
     const handler = (event) => {
@@ -85,6 +187,44 @@ export default function ProfileMenu({
     }
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
+
+  const handleLogout = () => {
+    if (typeof window === "undefined") return;
+    const returnTo = buildReturnToUrl(window.location.href, eventMeta, selectedService);
+    let decodedProfile = profile;
+    if (!decodedProfile && token) {
+      try {
+        decodedProfile = decodeJwt(token);
+      } catch (err) {
+        console.error("Failed to decode token for logout context", err);
+      }
+    }
+    const roles = Array.isArray(decodedProfile?.roles) ? decodedProfile.roles : [];
+    const ctxType = decodedProfile?.ctx?.type;
+    const normalizedType = normalizeRoleType(ctxType || selectedService || "");
+    const roleMatch = roles.find(
+      (entry) => normalizeRoleType(entry?.type) === normalizedType
+    );
+    const payload = {
+      version: 1,
+      createdAt: Date.now(),
+      expiresAt: Date.now() + REAUTH_CONTEXT_TTL_MS,
+      returnTo,
+      type: roleMatch?.type || ctxType || selectedService || null,
+      service: mapServiceParam(roleMatch?.type || ctxType || selectedService),
+      eventId: coerceId(eventMeta?.eventId ?? decodedProfile?.ctx?.eventId ?? roleMatch?.eventId),
+      adminId: coerceId(decodedProfile?.ctx?.adminId ?? roleMatch?.adminId)
+    };
+    try {
+      window.localStorage.setItem(REAUTH_CONTEXT_KEY, JSON.stringify(payload));
+    } catch (err) {
+      console.error("Failed to save resume context before logout", err);
+    }
+    clearAuthCache();
+    setToken(null);
+    setSelectedService(null);
+    window.location.assign(getLoginUrl(returnTo));
+  };
 
   return (
     <div ref={menuRef} className="relative">
@@ -119,6 +259,7 @@ export default function ProfileMenu({
             <button
               type="button"
               className="text-xs font-semibold text-slate-500 hover:text-[color:rgb(var(--color-orange))]"
+              onClick={handleLogout}
             >
               Log out
             </button>

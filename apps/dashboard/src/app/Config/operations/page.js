@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Header from "../../components/Header";
 import ConfigTransition from "../components/ConfigTransition";
@@ -14,14 +14,15 @@ import Toast from "../../components/Popups/Toast";
 export default function OperationsPage() {
   const token = useDashboardStore((state) => state.token);
   const eventId = useDashboardStore((state) => state.eventMeta?.eventId);
-  const cachedVendors = useDashboardStore(
-    (state) => (eventId ? state.vendorsByEventId?.[eventId] : null)
+  const cachedVendors = useDashboardStore((state) =>
+    eventId ? state.vendorsByEventId?.[eventId] : undefined
   );
-  const cachedStalls = useDashboardStore(
-    (state) => (eventId ? state.stallsByEventId?.[eventId] : null)
+  const cachedStalls = useDashboardStore((state) =>
+    eventId ? state.stallsByEventId?.[eventId] : undefined
   );
   const setVendorsForEvent = useDashboardStore((state) => state.setVendorsForEvent);
   const setStallsForEvent = useDashboardStore((state) => state.setStallsForEvent);
+  const inFlightRef = useRef({ vendors: new Map(), stalls: new Map() });
   const [showVendorForm, setShowVendorForm] = useState(false);
   const [activeVendor, setActiveVendor] = useState(null);
   const [showStallForm, setShowStallForm] = useState(false);
@@ -42,52 +43,80 @@ export default function OperationsPage() {
     async (options = {}) => {
       const { force = false } = options;
       if (!token || !eventId) return;
-      if (!force && cachedVendors && cachedVendors.length > 0) {
-        setVendors(cachedVendors);
+      const requestKey = String(eventId);
+      const latestCached = useDashboardStore.getState().vendorsByEventId?.[eventId];
+      if (!force && Array.isArray(latestCached)) {
+        setVendors(latestCached);
+        return;
+      }
+      if (!force && inFlightRef.current.vendors.has(requestKey)) {
+        await inFlightRef.current.vendors.get(requestKey);
         return;
       }
       setVendorsLoading(true);
       setVendorsError("");
+      const requestPromise = (async () => {
+        try {
+          const list = await fetchVendors({ eventId, token, dedupe: !force });
+          const normalized = Array.isArray(list) ? list : [];
+          setVendors(normalized);
+          setVendorsForEvent(eventId, normalized);
+        } catch (error) {
+          console.error("Failed to load vendors", error);
+          setVendors([]);
+          setVendorsError("Unable to load vendors.");
+        } finally {
+          setVendorsLoading(false);
+        }
+      })();
+      inFlightRef.current.vendors.set(requestKey, requestPromise);
       try {
-        const list = await fetchVendors({ eventId, token });
-        const normalized = Array.isArray(list) ? list : [];
-        setVendors(normalized);
-        setVendorsForEvent(eventId, normalized);
-      } catch (error) {
-        console.error("Failed to load vendors", error);
-        setVendors([]);
-        setVendorsError("Unable to load vendors.");
+        await requestPromise;
       } finally {
-        setVendorsLoading(false);
+        inFlightRef.current.vendors.delete(requestKey);
       }
     },
-    [eventId, token, cachedVendors, setVendorsForEvent]
+    [eventId, token, setVendorsForEvent]
   );
 
   const loadStalls = useCallback(
     async (options = {}) => {
       const { force = false } = options;
       if (!token || !eventId) return;
-      if (!force && cachedStalls && cachedStalls.length > 0) {
-        setStalls(cachedStalls);
+      const requestKey = String(eventId);
+      const latestCached = useDashboardStore.getState().stallsByEventId?.[eventId];
+      if (!force && Array.isArray(latestCached)) {
+        setStalls(latestCached);
+        return;
+      }
+      if (!force && inFlightRef.current.stalls.has(requestKey)) {
+        await inFlightRef.current.stalls.get(requestKey);
         return;
       }
       setStallsLoading(true);
       setStallsError("");
+      const requestPromise = (async () => {
+        try {
+          const list = await fetchStalls({ eventId, token, dedupe: !force });
+          const normalized = Array.isArray(list) ? list : [];
+          setStalls(normalized);
+          setStallsForEvent(eventId, normalized);
+        } catch (error) {
+          console.error("Failed to load stalls", error);
+          setStalls([]);
+          setStallsError("Unable to load stalls.");
+        } finally {
+          setStallsLoading(false);
+        }
+      })();
+      inFlightRef.current.stalls.set(requestKey, requestPromise);
       try {
-        const list = await fetchStalls({ eventId, token });
-        const normalized = Array.isArray(list) ? list : [];
-        setStalls(normalized);
-        setStallsForEvent(eventId, normalized);
-      } catch (error) {
-        console.error("Failed to load stalls", error);
-        setStalls([]);
-        setStallsError("Unable to load stalls.");
+        await requestPromise;
       } finally {
-        setStallsLoading(false);
+        inFlightRef.current.stalls.delete(requestKey);
       }
     },
-    [eventId, token, cachedStalls, setStallsForEvent]
+    [eventId, token, setStallsForEvent]
   );
 
   useEffect(() => {
@@ -101,13 +130,13 @@ export default function OperationsPage() {
   }, [loadVendors, loadStalls]);
 
   useEffect(() => {
-    if (cachedVendors && cachedVendors.length > 0) {
+    if (Array.isArray(cachedVendors)) {
       setVendors(cachedVendors);
     }
   }, [cachedVendors]);
 
   useEffect(() => {
-    if (cachedStalls && cachedStalls.length > 0) {
+    if (Array.isArray(cachedStalls)) {
       setStalls(cachedStalls);
     }
   }, [cachedStalls]);

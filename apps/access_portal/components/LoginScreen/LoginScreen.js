@@ -17,28 +17,25 @@ function buildAuthUrl(authUrl, appId, redirect) {
   }
 }
 
-function IconInfo(props) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...props}>
-      <circle cx="12" cy="12" r="9" />
-      <line x1="12" y1="10" x2="12" y2="16" />
-      <circle cx="12" cy="7" r="1" fill="currentColor" stroke="none" />
-    </svg>
-  );
-}
-
-function IconShield(props) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...props}>
-      <path d="M12 3l7 3v6c0 5-3.5 8-7 9-3.5-1-7-4-7-9V6l7-3z" />
-    </svg>
-  );
-}
-
 function IconGoogle(props) {
   return (
-    <svg viewBox="0 0 24 24" fill="currentColor" {...props}>
-      <path d="M21.35 11.1h-9.18v2.92h5.91c-.24 1.4-1.47 4.1-5.91 4.1-3.55 0-6.45-2.93-6.45-6.56S8.62 5 12.17 5c2.02 0 3.37.86 4.14 1.6l2.83-2.73C16.93 2.85 14.7 2 12.08 2 6.64 2 2.24 6.48 2.24 12s4.4 10 9.84 10c5.68 0 9.44-3.99 9.44-9.6 0-.64-.07-1.13-.17-1.3z" />
+    <svg viewBox="0 0 24 24" aria-hidden {...props}>
+      <path
+        fill="#4285F4"
+        d="M23.49 12.27c0-.79-.07-1.54-.2-2.27H12v4.3h6.45a5.52 5.52 0 01-2.39 3.62v2.99h3.86c2.26-2.08 3.57-5.14 3.57-8.64z"
+      />
+      <path
+        fill="#34A853"
+        d="M12 24c3.24 0 5.96-1.07 7.95-2.9l-3.86-2.99c-1.07.72-2.44 1.15-4.09 1.15-3.14 0-5.8-2.12-6.75-4.98H1.26v3.11A12 12 0 0012 24z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M5.25 14.27a7.22 7.22 0 010-4.54V6.62H1.26a12 12 0 000 10.76l3.99-3.11z"
+      />
+      <path
+        fill="#EA4335"
+        d="M12 4.74c1.76 0 3.34.61 4.58 1.8l3.44-3.44C17.95 1.19 15.24 0 12 0 7.31 0 3.23 2.69 1.26 6.62l3.99 3.11c.95-2.86 3.61-4.99 6.75-4.99z"
+      />
     </svg>
   );
 }
@@ -54,6 +51,27 @@ export default function LoginScreen({
   const [profile, setProfile] = useState(null);
   const [loginUrl, setLoginUrl] = useState(authUrl);
   const [devToken, setDevToken] = useState(null);
+  const [activeSlide, setActiveSlide] = useState(0);
+  const sliderItems = useMemo(
+    () => [
+      {
+        src: "/images/1.avif",
+        title: "CashlessX",
+        description: "Enable fast, secure NFC payments for high-volume event counters."
+      },
+      {
+        src: "/images/2.avif",
+        title: "AccessX",
+        description: "Control gates and scan entries in real time with reliable validation."
+      },
+      {
+        src: "/images/3.avif",
+        title: "InventoryX",
+        description: "Track stock movement live and keep every stall inventory synchronized."
+      }
+    ],
+    []
+  );
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -131,6 +149,14 @@ export default function LoginScreen({
   }, [status]);
 
   useEffect(() => {
+    if (!sliderItems.length) return;
+    const timer = window.setInterval(() => {
+      setActiveSlide((prev) => (prev + 1) % sliderItems.length);
+    }, 4300);
+    return () => window.clearInterval(timer);
+  }, [sliderItems]);
+
+  useEffect(() => {
     if (!router.isReady) return;
     const raw = router.query.token;
     const fromQuery = Array.isArray(raw) ? raw[0] : raw;
@@ -156,109 +182,138 @@ export default function LoginScreen({
     processToken(devToken, 450);
   };
 
+  const handleGoogleSignIn = useCallback(
+    (event) => {
+      event.preventDefault();
+      if (status === "loading" || status === "success") return;
+      setError(null);
+      setStatus("loading");
+      if (typeof window !== "undefined") {
+        window.setTimeout(() => {
+          window.location.assign(loginUrl);
+        }, 120);
+      }
+    },
+    [loginUrl, status]
+  );
+
   const helperText = useMemo(() => {
     if (status === "success") return "Authenticated. Redirecting...";
+    if (status === "loading") return "Verifying account. Redirecting you to Google...";
     if (status === "error") return error;
     return "Access your event dashboard, manage cashless payments, and view real-time analytics.";
   }, [status, error]);
 
+  const activeSlideItem = sliderItems[activeSlide] || sliderItems[0];
+
   return (
-    <main className="min-h-screen bg-[#e9edf3]">
-      <section className="w-full min-h-screen">
-        <div className="overflow-hidden bg-white md:grid md:min-h-screen md:grid-cols-[1.38fr_0.62fr]">
-          <div className="relative h-[54vh] min-h-[380px] md:h-auto">
+    <main className="relative min-h-screen overflow-hidden bg-[#031026]">
+      {sliderItems.map((item, index) => (
+        <img
+          key={item.src}
+          src={item.src}
+          alt={`AtomX sign in visual ${index + 1}`}
+          className={`absolute inset-0 h-full w-full object-cover brightness-[1.04] contrast-[1.03] saturate-[1.06] transition-opacity duration-[1200ms] ease-out ${
+            index === activeSlide ? "opacity-100" : "opacity-0"
+          }`}
+        />
+      ))}
+      <div className="absolute inset-0 bg-[linear-gradient(102deg,rgba(2,8,20,0.06)_0%,rgba(2,8,20,0.03)_44%,rgba(2,8,20,0.2)_78%,rgba(2,8,20,0.28)_100%)]" />
+
+      <div className="absolute bottom-9 left-8 right-[42%] z-10 hidden text-white md:block lg:left-12">
+        <h2 className="max-w-[460px] text-[3.1rem] font-semibold leading-[1.05] drop-shadow-[0_6px_14px_rgba(0,0,0,0.45)]">
+          {activeSlideItem?.title}
+        </h2>
+        <p className="mt-5 max-w-[560px] text-xl leading-relaxed text-white/86">
+          {activeSlideItem?.description}
+        </p>
+      </div>
+
+      <section className="relative z-10 flex min-h-screen items-end justify-center px-5 py-8 md:items-center md:justify-end md:pl-10 md:pr-4 lg:pl-14 lg:pr-6">
+        <div className="w-full max-w-[460px]">
+          <div className="flex rounded-[8px] border border-white/28 bg-black/32 p-7 shadow-[0_26px_60px_rgba(2,8,20,0.46)] backdrop-blur-[10px] md:min-h-[600px] md:px-9 md:py-10">
+            <div className="flex w-full flex-col">
             <img
-              src="/shared/images/Sign_in_Screen.png"
-              alt="AtomX sign in visual"
-              className="h-full w-full object-cover"
+              src="/shared/logos/AtomX_Logo.svg"
+              alt="AtomX"
+              className="block h-24 w-auto self-start object-contain brightness-0 invert md:h-60 md:-mt-24 md:-mb-16 md:-ml-12"
             />
-            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,12,24,0.56)_0%,rgba(7,12,24,0.2)_42%,rgba(7,12,24,0.08)_100%)]" />
+            <div className="mt-2 h-px w-full max-w-[210px] bg-[linear-gradient(90deg,#F88C43_0%,#1495AB_52%,#FFFFFF_100%)]" />
 
-            <div className="absolute left-6 top-6 z-10 hidden items-center gap-3 text-white md:flex">
-              <img
-                src="/shared/logos/AtomX_Logo.svg"
-                alt="AtomX"
-                className="h-11 w-auto object-contain brightness-[1.2]"
-              />
-            </div>
+            <h1 className="mt-7 text-[2.25rem] font-semibold leading-[1.08] text-white md:text-[3rem]">
+              Sign in to AtomX{" "}
+              <span className="text-[#1495AB] drop-shadow-[0_2px_2px_rgba(15,23,42,0.45)]">
+                Portal
+              </span>
+            </h1>
 
-            <div className="absolute bottom-8 left-8 right-8 z-10 hidden text-white md:block">
-              <h2 className="max-w-[340px] text-[3rem] font-semibold leading-[1.05]">
-                Sign in to AtomX Portal
-              </h2>
-              <p className="mt-5 max-w-[430px] text-lg leading-relaxed text-white/85">
-                Secure access to event operations, analytics, and payment controls.
-              </p>
-            </div>
-          </div>
+            <p className="mt-5 max-w-[640px] text-[1.08rem] leading-relaxed text-white/65 md:text-[1.22rem]">
+              {helperText}
+            </p>
 
-          <div className="relative -mt-10 rounded-t-[34px] bg-white px-7 pb-6 pt-7 md:mt-0 md:rounded-none md:px-10 md:py-10">
-            <div className="mx-auto w-full max-w-[420px]">
-              <div className="text-center md:text-left">
-                <img
-                  src="/shared/logos/AtomX_Logo.svg"
-                  alt="AtomX"
-                  className="mx-auto h-14 w-auto object-contain md:mx-0 md:h-16"
-                />
-                <div className="mx-auto mt-4 h-1 w-20 rounded-full bg-[#f45d13] md:mx-0" />
-                <h1 className="mt-7 text-[2.8rem] font-semibold leading-[1.08] text-[#0f1631] md:text-[3rem]">
-                  Sign in to
-                  <br />
-                  AtomX Portal
-                </h1>
+            {status === "error" ? (
+              <div className="mt-6 rounded-2xl border border-red-300/40 bg-red-400/10 px-4 py-3 text-base text-red-100">
+                {error}
               </div>
+            ) : null}
 
-              {status === "error" ? (
-                <div className="mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                  {error}
-                </div>
-              ) : null}
-
-              {profile ? (
-                <div className="mt-7 rounded-xl border border-[#cde3f7] bg-[#f4f9ff] px-4 py-3 text-sm text-[#375576]">
-                  Authenticated as{" "}
-                  <span className="font-semibold text-[#10203b]">{profile.email}</span>. Redirecting...
-                </div>
-              ) : (
-                <a
-                  href={loginUrl}
-                  className="mt-8 flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-[#f45d13] px-6 text-base font-semibold text-white shadow-[0_14px_26px_rgba(244,93,19,0.22)] transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f45d13]/45"
-                >
-                  <IconGoogle className="h-6 w-6" />
-                  <span className="text-[1.1rem] leading-none">Continue with Google</span>
-                </a>
-              )}
-
-              {showDevButton ? (
-                <button
-                  type="button"
-                  onClick={handleDevTokenLogin}
-                  className="mt-3 w-full rounded-full border border-dashed border-[#ffbb92] bg-[#fff3ea] px-4 py-2 text-sm font-semibold text-[#d24f10]"
-                >
-                  Use dev session token
-                </button>
-              ) : null}
-
-              <p className="mx-auto mt-7 max-w-[420px] text-center text-base leading-relaxed text-[#8193b0] md:text-left md:text-[1rem]">
-                {helperText}
-              </p>
-
-              <div className="mt-8 h-px w-full bg-[#e5eaf2]" />
-
-              <div className="mt-5 flex items-center justify-center gap-8 text-[#70839f] md:justify-start">
-                <a href="/legal/terms" className="inline-flex items-center gap-2 text-base font-medium hover:text-[#475a77]">
-                  <IconInfo className="h-5 w-5" />
-                  Terms
-                </a>
-                <a href="/legal/privacy" className="inline-flex items-center gap-2 text-base font-medium hover:text-[#475a77]">
-                  <IconShield className="h-5 w-5" />
-                  Privacy
-                </a>
+            {profile ? (
+              <div className="mt-7 rounded-2xl border border-white/25 bg-white/10 px-4 py-3 text-base text-white/90">
+                Authenticated as <span className="font-semibold text-white">{profile.email}</span>. Redirecting...
               </div>
+            ) : (
+              <a
+                href={loginUrl}
+                onClick={handleGoogleSignIn}
+                className={`mt-8 flex h-14 w-full items-center justify-center gap-3 rounded-[26px] bg-[#f88c43] px-7 text-[1.2rem] font-semibold text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.28)] shadow-[0_18px_38px_rgba(248,140,67,0.45)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f88c43]/45 ${
+                  status === "loading"
+                    ? "pointer-events-none opacity-95"
+                    : "hover:brightness-105"
+                }`}
+              >
+                <IconGoogle className="h-7 w-7" />
+                <span className="leading-none">
+                  {status === "loading" ? "Verifying..." : "Continue with Google"}
+                </span>
+              </a>
+            )}
+
+            {showDevButton ? (
+              <button
+                type="button"
+                onClick={handleDevTokenLogin}
+                className="mt-3 w-full rounded-full border border-dashed border-[#ffbb92] bg-[#fff3ea] px-4 py-2 text-sm font-semibold text-[#d24f10]"
+              >
+                Use dev session token
+              </button>
+            ) : null}
+
+            <p className="mt-auto pt-9 text-[0.96rem] leading-relaxed text-white/66 md:text-[1rem]">
+              By continuing, you agree to AtomX&apos;s{" "}
+              <a href="/legal/terms" className="text-[#f88c43] underline underline-offset-2 hover:text-[#ff9f5f]">
+                Terms
+              </a>{" "}
+              and{" "}
+              <a href="/legal/privacy" className="text-[#f88c43] underline underline-offset-2 hover:text-[#ff9f5f]">
+                Privacy Policy
+              </a>
+              .
+            </p>
             </div>
           </div>
         </div>
       </section>
+
+      <div className="pointer-events-none absolute bottom-7 left-1/2 z-10 hidden -translate-x-1/2 items-center gap-2 md:flex">
+        {sliderItems.map((_, index) => (
+          <span
+            key={`slide-dot-${index}`}
+            className={`h-2 rounded-full transition-all duration-300 ${
+              index === activeSlide ? "w-7 bg-white" : "w-2 bg-white/35"
+            }`}
+          />
+        ))}
+      </div>
     </main>
   );
 }

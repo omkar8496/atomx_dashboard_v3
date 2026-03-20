@@ -6,14 +6,67 @@ import { useDashboardStore } from "../../../store/dashboardStore";
 import SessionPrompt from "./SessionPrompt";
 
 const WARNING_WINDOW_MS = 10 * 60 * 1000;
+const REAUTH_CONTEXT_KEY = "atomx.portal.reauth";
+const REAUTH_CONTEXT_TTL_MS = 24 * 60 * 60 * 1000;
 
 function sanitizeReturnTo(value) {
   try {
     const parsed = new URL(value, window.location.origin);
     parsed.searchParams.delete("returnTo");
+    parsed.searchParams.delete("token");
     return parsed.toString();
   } catch (err) {
     return value;
+  }
+}
+
+function normalizeRoleType(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[_\s]+/g, "-");
+}
+
+function mapServiceParam(type) {
+  const normalized = normalizeRoleType(type);
+  if (normalized.includes("tag-series") || normalized.includes("tagseries")) {
+    return "tag-series";
+  }
+  if (normalized.includes("cashless")) return "cashless";
+  if (normalized.includes("inventory")) return "inventory";
+  if (normalized.includes("admin")) return "admin";
+  return normalized || null;
+}
+
+function coerceId(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const num = Number(value);
+  return Number.isFinite(num) ? num : value;
+}
+
+function buildReturnToUrl(currentHref, eventMeta, selectedService) {
+  const sanitized = sanitizeReturnTo(currentHref);
+  try {
+    const parsed = new URL(sanitized, window.location.origin);
+    if (eventMeta?.eventId && !parsed.searchParams.get("eventId")) {
+      parsed.searchParams.set("eventId", String(eventMeta.eventId));
+    }
+    if (eventMeta?.eventName && !parsed.searchParams.get("eventName")) {
+      parsed.searchParams.set("eventName", eventMeta.eventName);
+    }
+    if (eventMeta?.venue && !parsed.searchParams.get("venue")) {
+      parsed.searchParams.set("venue", eventMeta.venue);
+    }
+    if (eventMeta?.city && !parsed.searchParams.get("city")) {
+      parsed.searchParams.set("city", eventMeta.city);
+    }
+    const serviceParam = mapServiceParam(selectedService);
+    if (serviceParam && !parsed.searchParams.get("service")) {
+      parsed.searchParams.set("service", serviceParam);
+    }
+    return parsed.toString();
+  } catch {
+    return sanitized;
   }
 }
 
@@ -64,6 +117,7 @@ function clearDashboardAuthCache() {
 
 export default function SessionGuard() {
   const token = useDashboardStore((state) => state.token);
+  const profile = useDashboardStore((state) => state.profile);
   const selectedService = useDashboardStore((state) => state.selectedService);
   const eventMeta = useDashboardStore((state) => state.eventMeta);
   const setToken = useDashboardStore((state) => state.setToken);
@@ -89,14 +143,33 @@ export default function SessionGuard() {
   const startRelogin = useCallback(() => {
     if (reloginRef.current) return;
     if (typeof window === "undefined") return;
-    const returnTo = sanitizeReturnTo(window.location.href);
+    const returnTo = buildReturnToUrl(window.location.href, eventMeta, selectedService);
+    let decodedProfile = profile;
+    if (!decodedProfile && token) {
+      try {
+        decodedProfile = decodeJwt(token);
+      } catch (err) {
+        console.error("Failed to decode token for reauth context", err);
+      }
+    }
+    const roles = Array.isArray(decodedProfile?.roles) ? decodedProfile.roles : [];
+    const ctxType = decodedProfile?.ctx?.type;
+    const normalizedType = normalizeRoleType(ctxType || selectedService || "");
+    const roleMatch = roles.find(
+      (role) => normalizeRoleType(role?.type) === normalizedType
+    );
     const payload = {
+      version: 1,
+      createdAt: Date.now(),
+      expiresAt: Date.now() + REAUTH_CONTEXT_TTL_MS,
       returnTo,
-      type: selectedService || null,
-      eventId: eventMeta?.eventId ?? null
+      type: roleMatch?.type || ctxType || selectedService || null,
+      service: mapServiceParam(roleMatch?.type || ctxType || selectedService),
+      eventId: coerceId(eventMeta?.eventId ?? decodedProfile?.ctx?.eventId ?? roleMatch?.eventId),
+      adminId: coerceId(decodedProfile?.ctx?.adminId ?? roleMatch?.adminId)
     };
     try {
-      window.localStorage.setItem("atomx.portal.reauth", JSON.stringify(payload));
+      window.localStorage.setItem(REAUTH_CONTEXT_KEY, JSON.stringify(payload));
     } catch (err) {
       console.error("Failed to persist reauth context", err);
     }
@@ -106,7 +179,7 @@ export default function SessionGuard() {
     setToken(null);
     setSelectedService(null);
     window.location.assign(loginUrl);
-  }, [eventMeta, selectedService, setSelectedService, setToken]);
+  }, [eventMeta, profile, selectedService, setSelectedService, setToken, token]);
 
   const scheduleTimers = useCallback(() => {
     if (!expiresAt) return;

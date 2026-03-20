@@ -101,8 +101,6 @@ export default function CEVendor({ open, onClose, vendor, onSaved, onToast }) {
     draftAppliedRef.current = false;
   }, [vendorId, open]);
 
-  if (!isMounted) return null;
-
   const getFieldValue = (formData, name, fallback = "") => {
     const value = formData.get(name);
     if (value === null || value === undefined) return fallback;
@@ -147,7 +145,7 @@ export default function CEVendor({ open, onClose, vendor, onSaved, onToast }) {
 
   const applyDraftToForm = useCallback((values) => {
     const form = formRef.current;
-    if (!form || !values) return;
+    if (!form || !values || typeof values !== "object" || Array.isArray(values)) return;
     const escapeName = (name) => {
       if (typeof CSS !== "undefined" && CSS.escape) {
         return CSS.escape(name);
@@ -189,7 +187,7 @@ export default function CEVendor({ open, onClose, vendor, onSaved, onToast }) {
     watch: [showSac, autoPrint, showKot, invoiceDefault, showPrintDetails],
     onRestore: (values) => {
       if (draftAppliedRef.current) return;
-      if (!values) return;
+      if (!values || typeof values !== "object" || Array.isArray(values)) return;
       setShowPrintDetails(toBool(values.showPrintDetails));
       setShowSac(toBool(values.showSac));
       setAutoPrint(toBool(values.autoPrint));
@@ -409,6 +407,8 @@ export default function CEVendor({ open, onClose, vendor, onSaved, onToast }) {
       setIsSubmitting(false);
     }
   };
+
+  if (!isMounted) return null;
 
   return (
     <div
