@@ -272,7 +272,7 @@ export default function LoginScreen({
             <div className="mt-2 h-px w-full max-w-[210px] bg-[linear-gradient(90deg,#F88C43_0%,#1495AB_52%,#FFFFFF_100%)]" />
 
             <h1 className="mt-7 text-[2.25rem] font-semibold leading-[1.08] text-white md:text-[3rem]">
-              Sign in to AtomX{" "}
+              Sign in to{" "}
               <span className="text-[#1495AB] drop-shadow-[0_2px_2px_rgba(15,23,42,0.45)]">
                 Portal
               </span>
