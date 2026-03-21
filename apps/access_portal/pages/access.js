@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Head from "next/head";
 import { useRouter } from "next/router";
 import { decodeJwt, getBaseUrl, getInitials } from "@atomx/lib";
-import { AtomXLoader } from "@atomx/global-components";
+import { AtomXLoader, capturePostHogEvent } from "@atomx/global-components";
 import { HeaderBar } from "../components/HeaderBar/HeaderBar";
 import { WelcomePanel } from "../components/WelcomePanel/WelcomePanel";
 
@@ -377,6 +377,16 @@ export default function AccessPage() {
       normalizedType !== "tag series" &&
       !isAdminType;
     const eventId = permission.eventId ?? roleMatch?.eventId ?? null;
+    const userEmail = profile?.email ?? null;
+
+    capturePostHogEvent("module_role_selected", {
+      app: "access_portal",
+      user_email: userEmail,
+      module_type: apiType ?? null,
+      selected_label: permission.label ?? null,
+      admin_id: adminId ?? null,
+      event_id: eventId ?? null
+    });
 
     if (!apiBase) {
       setSelectError("Missing API base URL (NEXT_PUBLIC_BASE_URL)");
@@ -456,6 +466,16 @@ export default function AccessPage() {
         });
       }
 
+      capturePostHogEvent("module_selected", {
+        app: "access_portal",
+        user_email: userEmail,
+        service: permission.service ?? mapServiceParam(apiType),
+        module_type: apiType ?? null,
+        admin_id: adminId ?? null,
+        event_id: eventId ?? null,
+        destination: destination ?? null
+      });
+
       if (destination) {
         const target = destination.startsWith("http")
           ? new URL(destination)
@@ -507,6 +527,15 @@ export default function AccessPage() {
       }
     } catch (err) {
       console.error(err);
+      capturePostHogEvent("module_selection_failed", {
+        app: "access_portal",
+        user_email: userEmail,
+        module_type: apiType ?? null,
+        service: permission.service ?? mapServiceParam(apiType),
+        admin_id: adminId ?? null,
+        event_id: eventId ?? null,
+        error_message: err?.message || "service_selection_failed"
+      });
       setSelectError(err.message || "Failed to switch module");
       setModalApp({
         title: permission.label,

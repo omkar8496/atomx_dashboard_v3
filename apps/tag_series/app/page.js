@@ -7,6 +7,10 @@ import { getStepOneState, saveStepOneState } from "../lib/setupStorage";
 import AddFormFactorPage from "./Admin/AddFormFactor/page";
 import AddProductPage from "./Admin/AddProduct/page";
 import ViewPage from "./Admin/View/page";
+import {
+  capturePostHogEvent,
+  identifyPostHogUser
+} from "@atomx/global-components";
 
 function getTagSeriesAuthToken() {
   if (typeof window === "undefined") return null;
@@ -246,9 +250,27 @@ export default function EventIdPage() {
         timestamp: Date.now()
       });
 
+      identifyPostHogUser(selectedClient, {
+        app: "tag_series",
+        client_name: selectedClientMeta?.name ?? ""
+      });
+      capturePostHogEvent("operation_event_setup_submitted", {
+        app: "tag_series",
+        event_id: eventId,
+        year_series: yearSeries,
+        client_id: selectedClient,
+        client_name: selectedClientMeta?.name ?? "",
+        next_series: nextSeries
+      });
+
       router.push(`/generate?c=${eventId}`);
     } catch (err) {
       console.error("Failed to validate series", err);
+      capturePostHogEvent("$exception", {
+        app: "tag_series",
+        $exception_message: err.message,
+        $exception_source: "event_setup_submitted"
+      });
       setSubmitError("Unable to validate this event. Please try again.");
     } finally {
       setSubmitting(false);

@@ -3,6 +3,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import { decodeJwt } from "@atomx/lib";
+import {
+  capturePostHogEvent,
+  identifyPostHogUser
+} from "@atomx/global-components";
 
 const DEFAULT_AUTH_URL = "https://dapi.atomx.in/auth/google/start";
 
@@ -91,6 +95,21 @@ export default function LoginScreen({
       if (!token) return;
       try {
         const decoded = decodeJwt(token);
+        const userEmail = decoded?.email || null;
+        const userId = decoded?.sub ?? decoded?.id ?? userEmail;
+        identifyPostHogUser(userId, {
+          email: userEmail,
+          name: decoded?.name ?? null,
+          role_type: decoded?.type ?? null,
+          app: "access_portal"
+        });
+        capturePostHogEvent("login_success", {
+          app: "access_portal",
+          app_id: appId,
+          user_email: userEmail,
+          role_type: decoded?.type ?? null,
+          has_roles: Array.isArray(decoded?.roles) && decoded.roles.length > 0
+        });
         setProfile(decoded);
         setStatus("success");
         if (typeof window !== "undefined") {
@@ -117,6 +136,12 @@ export default function LoginScreen({
         }
       } catch (err) {
         console.error(err);
+        capturePostHogEvent("login_failure", {
+          app: "access_portal",
+          app_id: appId,
+          stage: "token_decode",
+          error_message: err?.message || "token_decode_failed"
+        });
         setError("We could not verify your login token. Please try again.");
         setStatus("error");
       }
@@ -188,6 +213,12 @@ export default function LoginScreen({
       if (status === "loading" || status === "success") return;
       setError(null);
       setStatus("loading");
+      capturePostHogEvent("login_start", {
+        app: "access_portal",
+        app_id: appId,
+        provider: "google",
+        redirect_path: redirectPath
+      });
       if (typeof window !== "undefined") {
         window.setTimeout(() => {
           window.location.assign(loginUrl);

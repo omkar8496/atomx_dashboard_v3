@@ -2,6 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { decodeJwt } from "@atomx/lib";
+import {
+  capturePostHogEvent,
+  identifyPostHogUser
+} from "@atomx/global-components";
 import { useDashboardStore } from "../../../store/dashboardStore";
 import SessionPrompt from "./SessionPrompt";
 
@@ -140,6 +144,28 @@ export default function SessionGuard() {
     }
   }, [token]);
 
+  useEffect(() => {
+    if (!token) return;
+    try {
+      const decoded = decodeJwt(token);
+      const email = decoded?.email ?? null;
+      const distinctId = decoded?.sub ?? decoded?.id ?? email;
+      identifyPostHogUser(distinctId, {
+        app: "dashboard",
+        email,
+        name: decoded?.name ?? null,
+        role_type: decoded?.ctx?.type ?? decoded?.type ?? null
+      });
+      capturePostHogEvent("session_identified", {
+        app: "dashboard",
+        user_email: email,
+        role_type: decoded?.ctx?.type ?? decoded?.type ?? null
+      });
+    } catch (err) {
+      console.error("Failed to identify dashboard user in PostHog", err);
+    }
+  }, [token]);
+
   const startRelogin = useCallback(() => {
     if (reloginRef.current) return;
     if (typeof window === "undefined") return;
@@ -174,6 +200,13 @@ export default function SessionGuard() {
       console.error("Failed to persist reauth context", err);
     }
     const loginUrl = getLoginUrl(returnTo);
+    capturePostHogEvent("session_relogin_start", {
+      app: "dashboard",
+      service: mapServiceParam(payload.type),
+      event_id: payload.eventId ?? null,
+      admin_id: payload.adminId ?? null,
+      return_to: returnTo
+    });
     reloginRef.current = true;
     clearDashboardAuthCache();
     setToken(null);
@@ -223,6 +256,10 @@ export default function SessionGuard() {
   useEffect(() => {
     const onStorage = (event) => {
       if (event.key && event.key.startsWith("atomx.auth.")) {
+        capturePostHogEvent("session_relogin_success", {
+          app: "dashboard",
+          source: "storage"
+        });
         reloginRef.current = false;
         setWarningOpen(false);
         setExpiredOpen(false);
@@ -242,6 +279,11 @@ export default function SessionGuard() {
       if (event.data.service) {
         setSelectedService(event.data.service);
       }
+      capturePostHogEvent("session_relogin_success", {
+        app: "dashboard",
+        source: "post_message",
+        service: event.data.service ?? null
+      });
       reloginRef.current = false;
       setWarningOpen(false);
       setExpiredOpen(false);

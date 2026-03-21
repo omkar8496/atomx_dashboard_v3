@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import * as XLSX from "xlsx";
 import { createTagSeriesLog, fetchBatchRecords, fetchSeriesMeta } from "../../api/api";
 import { getStepOneState } from "../../lib/setupStorage";
+import { capturePostHogEvent } from "@atomx/global-components";
 
 const LOG_SERIAL_WIDTH = 5;
 const MAX_QTY = 1_000_000;
@@ -467,8 +468,27 @@ function GenerateForm() {
           eventId
         }
       });
+      capturePostHogEvent("operation_tag_batch_generated", {
+        app: "tag_series",
+        event_id: eventId,
+        form_type: formType,
+        form_type_label: FORM_TYPES.find((ft) => ft.value === formType)?.label,
+        quantity: q,
+        extra_quantity: spare,
+        total_count: totalCount,
+        year_series: yy,
+        brand_series: brand,
+        client_id: clientMeta?.clientId,
+        client_name: clientMeta?.clientName,
+        range_count: ranges.length
+      });
       await fetchAndSetBatchRecords();
     } catch (error) {
+      capturePostHogEvent("$exception", {
+        app: "tag_series",
+        $exception_message: error.message,
+        $exception_source: "tag_batch_generated"
+      });
       setErr(error.message || "Unable to save tag series log.");
       return;
     }
@@ -523,6 +543,15 @@ function GenerateForm() {
       workbook,
       fileName
     );
+    capturePostHogEvent("operation_tag_excel_downloaded", {
+      app: "tag_series",
+      event_id: params.eventId,
+      form_type: params.formType,
+      form_type_label: formLabel,
+      include_urls: includeLinks,
+      row_count: rows.length,
+      file_name: fileName
+    });
   };
 
   return (
