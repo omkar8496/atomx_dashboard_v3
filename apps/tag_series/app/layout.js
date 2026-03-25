@@ -1,7 +1,6 @@
 import { Suspense } from "react";
 import "./globals.css";
 import { TokenGate } from "@atomx/global-components";
-import { getPostHogClient } from "../lib/posthog";
 import { PostHogInit } from "../components/PostHogInit";
 
 export const metadata = {
@@ -10,10 +9,6 @@ export const metadata = {
 };
 
 export default function RootLayout({ children }) {
-  // Initialize the PostHog server-side client eagerly so it is ready for
-  // any Server Component or Server Action that calls getPostHogClient().
-  getPostHogClient();
-
   return (
     <html lang="en">
       <body className="antialiased">
