@@ -6,7 +6,10 @@ const SERIES_ENDPOINT = `${BASE_URL}/v1/TagSeries/Series`;
 const LOGS_ENDPOINT = `${BASE_URL}/v1/TagSeries/Logs`;
 const BATCH_RECORDS_ENDPOINT = `${BASE_URL}/v1/TagSeries/BatchRecords`;
 const EVENTS_ENDPOINT = `${BASE_URL}/v1/TagSeries/Events`;
-const TAG_SERIES_API_KEY = "pZebJlF_.dv3_prod.Iu7Zitu3X30C2R6-bVZtRXRu0DeiHY-j";
+const TAG_SERIES_API_KEY =
+  process.env.NEXT_PUBLIC_TAG_SERIES_API_KEY ??
+  process.env.NEXT_PUBLIC_DASHBOARD_API_KEY ??
+  "pZebJlF_.dv3_prod.Iu7Zitu3X30C2R6-bVZtRXRu0DeiHY-j";
 
 function buildHeaders(token) {
   if (!token) {

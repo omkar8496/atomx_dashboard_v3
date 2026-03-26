@@ -8,7 +8,9 @@ import {
   identifyPostHogUser
 } from "@atomx/global-components";
 
-const DEFAULT_AUTH_URL = "https://dapi.atomx.in/auth/google/start";
+const DEFAULT_AUTH_URL = `${
+  (process.env.NEXT_PUBLIC_BASE_URL ?? "https://dapi.atomx.in").replace(/\/$/, "")
+}/auth/google/start`;
 
 function buildAuthUrl(authUrl, appId, redirect) {
   try {
