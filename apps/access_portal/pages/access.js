@@ -248,8 +248,9 @@ export default function AccessPage() {
 
   useEffect(() => {
     if (!router.isReady) return;
-    let tokenCandidate = router.query.token;
-    tokenCandidate = Array.isArray(tokenCandidate) ? tokenCandidate[0] : tokenCandidate;
+    const queryTokenRaw = router.query.token;
+    const queryToken = Array.isArray(queryTokenRaw) ? queryTokenRaw[0] : queryTokenRaw;
+    let tokenCandidate = queryToken;
 
     if (!tokenCandidate && typeof window !== "undefined") {
       const directToken = new URLSearchParams(window.location.search).get("token");

@@ -7,6 +7,9 @@ import { AtomXLoader } from "@atomx/global-components";
 import { useDashboardStore } from "../../store/dashboardStore";
 import { fetchEventDetails, fetchEventsList } from "../../lib/dashboardApi";
 
+const ACCESS_FALLBACK_PATH = "/access";
+const ADMIN_BACK_GUARD_KEY = "__atomxAdminBackGuard";
+
 export default function AdminClient() {
   const router = useRouter();
   const token = useDashboardStore((state) => state.token);
@@ -18,6 +21,7 @@ export default function AdminClient() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [queryToken, setQueryToken] = useState("");
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -29,6 +33,52 @@ export default function AdminClient() {
   }, []);
 
   const authToken = token || queryToken || "";
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const pushGuardState = () => {
+      window.history.pushState({ [ADMIN_BACK_GUARD_KEY]: true }, "", window.location.href);
+    };
+
+    pushGuardState();
+    const onPopState = (event) => {
+      if (event.state?.[ADMIN_BACK_GUARD_KEY]) return;
+      setShowExitConfirm(true);
+      pushGuardState();
+    };
+
+    window.addEventListener("popstate", onPopState);
+    return () => {
+      window.removeEventListener("popstate", onPopState);
+    };
+  }, []);
+
+  const handleBackConfirm = () => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.removeItem("atomx.portal.token");
+      window.localStorage.removeItem("atomx.portal.reauth");
+      const keysToRemove = [];
+      for (let i = 0; i < window.localStorage.length; i += 1) {
+        const key = window.localStorage.key(i);
+        if (key && key.startsWith("atomx.auth.")) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach((key) => window.localStorage.removeItem(key));
+      if (window.sessionStorage) {
+        window.sessionStorage.clear();
+      }
+    } catch (err) {
+      console.error("Failed to clear session on exit", err);
+    }
+    const accessBase = process.env.NEXT_PUBLIC_ACCESS_PORTAL_URL || "/";
+    const target = new URL(accessBase, window.location.origin);
+    if (target.pathname === ACCESS_FALLBACK_PATH) {
+      target.pathname = "/";
+    }
+    window.location.assign(target.toString());
+  };
 
   useEffect(() => {
     if (!authToken) return;
@@ -145,6 +195,32 @@ export default function AdminClient() {
           ) : null}
         </div>
       </div>
+      {showExitConfirm ? (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_24px_50px_rgba(15,23,42,0.22)]">
+            <h3 className="text-lg font-semibold text-slate-900">Take Exit?</h3>
+            <p className="mt-2 text-sm text-slate-600">
+              Do you really want to take exit?
+            </p>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowExitConfirm(false)}
+                className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                No
+              </button>
+              <button
+                type="button"
+                onClick={handleBackConfirm}
+                className="rounded-lg bg-[color:rgb(var(--color-orange))] px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_18px_rgb(var(--color-orange)/0.25)] hover:brightness-105"
+              >
+                Yes
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }

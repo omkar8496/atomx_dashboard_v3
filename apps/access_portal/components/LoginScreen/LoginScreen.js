@@ -5,7 +5,10 @@ import { useRouter } from "next/router";
 import { decodeJwt } from "@atomx/lib";
 import {
   capturePostHogEvent,
-  identifyPostHogUser
+  getAnalyticsConsent,
+  identifyPostHogUser,
+  initPostHog,
+  setAnalyticsConsent
 } from "@atomx/global-components";
 
 const DEFAULT_AUTH_URL = `${
@@ -58,6 +61,7 @@ export default function LoginScreen({
   const [loginUrl, setLoginUrl] = useState(authUrl);
   const [devToken, setDevToken] = useState(null);
   const [activeSlide, setActiveSlide] = useState(0);
+  const [consentOpen, setConsentOpen] = useState(false);
   const sliderItems = useMemo(
     () => [
       {
@@ -91,6 +95,21 @@ export default function LoginScreen({
     }
     setLoginUrl(buildAuthUrl(authUrl, appId, redirectTarget));
   }, [appId, authUrl, redirectPath]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const consent = getAnalyticsConsent();
+    if (consent === "granted") {
+      setConsentOpen(false);
+      initPostHog("access_portal");
+      return;
+    }
+    if (consent === "denied") {
+      setConsentOpen(false);
+      return;
+    }
+    setConsentOpen(true);
+  }, []);
 
   const processToken = useCallback(
     (token, delay = 1200) => {
@@ -239,6 +258,16 @@ export default function LoginScreen({
 
   const activeSlideItem = sliderItems[activeSlide] || sliderItems[0];
 
+  const handleAcceptAnalytics = () => {
+    setAnalyticsConsent(true, "access_portal");
+    setConsentOpen(false);
+  };
+
+  const handleRejectAnalytics = () => {
+    setAnalyticsConsent(false, "access_portal");
+    setConsentOpen(false);
+  };
+
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#031026]">
       {sliderItems.map((item, index) => (
@@ -332,6 +361,13 @@ export default function LoginScreen({
               </a>
               .
             </p>
+            <button
+              type="button"
+              onClick={() => setConsentOpen(true)}
+              className="mt-3 self-start text-sm text-white/70 underline underline-offset-2 transition hover:text-white"
+            >
+              Cookie settings
+            </button>
             </div>
           </div>
         </div>
@@ -347,6 +383,29 @@ export default function LoginScreen({
           />
         ))}
       </div>
+
+      {consentOpen ? (
+        <div className="fixed inset-x-4 bottom-4 z-30 mx-auto w-full max-w-[620px] rounded-2xl border border-white/30 bg-black/55 p-5 text-white shadow-[0_24px_46px_rgba(2,8,20,0.55)] backdrop-blur-xl md:inset-x-auto md:right-6 md:mx-0">
+          <h3 className="text-lg font-semibold tracking-tight">Cookie Preferences</h3>
+
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={handleAcceptAnalytics}
+              className="rounded-full bg-[#f88c43] px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(248,140,67,0.35)] hover:brightness-105"
+            >
+              Accept all cookies
+            </button>
+            <button
+              type="button"
+              onClick={handleRejectAnalytics}
+              className="rounded-full border border-white/35 bg-transparent px-4 py-2 text-sm font-semibold text-white/90 hover:bg-white/10"
+            >
+              Accept only essential cookies
+            </button>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }
