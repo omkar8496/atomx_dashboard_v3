@@ -227,10 +227,6 @@ export default function EventIdPage() {
     try {
       setSubmitting(true);
       const token = getTagSeriesAuthToken();
-      if (!token) {
-        throw new Error("Missing auth token");
-      }
-
       const seriesPayload = await fetchSeriesMeta(token, {
         eventId,
         adminId: selectedClient,

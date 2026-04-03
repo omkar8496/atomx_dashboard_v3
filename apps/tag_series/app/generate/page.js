@@ -276,9 +276,6 @@ function GenerateForm() {
     setBatchError("");
     try {
       const token = getTagSeriesToken();
-      if (!token) {
-        throw new Error("Missing auth token.");
-      }
       const response = await fetchBatchRecords(token, {
         eventId,
         adminId: clientMeta.clientId
@@ -327,9 +324,6 @@ function GenerateForm() {
     async function loadSeriesMeta() {
       try {
         const token = getTagSeriesToken();
-        if (!token) {
-          return;
-        }
         const response = await fetchSeriesMeta(token, {
           eventId,
           adminId: clientMeta.clientId,
@@ -397,11 +391,6 @@ function GenerateForm() {
     if (q > MAX_QTY) return setErr(`Max quantity is ${MAX_QTY.toLocaleString()}.`);
 
     const token = getTagSeriesToken();
-    if (!token) {
-      setErr("Missing auth token. Please log in again.");
-      return;
-    }
-
     const payload = {
       eventId: Number(eventId),
       adminId: Number(clientMeta.clientId),

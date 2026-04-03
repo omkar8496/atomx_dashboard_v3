@@ -42,7 +42,7 @@ export default function OperationsPage() {
   const loadVendors = useCallback(
     async (options = {}) => {
       const { force = false } = options;
-      if (!token || !eventId) return;
+      if (!eventId) return;
       const requestKey = String(eventId);
       const latestCached = useDashboardStore.getState().vendorsByEventId?.[eventId];
       if (!force && Array.isArray(latestCached)) {
@@ -82,7 +82,7 @@ export default function OperationsPage() {
   const loadStalls = useCallback(
     async (options = {}) => {
       const { force = false } = options;
-      if (!token || !eventId) return;
+      if (!eventId) return;
       const requestKey = String(eventId);
       const latestCached = useDashboardStore.getState().stallsByEventId?.[eventId];
       if (!force && Array.isArray(latestCached)) {

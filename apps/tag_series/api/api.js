@@ -12,13 +12,8 @@ const TAG_SERIES_API_KEY =
   "pZebJlF_.dv3_prod.Iu7Zitu3X30C2R6-bVZtRXRu0DeiHY-j";
 
 function buildHeaders(token) {
-  if (!token) {
-    throw new Error("Missing session token for CardClients request");
-  }
-
   return {
-    "x-api-key": TAG_SERIES_API_KEY,
-    Authorization: `Bearer ${token}`
+    "x-api-key": TAG_SERIES_API_KEY
   };
 }
 

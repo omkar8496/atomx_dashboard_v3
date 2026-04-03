@@ -3,17 +3,17 @@ import { DASHBOARD_API_KEY } from "./apiConfig";
 
 const inFlightGetRequests = new Map();
 
-function buildGetRequestKey(url, token) {
-  return `${url}::${token || ""}`;
+function buildGetRequestKey(url) {
+  return `${url}::cookie-session`;
 }
 
 async function fetchGetJson({ url, token }) {
   const res = await fetch(url, {
     method: "GET",
     headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(DASHBOARD_API_KEY ? { "x-api-key": DASHBOARD_API_KEY } : {})
     },
+    credentials: "include",
     cache: "no-store"
   });
 
@@ -30,7 +30,7 @@ async function fetchGetJsonDeduped({ url, token, dedupe = true }) {
     return fetchGetJson({ url, token });
   }
 
-  const key = buildGetRequestKey(url, token);
+  const key = buildGetRequestKey(url);
   const existing = inFlightGetRequests.get(key);
   if (existing) {
     return existing;
@@ -50,9 +50,9 @@ export async function linkOperator({ email, adminId, token }) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(DASHBOARD_API_KEY ? { "x-api-key": DASHBOARD_API_KEY } : {})
     },
+    credentials: "include",
     body: JSON.stringify({
       email,
       adminId,
@@ -100,9 +100,9 @@ export async function updateEventDetails({ eventId, token, payload }) {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(DASHBOARD_API_KEY ? { "x-api-key": DASHBOARD_API_KEY } : {})
     },
+    credentials: "include",
     body: JSON.stringify(payload)
   });
 
@@ -120,9 +120,9 @@ export async function createVendor({ token, vendor }) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(DASHBOARD_API_KEY ? { "x-api-key": DASHBOARD_API_KEY } : {})
     },
+    credentials: "include",
     body: JSON.stringify({ vendor })
   });
 
@@ -156,9 +156,9 @@ export async function updateVendor({ vendorId, token, payload }) {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(DASHBOARD_API_KEY ? { "x-api-key": DASHBOARD_API_KEY } : {})
     },
+    credentials: "include",
     body: JSON.stringify(payload)
   });
 
@@ -176,9 +176,9 @@ export async function createStall({ token, stall }) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(DASHBOARD_API_KEY ? { "x-api-key": DASHBOARD_API_KEY } : {})
     },
+    credentials: "include",
     body: JSON.stringify({ stall })
   });
 

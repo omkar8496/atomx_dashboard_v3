@@ -200,7 +200,7 @@ export default function CEVendor({ open, onClose, vendor, onSaved, onToast }) {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    if (!eventId || !token) {
+    if (!eventId) {
       return;
     }
     const formData = new FormData(formRef.current);

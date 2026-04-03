@@ -14,6 +14,7 @@ const dashboardBase = (process.env.NEXT_PUBLIC_DASHBOARD_URL ?? "").replace(/\/$
 const dashboardConfigPath = "/Config/operations/";
 const REAUTH_CONTEXT_KEY = "atomx.portal.reauth";
 const REAUTH_CONTEXT_FALLBACK_TTL_MS = 24 * 60 * 60 * 1000;
+const BOOTSTRAP_TOKEN_COOKIE = "atomx_bootstrap_token";
 const DASHBOARD_API_KEY =
   process.env.NEXT_PUBLIC_DASHBOARD_API_KEY ??
   "pZebJlF_.dv3_prod.Iu7Zitu3X30C2R6-bVZtRXRu0DeiHY-j";
@@ -206,8 +207,28 @@ function readReauthContext() {
   return parsed;
 }
 
-async function fetchSelectedEventDetails({ apiBase, eventId, token }) {
-  if (!apiBase || !eventId || !token) {
+function readCookie(name) {
+  if (typeof document === "undefined") return null;
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = document.cookie.match(new RegExp(`(?:^|; )${escaped}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+function setBootstrapTokenCookie(tokenValue) {
+  if (typeof window === "undefined" || !tokenValue) return;
+  const secure = window.location.protocol === "https:" ? "; Secure" : "";
+  document.cookie = `${BOOTSTRAP_TOKEN_COOKIE}=${encodeURIComponent(
+    tokenValue
+  )}; Path=/; Max-Age=1800; SameSite=Lax${secure}`;
+}
+
+function clearBootstrapTokenCookie() {
+  if (typeof document === "undefined") return;
+  document.cookie = `${BOOTSTRAP_TOKEN_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`;
+}
+
+async function fetchSelectedEventDetails({ apiBase, eventId }) {
+  if (!apiBase || !eventId) {
     throw new Error("Missing data to load event details.");
   }
 
@@ -216,9 +237,9 @@ async function fetchSelectedEventDetails({ apiBase, eventId, token }) {
     {
       method: "GET",
       headers: {
-        Authorization: `Bearer ${token}`,
         ...(DASHBOARD_API_KEY ? { "x-api-key": DASHBOARD_API_KEY } : {})
       },
+      credentials: "include",
       cache: "no-store"
     }
   );
@@ -239,7 +260,6 @@ export default function AccessPage() {
   const [status, setStatus] = useState("loading");
   const [error, setError] = useState(null);
   const [modalApp, setModalApp] = useState(null);
-  const [token, setToken] = useState(null);
   const [selecting, setSelecting] = useState(null);
   const [selectError, setSelectError] = useState(null);
   const [hideErrorBanner, setHideErrorBanner] = useState(false);
@@ -274,7 +294,7 @@ export default function AccessPage() {
       const sanitized = sanitizeModules(decoded.roles);
       setProfile(decoded);
       setModules(sanitized);
-      setToken(tokenCandidate);
+      setBootstrapTokenCookie(tokenCandidate);
       if (typeof window !== "undefined") {
         window.localStorage.setItem("atomx.portal.token", tokenCandidate);
         sanitized.forEach((module) => {
@@ -421,12 +441,14 @@ export default function AccessPage() {
       const payload = needsEventId
         ? { type: apiType, eventId }
         : { type: apiType, adminId };
+      const bootstrapToken = readCookie(BOOTSTRAP_TOKEN_COOKIE);
       const res = await fetch(`${apiBase}/auth/select`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(token ? { Authorization: `Bearer ${token}` } : {})
+          ...(bootstrapToken ? { Authorization: `Bearer ${bootstrapToken}` } : {})
         },
+        credentials: "include",
         body: JSON.stringify(payload)
       });
 
@@ -434,36 +456,18 @@ export default function AccessPage() {
         const text = await res.text();
         throw new Error(text || `Request failed (${res.status})`);
       }
-
-      const data = await res.json();
-      const nextToken = data.token ?? data.accessToken ?? data.data?.token;
-      if (!nextToken) {
-        throw new Error("No token returned from auth/select");
-      }
+      await res.json().catch(() => null);
+      clearBootstrapTokenCookie();
 
       if (typeof window !== "undefined") {
         window.localStorage.removeItem(REAUTH_CONTEXT_KEY);
       }
 
-      // persist and refresh state with new token
-      window.localStorage.setItem("atomx.portal.token", nextToken);
-      const decoded = decodeJwt(nextToken);
-      const sanitized = sanitizeModules(decoded.roles);
-      setProfile(decoded);
-      setModules(sanitized);
-      setToken(nextToken);
-      sanitized.forEach((module) => {
-        if (module.type) {
-          window.localStorage.setItem(`atomx.auth.${module.type}`, nextToken);
-        }
-      });
-
       let eventDetails = null;
       if (shouldFetchEventDetails) {
         eventDetails = await fetchSelectedEventDetails({
           apiBase,
-          eventId,
-          token: nextToken
+          eventId
         });
       }
 
@@ -486,7 +490,6 @@ export default function AccessPage() {
             window.opener.postMessage(
               {
                 type: "atomx.auth",
-                token: nextToken,
                 service: permission.service ?? permission.type,
                 eventId
               },
@@ -498,7 +501,6 @@ export default function AccessPage() {
             console.error("Failed to post auth token", err);
           }
         }
-        target.searchParams.set("token", nextToken);
         if (permission.service) {
           target.searchParams.set("service", permission.service);
         }
@@ -543,6 +545,7 @@ export default function AccessPage() {
         description: "We could not refresh your access token. Please try again."
       });
     } finally {
+      clearBootstrapTokenCookie();
       if (!didNavigateAway) {
         setSelecting(null);
       }
@@ -621,7 +624,7 @@ export default function AccessPage() {
     setProfile(null);
     setModules([]);
     setStatus("empty");
-    setToken(null);
+    clearBootstrapTokenCookie();
     router.replace("/");
   };
 

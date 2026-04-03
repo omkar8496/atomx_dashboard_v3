@@ -298,14 +298,13 @@ export default function ConfigProfilePage() {
   useEffect(() => {
     let cancelled = false;
     async function loadDetails() {
-      if (!token || !eventMeta?.eventId) return;
+      if (!eventMeta?.eventId) return;
       if (eventDetails?.id && String(eventDetails.id) === String(eventMeta.eventId)) {
         return;
       }
       try {
         const details = await fetchEventDetails({
-          eventId: eventMeta.eventId,
-          token
+          eventId: eventMeta.eventId
         });
         if (!cancelled && details) {
           setEventDetails(details);
@@ -325,7 +324,7 @@ export default function ConfigProfilePage() {
     return () => {
       cancelled = true;
     };
-  }, [token, eventMeta?.eventId, eventDetails, setEventDetails, setEventMeta]);
+  }, [eventMeta?.eventId, eventDetails, setEventDetails, setEventMeta]);
 
   useEffect(() => {
     if (!eventDetails) return;
@@ -343,7 +342,7 @@ export default function ConfigProfilePage() {
   }, [eventId]);
 
   const handleSave = useCallback(async () => {
-    if (!eventId || !token) return;
+    if (!eventId) return;
     const diff = computeChanges();
     if (!diff.payload) {
       setChangeState((prev) => ({ ...prev, hasChanges: false, labels: [], payload: null }));
@@ -351,8 +350,8 @@ export default function ConfigProfilePage() {
     }
     setIsSaving(true);
     try {
-      await updateEventDetails({ eventId, token, payload: diff.payload });
-      const refreshed = await fetchEventDetails({ eventId, token, dedupe: false });
+      await updateEventDetails({ eventId, payload: diff.payload });
+      const refreshed = await fetchEventDetails({ eventId, dedupe: false });
       if (refreshed) {
         const merged = { ...(eventDetails ?? {}) };
         if (diff.payload.event) {
@@ -396,7 +395,7 @@ export default function ConfigProfilePage() {
     } finally {
       setIsSaving(false);
     }
-  }, [computeChanges, eventDetails, eventId, eventMeta, setEventDetails, setEventMeta, token]);
+  }, [computeChanges, eventDetails, eventId, eventMeta, setEventDetails, setEventMeta]);
 
   return (
     <main className="min-h-screen bg-[color:rgb(var(--color-bg))] pb-10">

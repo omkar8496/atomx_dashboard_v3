@@ -12,7 +12,6 @@ const ADMIN_BACK_GUARD_KEY = "__atomxAdminBackGuard";
 
 export default function AdminClient() {
   const router = useRouter();
-  const token = useDashboardStore((state) => state.token);
   const setEventMeta = useDashboardStore((state) => state.setEventMeta);
   const setEventDetails = useDashboardStore((state) => state.setEventDetails);
   const [events, setEvents] = useState([]);
@@ -20,19 +19,7 @@ export default function AdminClient() {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [queryToken, setQueryToken] = useState("");
   const [showExitConfirm, setShowExitConfirm] = useState(false);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const params = new URLSearchParams(window.location.search);
-    const tokenParam = params.get("token") || "";
-    if (tokenParam) {
-      setQueryToken(tokenParam);
-    }
-  }, []);
-
-  const authToken = token || queryToken || "";
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -81,13 +68,12 @@ export default function AdminClient() {
   };
 
   useEffect(() => {
-    if (!authToken) return;
     let active = true;
     const loadEvents = async () => {
       setLoading(true);
       setError("");
       try {
-        const list = await fetchEventsList({ token: authToken });
+        const list = await fetchEventsList({});
         if (!active) return;
         setEvents(Array.isArray(list) ? list : []);
       } catch (err) {
@@ -104,7 +90,7 @@ export default function AdminClient() {
     return () => {
       active = false;
     };
-  }, [authToken]);
+  }, []);
 
   const options = useMemo(() => {
     return events.map((eventItem) => {
@@ -118,10 +104,6 @@ export default function AdminClient() {
   }, [events]);
 
   const handleSelect = async () => {
-    if (!authToken) {
-      setError("Missing access token.");
-      return;
-    }
     if (!selectedEventId) {
       setError("Select an event to continue.");
       return;
@@ -130,8 +112,7 @@ export default function AdminClient() {
     setError("");
     try {
       const details = await fetchEventDetails({
-        eventId: selectedEventId,
-        token: authToken
+        eventId: selectedEventId
       });
       if (details) {
         setEventDetails(details);
@@ -143,7 +124,6 @@ export default function AdminClient() {
         });
       }
       const params = new URLSearchParams();
-      if (authToken) params.set("token", authToken);
       if (details?.id ?? selectedEventId) params.set("eventId", details?.id ?? selectedEventId);
       if (details?.name) params.set("eventName", details.name);
       if (details?.venue) params.set("venue", details.venue);
@@ -171,7 +151,7 @@ export default function AdminClient() {
                 className="flex-1 rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:border-[color:rgb(var(--color-teal))] focus:outline-none"
                 value={selectedEventId}
                 onChange={(event) => setSelectedEventId(event.target.value)}
-                disabled={loading || !authToken}
+                disabled={loading}
               >
                 <option value="">Select an event</option>
                 {options.map((option) => (

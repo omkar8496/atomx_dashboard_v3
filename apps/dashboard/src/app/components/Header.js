@@ -36,18 +36,8 @@ export default function Header({
   const profile = useDashboardStore((state) => state.profile);
   const storedEventMeta = useDashboardStore((state) => state.eventMeta);
   const selectedService = useDashboardStore((state) => state.selectedService);
-  const setToken = useDashboardStore((state) => state.setToken);
   const setEventMeta = useDashboardStore((state) => state.setEventMeta);
   const setSelectedService = useDashboardStore((state) => state.setSelectedService);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const params = new URLSearchParams(window.location.search);
-    const tokenParam = params.get("token");
-    if (tokenParam) {
-      setToken(tokenParam);
-    }
-  }, [setToken]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
