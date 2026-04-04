@@ -21,6 +21,7 @@ export async function fetchCardClients(token) {
   const response = await fetch(CARD_CLIENTS_ENDPOINT, {
     method: "GET",
     headers: buildHeaders(token),
+    credentials: "include",
     cache: "no-store"
   });
 
@@ -48,6 +49,7 @@ export async function fetchSeriesMeta(token, { eventId, adminId, yearSeries }) {
   const response = await fetch(`${SERIES_ENDPOINT}?${searchParams.toString()}`, {
     method: "GET",
     headers: buildHeaders(token),
+    credentials: "include",
     cache: "no-store"
   });
 
@@ -72,6 +74,7 @@ export async function createTagSeriesLog(token, payload) {
       ...buildHeaders(token),
       "Content-Type": "application/json"
     },
+    credentials: "include",
     cache: "no-store",
     body: JSON.stringify(payload)
   });
@@ -99,6 +102,7 @@ export async function fetchBatchRecords(token, { eventId, adminId }) {
   const response = await fetch(`${BATCH_RECORDS_ENDPOINT}?${searchParams.toString()}`, {
     method: "GET",
     headers: buildHeaders(token),
+    credentials: "include",
     cache: "no-store"
   });
 
@@ -116,6 +120,7 @@ export async function fetchTagSeriesEvents(token) {
   const response = await fetch(EVENTS_ENDPOINT, {
     method: "GET",
     headers: buildHeaders(token),
+    credentials: "include",
     cache: "no-store"
   });
 
