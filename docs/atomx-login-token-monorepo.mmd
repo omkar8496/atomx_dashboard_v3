@@ -1,0 +1,127 @@
+%% AtomX Monorepo + Auth/Token + Design System visualization
+%% Open with Mermaid viewer / VSCode Mermaid preview.
+
+flowchart TB
+  %% =========================
+  %% Monorepo structure
+  %% =========================
+  subgraph ROOT["atomx_dashboard_v3 (Turborepo + npm workspaces)"]
+    direction LR
+    subgraph APPS["apps/"]
+      direction TB
+      APP_ACCESS["access_portal<br/>Entry login + access selection"]
+      APP_DASH["dashboard<br/>Admin + Config + Operations"]
+      APP_TAG["tag_series<br/>Tag setup + batch flow"]
+    end
+    subgraph PKGS["packages/"]
+      direction TB
+      PKG_GLOBAL["global-components<br/>login UI, loader, analytics helper"]
+      PKG_AUTH["auth<br/>auth helper + login URL builder"]
+      PKG_LIB["lib<br/>decodeJwt, getBaseUrl, common helpers"]
+      PKG_API["api<br/>api client abstractions"]
+      PKG_SHARED["shared-ui<br/>shared UI primitives"]
+      PKG_UTILS["utils<br/>formatters and misc helpers"]
+      PKG_ASSETS["public-assets<br/>logos/fonts/loader"]
+    end
+  end
+
+  APP_ACCESS --> PKG_GLOBAL
+  APP_ACCESS --> PKG_LIB
+  APP_DASH --> PKG_GLOBAL
+  APP_DASH --> PKG_LIB
+  APP_TAG --> PKG_GLOBAL
+  APP_TAG --> PKG_LIB
+
+  %% =========================
+  %% Login + token flow
+  %% =========================
+  subgraph FLOW["Current Login + Token/Session Flow (all projects)"]
+    direction TB
+    L1["User opens portal login<br/>(access_portal /)"]
+    L2["Google auth start<br/>(auth URL from env/base URL)"]
+    L3["Backend callback returns initial JWT"]
+    L4["Access page parses token<br/>decodeJwt(role cards/admin+events)"]
+    L5["Client stores initial bootstrap token cookie<br/>atomx_bootstrap_token (short lived)"]
+    L6["User clicks Admin/Event card"]
+    L7["POST /auth/select<br/>Authorization: Bearer atomx_bootstrap_token<br/>credentials: include"]
+    L8["Backend sets cookie session token<br/>Set-Cookie: access_token=..."]
+    L9["Client clears bootstrap cookie"]
+    L10{"Selection type?"}
+    L11["Admin -> redirect dashboard /admin"]
+    L12["Event(non tag-series) -> fetch /v1/Events/Details/:eventId<br/>credentials: include"]
+    L13["Redirect dashboard /Config/operations with event params"]
+    L14["Tag-series -> redirect /tag_series"]
+    L15["Dashboard APIs use credentials: include<br/>x-api-key from env"]
+    L16["Tag-series APIs use credentials: include<br/>x-api-key from env"]
+    L17["SessionGuard detects expiry<br/>stores reauth context and sends to login"]
+    L18["Re-login -> access page restores selection context<br/>runs select flow again"]
+
+    L1 --> L2 --> L3 --> L4 --> L5 --> L6 --> L7 --> L8 --> L9 --> L10
+    L10 -->|admin| L11 --> L15
+    L10 -->|event| L12 --> L13 --> L15
+    L10 -->|tag-series| L14 --> L16
+    L15 --> L17 --> L18 --> L7
+    L16 --> L17
+  end
+
+  %% =========================
+  %% Analytics flow
+  %% =========================
+  subgraph ANALYTICS["Analytics instrumentation"]
+    direction TB
+    A1["PostHog init in global-components/posthog.js"]
+    A2["GA4 gtag init in same helper"]
+    A3["Cookie consent gate controls analytics on/off"]
+    A4["Tracked events<br/>login_start/login_success/login_failed<br/>module_role_selected/module_selected/module_selection_failed<br/>session_relogin_start/session_relogin_success"]
+    A1 --> A4
+    A2 --> A4
+    A3 --> A1
+    A3 --> A2
+  end
+
+  APP_ACCESS --> ANALYTICS
+  APP_DASH --> ANALYTICS
+  APP_TAG --> ANALYTICS
+
+  %% =========================
+  %% Design system mapping
+  %% =========================
+  subgraph DESIGN["Design tokens currently used"]
+    direction LR
+    subgraph COLORS["Color palette"]
+      direction TB
+      C1["Primary Orange<br/>#F88C43"]
+      C2["Primary Teal<br/>#1495AB"]
+      C3["Header Teal Variant<br/>#258D9C"]
+      C4["Surface White<br/>#FFFFFF"]
+      C5["Dashboard BG<br/>rgb(243,247,251)"]
+    end
+    subgraph FONTS["Font stacks by app"]
+      direction TB
+      F1["access_portal<br/>Poppins (+ fallbacks)"]
+      F2["tag_series<br/>Poppins (+ fallbacks)"]
+      F3["dashboard<br/>Arial/Helvetica body<br/>Geist vars present in layout"]
+    end
+  end
+
+  APP_ACCESS --> F1
+  APP_TAG --> F2
+  APP_DASH --> F3
+  APP_ACCESS --> C1
+  APP_ACCESS --> C2
+  APP_DASH --> C1
+  APP_DASH --> C2
+  APP_DASH --> C3
+  APP_TAG --> C2
+
+  classDef orange fill:#F88C43,color:#ffffff,stroke:#C96524,stroke-width:1px;
+  classDef teal fill:#1495AB,color:#ffffff,stroke:#0E6C7C,stroke-width:1px;
+  classDef teal2 fill:#258D9C,color:#ffffff,stroke:#176E79,stroke-width:1px;
+  classDef white fill:#FFFFFF,color:#0f172a,stroke:#cbd5e1,stroke-width:1px;
+  classDef slate fill:#eef3f8,color:#0f172a,stroke:#cbd5e1,stroke-width:1px;
+
+  class C1 orange;
+  class C2 teal;
+  class C3 teal2;
+  class C4,C5 white;
+  class ROOT,APPS,PKGS,FLOW,ANALYTICS,DESIGN,COLORS,FONTS slate;

@@ -39,6 +39,7 @@
   },
   "dependencies": {
     "@next/third-parties": "^16.2.0",
+    "mermaid": "^11.14.0",
     "posthog-js": "^1.363.0"
   }
 }
