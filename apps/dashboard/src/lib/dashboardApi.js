@@ -3,19 +3,32 @@ import { DASHBOARD_API_KEY } from "./apiConfig";
 
 const inFlightGetRequests = new Map();
 
-function buildGetRequestKey(url) {
-  return `${url}::cookie-session`;
+function buildGetRequestKey(url, token) {
+  return `${url}::${token || "cookie-session"}`;
 }
 
-async function fetchGetJson({ url, token }) {
-  const res = await fetch(url, {
+function buildAuthHeaders(token) {
+  return {
+    ...(DASHBOARD_API_KEY ? { "x-api-key": DASHBOARD_API_KEY } : {}),
+    ...(token ? { Authorization: `Bearer ${token}` } : {})
+  };
+}
+
+async function requestGetJson({ url, token }) {
+  return fetch(url, {
     method: "GET",
-    headers: {
-      ...(DASHBOARD_API_KEY ? { "x-api-key": DASHBOARD_API_KEY } : {})
-    },
+    headers: buildAuthHeaders(token),
     credentials: "include",
     cache: "no-store"
   });
+}
+
+async function fetchGetJson({ url, token }) {
+  let res = await requestGetJson({ url, token });
+
+  if (!res.ok && token) {
+    res = await requestGetJson({ url, token: null });
+  }
 
   if (!res.ok) {
     const text = await res.text().catch(() => res.statusText);
@@ -30,7 +43,7 @@ async function fetchGetJsonDeduped({ url, token, dedupe = true }) {
     return fetchGetJson({ url, token });
   }
 
-  const key = buildGetRequestKey(url);
+  const key = buildGetRequestKey(url, token);
   const existing = inFlightGetRequests.get(key);
   if (existing) {
     return existing;
@@ -44,20 +57,16 @@ async function fetchGetJsonDeduped({ url, token, dedupe = true }) {
   return request;
 }
 
-export async function linkOperator({ email, adminId, token }) {
+export async function linkRole({ token, payload }) {
   const baseUrl = getBaseUrl();
   const res = await fetch(`${baseUrl}/v1/Operators/Link`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...(DASHBOARD_API_KEY ? { "x-api-key": DASHBOARD_API_KEY } : {})
+      ...buildAuthHeaders(token)
     },
     credentials: "include",
-    body: JSON.stringify({
-      email,
-      adminId,
-      type: "operator"
-    })
+    body: JSON.stringify(payload)
   });
 
   if (!res.ok) {
@@ -66,6 +75,18 @@ export async function linkOperator({ email, adminId, token }) {
   }
 
   return res.json();
+}
+
+export async function linkOperator({ email, adminId, eventId, type = "operator", token }) {
+  return linkRole({
+    token,
+    payload: {
+      email,
+      adminId,
+      ...(eventId ? { eventId } : {}),
+      type
+    }
+  });
 }
 
 export async function fetchEventDetails({ eventId, token, dedupe = true }) {
@@ -100,7 +121,7 @@ export async function updateEventDetails({ eventId, token, payload }) {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
-      ...(DASHBOARD_API_KEY ? { "x-api-key": DASHBOARD_API_KEY } : {})
+      ...buildAuthHeaders(token)
     },
     credentials: "include",
     body: JSON.stringify(payload)
@@ -120,7 +141,7 @@ export async function createVendor({ token, vendor }) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...(DASHBOARD_API_KEY ? { "x-api-key": DASHBOARD_API_KEY } : {})
+      ...buildAuthHeaders(token)
     },
     credentials: "include",
     body: JSON.stringify({ vendor })
@@ -156,7 +177,7 @@ export async function updateVendor({ vendorId, token, payload }) {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
-      ...(DASHBOARD_API_KEY ? { "x-api-key": DASHBOARD_API_KEY } : {})
+      ...buildAuthHeaders(token)
     },
     credentials: "include",
     body: JSON.stringify(payload)
@@ -176,7 +197,7 @@ export async function createStall({ token, stall }) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...(DASHBOARD_API_KEY ? { "x-api-key": DASHBOARD_API_KEY } : {})
+      ...buildAuthHeaders(token)
     },
     credentials: "include",
     body: JSON.stringify({ stall })
@@ -196,7 +217,7 @@ export async function fetchStalls({ eventId, token, dedupe = true }) {
   }
   const baseUrl = getBaseUrl();
   const data = await fetchGetJsonDeduped({
-    url: `${baseUrl}/v1/Stalls/List/${encodeURIComponent(eventId)}`,
+    url: `${baseUrl}/v1/Stalls/List/Eventwise/${encodeURIComponent(eventId)}`,
     token,
     dedupe
   });

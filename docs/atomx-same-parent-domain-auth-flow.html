@@ -1,0 +1,739 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AtomX Same Parent Domain Auth Flow</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 16mm 14mm;
+    }
+
+    :root {
+      --ink: #182033;
+      --muted: #637088;
+      --line: #d9e0ea;
+      --soft: #f5f7fb;
+      --orange: #e04420;
+      --teal: #1495ab;
+      --purple: #4532c9;
+      --dark: #171717;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 12px;
+      line-height: 1.55;
+      background: #ffffff;
+    }
+
+    h1,
+    h2,
+    h3 {
+      margin: 0;
+      color: #101827;
+      line-height: 1.15;
+    }
+
+    h1 {
+      font-size: 30px;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      margin-top: 28px;
+      padding-top: 4px;
+      font-size: 19px;
+    }
+
+    h3 {
+      margin-top: 18px;
+      font-size: 14px;
+    }
+
+    p {
+      margin: 8px 0 0;
+    }
+
+    ul,
+    ol {
+      margin: 8px 0 0;
+      padding-left: 18px;
+    }
+
+    li {
+      margin: 3px 0;
+    }
+
+    code {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 11px;
+      color: #243047;
+      background: #eef2f8;
+      border-radius: 4px;
+      padding: 1px 4px;
+    }
+
+    pre {
+      margin: 10px 0 0;
+      padding: 11px 12px;
+      overflow: hidden;
+      color: #162035;
+      background: #f4f7fb;
+      border: 1px solid #dce4ef;
+      border-radius: 8px;
+      font-size: 10.4px;
+      line-height: 1.45;
+      white-space: pre-wrap;
+    }
+
+    pre code {
+      padding: 0;
+      background: transparent;
+      border-radius: 0;
+      font-size: inherit;
+    }
+
+    .cover {
+      padding: 24px 26px;
+      border: 1px solid #e4e9f1;
+      border-left: 6px solid var(--orange);
+      border-radius: 10px;
+      background:
+        linear-gradient(135deg, rgba(224, 68, 32, 0.08), transparent 45%),
+        linear-gradient(180deg, #ffffff, #f8fafc);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 18px;
+      font-weight: 800;
+      font-size: 18px;
+      color: var(--orange);
+    }
+
+    .brand-mark {
+      display: inline-flex;
+      width: 30px;
+      height: 30px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      color: white;
+      background: linear-gradient(135deg, var(--orange), var(--purple));
+      font-size: 14px;
+    }
+
+    .subtitle {
+      max-width: 620px;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .meta {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 22px;
+    }
+
+    .meta-card,
+    .callout,
+    .note,
+    .warning {
+      border: 1px solid #e0e6ef;
+      border-radius: 8px;
+      background: #ffffff;
+      padding: 10px 12px;
+    }
+
+    .meta-card strong {
+      display: block;
+      font-size: 10px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .12em;
+    }
+
+    .meta-card span {
+      display: block;
+      margin-top: 4px;
+      font-weight: 700;
+    }
+
+    .callout {
+      margin-top: 12px;
+      border-left: 4px solid var(--teal);
+      background: #f7fcfd;
+    }
+
+    .warning {
+      margin-top: 12px;
+      border-left: 4px solid var(--orange);
+      background: #fff8f4;
+    }
+
+    .note {
+      margin-top: 12px;
+      background: #f9fbff;
+    }
+
+    .section {
+      page-break-inside: avoid;
+    }
+
+    .diagram {
+      margin-top: 14px;
+      padding: 14px;
+      border: 1px solid #dfe7f0;
+      border-radius: 10px;
+      background: #fbfdff;
+    }
+
+    .diagram svg {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .pill {
+      display: inline-block;
+      margin: 2px 4px 2px 0;
+      padding: 3px 7px;
+      border-radius: 999px;
+      color: #243047;
+      background: #eef3f8;
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    .table {
+      width: 100%;
+      margin-top: 10px;
+      border-collapse: collapse;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .table th,
+    .table td {
+      padding: 8px 9px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+      text-align: left;
+    }
+
+    .table th {
+      background: #eef3f8;
+      color: #344054;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    .table tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .page-break {
+      page-break-before: always;
+    }
+
+    .footer-note {
+      margin-top: 24px;
+      color: var(--muted);
+      font-size: 10px;
+    }
+  </style>
+</head>
+<body>
+  <section class="cover">
+    <div class="brand"><span class="brand-mark">AX</span> AtomX</div>
+    <h1>Same Parent Domain Authentication Flow</h1>
+    <p class="subtitle">
+      A practical integration document for connecting new Next.js/static projects to the existing AtomX access portal, Google login, workspace selection, and selected-session API flow.
+    </p>
+    <div class="meta">
+      <div class="meta-card">
+        <strong>Portal</strong>
+        <span>portal.atomx.in</span>
+      </div>
+      <div class="meta-card">
+        <strong>Project Domains</strong>
+        <span>*.atomx.in</span>
+      </div>
+      <div class="meta-card">
+        <strong>API</strong>
+        <span>dapi-uat.atomx.in</span>
+      </div>
+    </div>
+    <div class="callout">
+      <strong>Core decision:</strong> all projects live under the same parent domain, for example <code>portal.atomx.in</code>, <code>dashboard.atomx.in</code>, <code>tag-series.atomx.in</code>, and <code>new-project.atomx.in</code>. This allows the backend to use parent-domain cookies for the selected workspace session.
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>1. Objective</h2>
+    <p>
+      The goal is to let any AtomX project use the same login and access-selection process without rebuilding Google login in every project. A user can open any project subdomain, be redirected to <code>portal.atomx.in</code> for authentication, select the correct workspace/project, and return to the project with an active selected session.
+    </p>
+    <p>
+      The new project can be created by another worker, built as an <code>out/</code> static folder, and hosted on a different subdomain, as long as the parent domain remains <code>atomx.in</code>.
+    </p>
+  </section>
+
+  <section class="section">
+    <h2>2. Domain Model</h2>
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Service</th>
+          <th>Example</th>
+          <th>Responsibility</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Access Portal</td>
+          <td><code>portal.atomx.in</code></td>
+          <td>Google login, access page, workspace/project selection, <code>/auth/select</code>, redirect back to project.</td>
+        </tr>
+        <tr>
+          <td>Dashboard</td>
+          <td><code>dashboard.atomx.in</code></td>
+          <td>Admin/event list, configuration, operations, vendor/stall/device/menu screens.</td>
+        </tr>
+        <tr>
+          <td>New Project</td>
+          <td><code>new-project.atomx.in</code></td>
+          <td>Own UI and business logic; no Google login implementation; uses AtomX session and API client.</td>
+        </tr>
+        <tr>
+          <td>Backend API</td>
+          <td><code>dapi-uat.atomx.in</code></td>
+          <td>Google auth callback, <code>/auth/select</code>, session cookie, protected APIs.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="section">
+    <h2>3. Full Flow Diagram</h2>
+    <div class="diagram">
+      <svg viewBox="0 0 980 560" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="AtomX same parent domain authentication flow">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#596579"/>
+          </marker>
+          <linearGradient id="grad" x1="0" x2="1">
+            <stop offset="0" stop-color="#e04420"/>
+            <stop offset="1" stop-color="#4532c9"/>
+          </linearGradient>
+          <style>
+            .box { fill: #fff; stroke: #d9e0ea; stroke-width: 2; rx: 12; }
+            .portal { fill: #fff8f4; stroke: #e04420; }
+            .project { fill: #f7fcfd; stroke: #1495ab; }
+            .api { fill: #f7f7ff; stroke: #4532c9; }
+            .title { font: 700 17px Inter, Arial, sans-serif; fill: #172033; }
+            .text { font: 500 13px Inter, Arial, sans-serif; fill: #536078; }
+            .num { font: 800 13px Inter, Arial, sans-serif; fill: white; }
+            .line { stroke: #596579; stroke-width: 2; fill: none; marker-end: url(#arrow); }
+            .chip { fill: url(#grad); }
+          </style>
+        </defs>
+
+        <rect x="40" y="42" width="250" height="92" class="box project"/>
+        <circle cx="66" cy="68" r="15" class="chip"/><text x="62" y="73" class="num">1</text>
+        <text x="88" y="66" class="title">User opens project</text>
+        <text x="88" y="90" class="text">new-project.atomx.in</text>
+        <text x="88" y="112" class="text">Static Next.js app loads</text>
+
+        <rect x="380" y="42" width="250" height="92" class="box project"/>
+        <circle cx="406" cy="68" r="15" class="chip"/><text x="402" y="73" class="num">2</text>
+        <text x="428" y="66" class="title">Auth guard checks session</text>
+        <text x="428" y="90" class="text">GET /auth/me or API ping</text>
+        <text x="428" y="112" class="text">credentials: include</text>
+
+        <rect x="710" y="42" width="250" height="92" class="box portal"/>
+        <circle cx="736" cy="68" r="15" class="chip"/><text x="732" y="73" class="num">3</text>
+        <text x="758" y="66" class="title">Redirect to portal</text>
+        <text x="758" y="90" class="text">portal.atomx.in</text>
+        <text x="758" y="112" class="text">?returnTo=&service=</text>
+
+        <rect x="710" y="210" width="250" height="92" class="box portal"/>
+        <circle cx="736" cy="236" r="15" class="chip"/><text x="732" y="241" class="num">4</text>
+        <text x="758" y="234" class="title">Google login</text>
+        <text x="758" y="258" class="text">Initial portal token/session</text>
+        <text x="758" y="280" class="text">Access page renders roles</text>
+
+        <rect x="380" y="210" width="250" height="92" class="box portal"/>
+        <circle cx="406" cy="236" r="15" class="chip"/><text x="402" y="241" class="num">5</text>
+        <text x="428" y="234" class="title">Select workspace/project</text>
+        <text x="428" y="258" class="text">Admin, Event, Tag Series, etc.</text>
+        <text x="428" y="280" class="text">Portal knows target service</text>
+
+        <rect x="40" y="210" width="250" height="92" class="box api"/>
+        <circle cx="66" cy="236" r="15" class="chip"/><text x="62" y="241" class="num">6</text>
+        <text x="88" y="234" class="title">POST /auth/select</text>
+        <text x="88" y="258" class="text">type + adminId/eventId</text>
+        <text x="88" y="280" class="text">Backend sets selected cookie</text>
+
+        <rect x="40" y="378" width="250" height="92" class="box api"/>
+        <circle cx="66" cy="404" r="15" class="chip"/><text x="62" y="409" class="num">7</text>
+        <text x="88" y="402" class="title">Parent-domain cookie</text>
+        <text x="88" y="426" class="text">Domain=.atomx.in</text>
+        <text x="88" y="448" class="text">HttpOnly + Secure</text>
+
+        <rect x="380" y="378" width="250" height="92" class="box portal"/>
+        <circle cx="406" cy="404" r="15" class="chip"/><text x="402" y="409" class="num">8</text>
+        <text x="428" y="402" class="title">Redirect back</text>
+        <text x="428" y="426" class="text">window.location.assign(returnTo)</text>
+        <text x="428" y="448" class="text">Selected session is active</text>
+
+        <rect x="710" y="378" width="250" height="92" class="box project"/>
+        <circle cx="736" cy="404" r="15" class="chip"/><text x="732" y="409" class="num">9</text>
+        <text x="758" y="402" class="title">Project API calls work</text>
+        <text x="758" y="426" class="text">fetch(..., credentials: include)</text>
+        <text x="758" y="448" class="text">No local login required</text>
+
+        <path class="line" d="M290 88 H380"/>
+        <path class="line" d="M630 88 H710"/>
+        <path class="line" d="M835 134 V210"/>
+        <path class="line" d="M710 256 H630"/>
+        <path class="line" d="M380 256 H290"/>
+        <path class="line" d="M165 302 V378"/>
+        <path class="line" d="M290 424 H380"/>
+        <path class="line" d="M630 424 H710"/>
+      </svg>
+    </div>
+  </section>
+
+  <section class="section page-break">
+    <h2>4. Token and Cookie Flow</h2>
+    <p>
+      There are two different auth moments: the initial login session and the selected workspace/project session. The selected session is the one that should authorize project APIs.
+    </p>
+    <ol>
+      <li><strong>Google login:</strong> user authenticates once through <code>portal.atomx.in</code>.</li>
+      <li><strong>Initial token/session:</strong> backend lets the portal render the access page and available roles.</li>
+      <li><strong>Workspace selection:</strong> portal sends <code>POST /auth/select</code> with the selected role context.</li>
+      <li><strong>Selected session:</strong> backend updates the session cookie to contain selected context such as <code>adminId</code>, <code>eventId</code>, or <code>type</code>.</li>
+      <li><strong>Project APIs:</strong> the destination project sends API calls with <code>credentials: "include"</code>; the backend reads the selected cookie.</li>
+    </ol>
+
+    <div class="warning">
+      <strong>Important:</strong> if the cookie is <code>HttpOnly</code>, frontend code cannot read it with <code>document.cookie</code>. That is good. The project should validate login by calling a session-check endpoint like <code>/auth/me</code>, not by reading the cookie directly.
+    </div>
+
+    <h3>Required Backend Cookie Settings</h3>
+    <pre><code>Domain=.atomx.in
+Path=/
+Secure
+HttpOnly
+SameSite=None</code></pre>
+
+    <h3>Required CORS Settings</h3>
+    <p>
+      The API must allow credentialed requests from all approved project subdomains. Do not use wildcard CORS with credentials.
+    </p>
+    <pre><code>Allowed origins:
+https://portal.atomx.in
+https://dashboard.atomx.in
+https://tag-series.atomx.in
+https://new-project.atomx.in
+
+Allow credentials: true</code></pre>
+  </section>
+
+  <section class="section">
+    <h2>5. Redirect Between Subdomains</h2>
+    <p>
+      A new project should redirect unauthenticated users to the portal with a <code>returnTo</code> parameter. The portal should preserve this return URL through login and workspace selection.
+    </p>
+
+    <h3>Project to Portal</h3>
+    <pre><code>https://portal.atomx.in?returnTo=https%3A%2F%2Fnew-project.atomx.in%2F&amp;service=new-project</code></pre>
+
+    <h3>Portal Back to Project</h3>
+    <pre><code>https://new-project.atomx.in/</code></pre>
+
+    <p>
+      Because all apps share <code>.atomx.in</code>, the selected cookie set by the backend is available to the project subdomain when the project calls the API.
+    </p>
+  </section>
+
+  <section class="section">
+    <h2>6. New Project Implementation Guide</h2>
+    <p>
+      Give the following small integration kit to the worker building a new AtomX project. The project does not need Google login code. It only needs an auth guard and an API helper.
+    </p>
+
+    <table class="table">
+      <thead>
+        <tr>
+          <th>File</th>
+          <th>Where to place</th>
+          <th>Purpose</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>src/lib/atomxAuthConfig.js</code></td>
+          <td>New project</td>
+          <td>Portal URL, API URL, service key, login route settings.</td>
+        </tr>
+        <tr>
+          <td><code>src/lib/atomxApiClient.js</code></td>
+          <td>New project</td>
+          <td>Central API helper using <code>credentials: "include"</code>.</td>
+        </tr>
+        <tr>
+          <td><code>src/components/AtomxAuthGuard.jsx</code></td>
+          <td>New project</td>
+          <td>Client-side session check and redirect to portal.</td>
+        </tr>
+        <tr>
+          <td><code>src/app/layout.jsx</code> or <code>pages/_app.jsx</code></td>
+          <td>New project</td>
+          <td>Wrap the application with <code>AtomxAuthGuard</code>.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="section page-break">
+    <h2>7. Code: Auth Config</h2>
+    <pre><code>// src/lib/atomxAuthConfig.js
+export const ATOMX_AUTH = {
+  portalUrl: "https://portal.atomx.in",
+  apiBaseUrl: "https://dapi-uat.atomx.in",
+  service: "new-project",
+  sessionCheckPath: "/auth/me"
+};</code></pre>
+
+    <h2>8. Code: API Client</h2>
+    <pre><code>// src/lib/atomxApiClient.js
+import { ATOMX_AUTH } from "./atomxAuthConfig";
+
+export async function atomxFetch(path, options = {}) {
+  const url = path.startsWith("http")
+    ? path
+    : `${ATOMX_AUTH.apiBaseUrl}${path}`;
+
+  const response = await fetch(url, {
+    ...options,
+    credentials: "include",
+    headers: {
+      ...(options.headers || {})
+    }
+  });
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => response.statusText);
+    throw new Error(text || `Request failed (${response.status})`);
+  }
+
+  return response.json();
+}</code></pre>
+
+    <h2>9. Code: Redirect Helper</h2>
+    <pre><code>// src/lib/atomxRedirect.js
+import { ATOMX_AUTH } from "./atomxAuthConfig";
+
+export function redirectToAtomxPortal() {
+  if (typeof window === "undefined") return;
+
+  const url = new URL(ATOMX_AUTH.portalUrl);
+  url.searchParams.set("returnTo", window.location.href);
+  url.searchParams.set("service", ATOMX_AUTH.service);
+
+  window.location.assign(url.toString());
+}</code></pre>
+
+    <h2>10. Code: Auth Guard</h2>
+    <pre><code>// src/components/AtomxAuthGuard.jsx
+"use client";
+
+import { useEffect, useState } from "react";
+import { ATOMX_AUTH } from "../lib/atomxAuthConfig";
+import { atomxFetch } from "../lib/atomxApiClient";
+import { redirectToAtomxPortal } from "../lib/atomxRedirect";
+
+export default function AtomxAuthGuard({ children }) {
+  const [status, setStatus] = useState("checking");
+
+  useEffect(() => {
+    let active = true;
+
+    async function checkSession() {
+      try {
+        await atomxFetch(ATOMX_AUTH.sessionCheckPath);
+        if (active) setStatus("ready");
+      } catch {
+        if (!active) return;
+        setStatus("redirecting");
+        redirectToAtomxPortal();
+      }
+    }
+
+    checkSession();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  if (status !== "ready") {
+    return null; // or show AtomX loader
+  }
+
+  return children;
+}</code></pre>
+  </section>
+
+  <section class="section">
+    <h2>11. Where to Use the Guard</h2>
+    <h3>Next.js App Router</h3>
+    <pre><code>// src/app/layout.jsx
+import AtomxAuthGuard from "../components/AtomxAuthGuard";
+
+export default function RootLayout({ children }) {
+  return (
+    &lt;html lang="en"&gt;
+      &lt;body&gt;
+        &lt;AtomxAuthGuard&gt;
+          {children}
+        &lt;/AtomxAuthGuard&gt;
+      &lt;/body&gt;
+    &lt;/html&gt;
+  );
+}</code></pre>
+
+    <h3>Next.js Pages Router</h3>
+    <pre><code>// src/pages/_app.jsx
+import AtomxAuthGuard from "../components/AtomxAuthGuard";
+
+export default function App({ Component, pageProps }) {
+  return (
+    &lt;AtomxAuthGuard&gt;
+      &lt;Component {...pageProps} /&gt;
+    &lt;/AtomxAuthGuard&gt;
+  );
+}</code></pre>
+  </section>
+
+  <section class="section">
+    <h2>12. Access Portal Responsibilities</h2>
+    <p>
+      The portal must accept <code>returnTo</code> and <code>service</code> in the URL, complete login if needed, then perform workspace selection.
+    </p>
+    <ol>
+      <li>Read <code>returnTo</code> from URL and sanitize it.</li>
+      <li>Run Google login if there is no active portal session.</li>
+      <li>Show access/workspace cards from the decoded roles.</li>
+      <li>When user selects the target project/workspace, call <code>POST /auth/select</code>.</li>
+      <li>Backend sets selected session cookie on <code>.atomx.in</code>.</li>
+      <li>Redirect to <code>returnTo</code>.</li>
+    </ol>
+
+    <h3>Portal Selection Request</h3>
+    <pre><code>POST https://dapi-uat.atomx.in/auth/select
+credentials: include
+body:
+{
+  "type": "cashless",
+  "eventId": 1840
+}
+
+or:
+{
+  "type": "admin",
+  "adminId": 45
+}</code></pre>
+  </section>
+
+  <section class="section page-break">
+    <h2>13. API Call Pattern Inside New Project</h2>
+    <p>
+      All project API calls must use the shared helper or at least include <code>credentials: "include"</code>.
+    </p>
+    <pre><code>import { atomxFetch } from "./lib/atomxApiClient";
+
+export async function loadEvents() {
+  return atomxFetch("/v1/Events/List");
+}
+
+export async function loadStalls(eventId) {
+  return atomxFetch(`/v1/Stalls/List/Eventwise/${eventId}`);
+}</code></pre>
+
+    <div class="note">
+      <strong>Do not build Google login in the new project.</strong> The new project should only check session, redirect to portal when needed, and use AtomX APIs with credentials.
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>14. Static Export Notes</h2>
+    <p>
+      If the new project is exported as a static <code>out/</code> folder, the auth guard must run on the client side. This is expected. The static app cannot know the session at build time.
+    </p>
+    <ul>
+      <li>Use a client component for auth check.</li>
+      <li>Do not call protected APIs during static generation.</li>
+      <li>Show a loader while checking session.</li>
+      <li>If unauthorized, redirect to <code>portal.atomx.in</code>.</li>
+      <li>After returning, API calls work through the parent-domain cookie.</li>
+    </ul>
+  </section>
+
+  <section class="section">
+    <h2>15. Security Checklist</h2>
+    <ul>
+      <li>Use <code>HttpOnly</code> cookies for real session tokens.</li>
+      <li>Use <code>Secure</code> cookies in production.</li>
+      <li>Use <code>SameSite=None</code> for cross-subdomain credential requests when needed.</li>
+      <li>Set cookie <code>Domain=.atomx.in</code>.</li>
+      <li>Sanitize <code>returnTo</code>; allow only approved <code>*.atomx.in</code> destinations.</li>
+      <li>Do not put long-lived secrets in query params.</li>
+      <li>Allow only known project subdomains in backend CORS.</li>
+      <li>Clear selected session on logout.</li>
+    </ul>
+  </section>
+
+  <section class="section">
+    <h2>16. Final Worker Handoff Summary</h2>
+    <p>
+      Give this summary to anyone building a new project:
+    </p>
+    <ol>
+      <li>Host the app on a subdomain under <code>atomx.in</code>.</li>
+      <li>Do not implement Google login.</li>
+      <li>Add <code>AtomxAuthGuard</code> at the root of the app.</li>
+      <li>In the guard, call <code>/auth/me</code> or a session-check API using <code>credentials: "include"</code>.</li>
+      <li>If unauthorized, redirect to <code>portal.atomx.in?returnTo=currentUrl&amp;service=projectKey</code>.</li>
+      <li>Use <code>atomxFetch</code> for all AtomX backend calls.</li>
+      <li>Build the app normally and deploy the <code>out/</code> folder to its subdomain.</li>
+    </ol>
+    <p class="footer-note">
+      Document generated for AtomX Portal V1 monorepo integration. Keep this file in sync with backend cookie settings and access portal redirect behavior.
+    </p>
+  </section>
+</body>
+</html>

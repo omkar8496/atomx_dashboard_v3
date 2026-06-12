@@ -179,19 +179,7 @@ export default function LoginScreen({
       return;
     }
 
-    let cancelled = false;
-    import("../../../../DEV_TOKEN_TEMP.js")
-      .then((mod) => {
-        if (cancelled) return;
-        if (mod?.DEV_PORTAL_TOKEN) {
-          setDevToken(mod.DEV_PORTAL_TOKEN);
-        }
-      })
-      .catch(() => setDevToken(null));
-
-    return () => {
-      cancelled = true;
-    };
+    setDevToken(process.env.NEXT_PUBLIC_DEV_PORTAL_TOKEN || null);
   }, [status]);
 
   useEffect(() => {

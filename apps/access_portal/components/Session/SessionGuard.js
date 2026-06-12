@@ -64,6 +64,8 @@ function formatCountdown(ms) {
 function clearPortalAuthCache() {
   if (typeof window === "undefined") return;
   window.localStorage.removeItem("atomx.portal.token");
+  window.localStorage.removeItem("atomx.dashboard.token");
+  window.localStorage.removeItem("atomx.dashboard.store");
   const keysToRemove = [];
   for (let i = 0; i < window.localStorage.length; i += 1) {
     const key = window.localStorage.key(i);

@@ -11,10 +11,11 @@ const moduleLinks = {
   "tag-series": process.env.NEXT_PUBLIC_TAG_SERIES_URL ?? "/tag_series"
 };
 const dashboardBase = (process.env.NEXT_PUBLIC_DASHBOARD_URL ?? "").replace(/\/$/, "");
-const dashboardConfigPath = "/Config/operations/";
+const dashboardConfigPath = "/Config/";
 const REAUTH_CONTEXT_KEY = "atomx.portal.reauth";
 const REAUTH_CONTEXT_FALLBACK_TTL_MS = 24 * 60 * 60 * 1000;
 const BOOTSTRAP_TOKEN_COOKIE = "atomx_bootstrap_token";
+const DASHBOARD_SELECTED_TOKEN_KEY = "atomx.dashboard.token";
 const DASHBOARD_API_KEY =
   process.env.NEXT_PUBLIC_DASHBOARD_API_KEY ??
   "pZebJlF_.dv3_prod.Iu7Zitu3X30C2R6-bVZtRXRu0DeiHY-j";
@@ -227,7 +228,64 @@ function clearBootstrapTokenCookie() {
   document.cookie = `${BOOTSTRAP_TOKEN_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`;
 }
 
-async function fetchSelectedEventDetails({ apiBase, eventId }) {
+function findTokenInResponse(value, seen = new Set(), allowRawString = true) {
+  if (!value) return null;
+  if (typeof value === "string") {
+    return allowRawString && value.split(".").length >= 3 ? value : null;
+  }
+  if (typeof value !== "object" || seen.has(value)) return null;
+  seen.add(value);
+
+  const tokenKeys = [
+    "token",
+    "accessToken",
+    "access_token",
+    "jwt",
+    "idToken",
+    "id_token",
+    "authToken",
+    "auth_token",
+    "bearerToken",
+    "bearer_token",
+    "selectedToken",
+    "selected_token",
+    "sessionToken",
+    "session_token"
+  ];
+  for (const key of tokenKeys) {
+    const token = value[key];
+    if (typeof token === "string" && token) return token;
+  }
+
+  for (const key of ["data", "result", "value"]) {
+    const token = value[key];
+    if (typeof token === "string" && token.split(".").length >= 3) return token;
+  }
+
+  for (const item of Object.values(value)) {
+    const token = findTokenInResponse(item, seen, false);
+    if (token) return token;
+  }
+  return null;
+}
+
+function persistSelectedAuthToken(token, { type, service }) {
+  if (typeof window === "undefined" || !token) return;
+  const keys = new Set([
+    DASHBOARD_SELECTED_TOKEN_KEY,
+    type ? `atomx.auth.${type}` : null,
+    type ? `atomx.auth.${normalizeRoleType(type)}` : null,
+    service ? `atomx.auth.${service}` : null
+  ]);
+  if (service === "tag-series") {
+    keys.add("atomx.auth.tag_series");
+  }
+  keys.forEach((key) => {
+    if (key) window.localStorage.setItem(key, token);
+  });
+}
+
+async function fetchSelectedEventDetails({ apiBase, eventId, token }) {
   if (!apiBase || !eventId) {
     throw new Error("Missing data to load event details.");
   }
@@ -237,7 +295,8 @@ async function fetchSelectedEventDetails({ apiBase, eventId }) {
     {
       method: "GET",
       headers: {
-        ...(DASHBOARD_API_KEY ? { "x-api-key": DASHBOARD_API_KEY } : {})
+        ...(DASHBOARD_API_KEY ? { "x-api-key": DASHBOARD_API_KEY } : {}),
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
       },
       credentials: "include",
       cache: "no-store"
@@ -251,6 +310,123 @@ async function fetchSelectedEventDetails({ apiBase, eventId }) {
 
   const data = await res.json().catch(() => null);
   return data?.event ?? data?.data?.event ?? null;
+}
+
+function formatSectionCount(count) {
+  return String(count).padStart(2, "0");
+}
+
+function RoleGlyph({ type }) {
+  const normalized = normalizeRoleType(type);
+  const iconClass = "h-3.5 w-3.5";
+
+  if (normalized === "admin") {
+    return (
+      <svg
+        viewBox="0 0 24 24"
+        className={iconClass}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden
+      >
+        <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" />
+        <path d="M4 21a8 8 0 0 1 16 0" />
+      </svg>
+    );
+  }
+
+  if (normalized.includes("cashless")) {
+    return (
+      <svg
+        viewBox="0 0 24 24"
+        className={iconClass}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden
+      >
+        <rect x="4" y="6" width="16" height="12" rx="2" />
+        <path d="M4 10h16" />
+        <path d="M8 15h4" />
+      </svg>
+    );
+  }
+
+  if (normalized.includes("inventory")) {
+    return (
+      <svg
+        viewBox="0 0 24 24"
+        className={iconClass}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden
+      >
+        <path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z" />
+        <path d="m4.5 8 7.5 4 7.5-4" />
+        <path d="M12 12v8.5" />
+      </svg>
+    );
+  }
+
+  if (normalized.includes("tag")) {
+    return (
+      <svg
+        viewBox="0 0 24 24"
+        className={iconClass}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden
+      >
+        <path d="M20 13 13 20 4 11V4h7l9 9Z" />
+        <path d="M7.5 7.5h.01" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={iconClass}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.9"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <rect x="5" y="5" width="14" height="14" rx="3" />
+      <path d="M9 9h6v6H9z" />
+    </svg>
+  );
+}
+
+function OpenArrowGlyph() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="h-3.5 w-3.5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M7 17 17 7" />
+      <path d="M9 7h8v8" />
+    </svg>
+  );
 }
 
 export default function AccessPage() {
@@ -338,10 +514,6 @@ export default function AccessPage() {
       initials: getInitials(profile.name),
       picture: profile.picture ?? profile.image ?? null
     };
-  }, [profile]);
-
-  const sessionExpiry = useMemo(() => {
-    return formatSessionExpiry(profile?.exp);
   }, [profile]);
 
   const roleCards = useMemo(() => {
@@ -456,7 +628,18 @@ export default function AccessPage() {
         const text = await res.text();
         throw new Error(text || `Request failed (${res.status})`);
       }
-      await res.json().catch(() => null);
+      const selectionData = await res.json().catch(() => null);
+      const selectedToken = findTokenInResponse(selectionData);
+      const service = permission.service ?? mapServiceParam(apiType);
+      if (selectedToken) {
+        persistSelectedAuthToken(selectedToken, {
+          type: apiType,
+          service
+        });
+      } else if (typeof window !== "undefined") {
+        window.localStorage.removeItem(DASHBOARD_SELECTED_TOKEN_KEY);
+        window.localStorage.removeItem("atomx.dashboard.store");
+      }
       clearBootstrapTokenCookie();
 
       if (typeof window !== "undefined") {
@@ -467,14 +650,15 @@ export default function AccessPage() {
       if (shouldFetchEventDetails) {
         eventDetails = await fetchSelectedEventDetails({
           apiBase,
-          eventId
+          eventId,
+          token: selectedToken
         });
       }
 
       capturePostHogEvent("module_selected", {
         app: "access_portal",
         user_email: userEmail,
-        service: permission.service ?? mapServiceParam(apiType),
+        service,
         module_type: apiType ?? null,
         admin_id: adminId ?? null,
         event_id: eventId ?? null,
@@ -490,7 +674,8 @@ export default function AccessPage() {
             window.opener.postMessage(
               {
                 type: "atomx.auth",
-                service: permission.service ?? permission.type,
+                service: service ?? permission.type,
+                token: selectedToken,
                 eventId
               },
               target.origin
@@ -501,8 +686,11 @@ export default function AccessPage() {
             console.error("Failed to post auth token", err);
           }
         }
-        if (permission.service) {
-          target.searchParams.set("service", permission.service);
+        if (service) {
+          target.searchParams.set("service", service);
+        }
+        if (selectedToken) {
+          target.searchParams.set("token", selectedToken);
         }
         if (shouldFetchEventDetails) {
           const resolvedEventId = eventDetails?.id ?? eventId;
@@ -602,6 +790,8 @@ export default function AccessPage() {
     if (typeof window !== "undefined") {
       try {
         window.localStorage.removeItem("atomx.portal.token");
+        window.localStorage.removeItem(DASHBOARD_SELECTED_TOKEN_KEY);
+        window.localStorage.removeItem("atomx.dashboard.store");
         window.localStorage.removeItem(REAUTH_CONTEXT_KEY);
         const keysToRemove = [];
         for (let i = 0; i < window.localStorage.length; i += 1) {
@@ -652,87 +842,93 @@ export default function AccessPage() {
     });
   };
 
+  const renderSectionHeader = (count, label) => (
+    <div className="flex items-center gap-3">
+      <span className="flex h-7 min-w-7 items-center justify-center rounded-full bg-[#1f1f1f] px-2 text-[0.7rem] font-semibold text-white">
+        {formatSectionCount(count)}
+      </span>
+      <h2 className="m-0 text-[1rem] font-medium text-[#1d2940]">{label}</h2>
+    </div>
+  );
+
   const renderRoleCards = (roles, emptyLabel, options = {}) => {
     const { onCardClick, showOpenIcon = false } = options;
     const isAdminSection = options.section === "admin";
+    const gridClass = isAdminSection
+      ? "grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(280px,370px))] max-[640px]:grid-cols-1"
+      : "grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(205px,215px))] max-[500px]:grid-cols-1";
+
     if (!roles.length) {
       return (
-        <div className="rounded-lg border border-[#e8d9d3] bg-white px-5 py-4 text-sm text-slate-600 shadow-[0_8px_18px_rgba(15,23,42,0.08)]">
+        <div className="rounded-lg border border-[#ececec] bg-white px-5 py-4 text-sm text-[#58677f] shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
           {emptyLabel}
         </div>
       );
     }
 
     return (
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <section className={gridClass}>
         {roles.map((role) => (
-          <article
+          <button
             key={role.id}
-            className={`group rounded-lg border border-[#e8d9d3] bg-white px-5 py-4 shadow-[0_8px_18px_rgba(15,23,42,0.08)] transition hover:border-[#1495ab]/40 hover:bg-[#f8fbfd] hover:shadow-[0_12px_22px_rgba(15,23,42,0.12)] ${
-              onCardClick ? "cursor-pointer" : ""
+            type="button"
+            className={`group relative min-h-[98px] overflow-visible rounded-lg border border-transparent bg-white p-0 text-left shadow-[0_10px_20px_rgba(15,23,42,0.055)] transition duration-200 ease-out hover:-translate-y-1.5 hover:shadow-[0_16px_28px_rgba(47,30,199,0.10),0_10px_18px_rgba(224,68,32,0.06)] ${
+              onCardClick ? "cursor-pointer" : "cursor-default"
             }`}
-            onClick={
-              onCardClick
-                ? () => {
-                    if (!role?.type) return;
-                    onCardClick(role);
-                  }
-                : undefined
-            }
+            style={{
+              background:
+                "linear-gradient(#fff, #fff) padding-box, linear-gradient(135deg, rgba(224,68,32,0.35), rgba(47,30,199,0.32)) border-box"
+            }}
+            onClick={() => {
+              if (!onCardClick || !role?.type) return;
+              onCardClick(role);
+            }}
+            disabled={!onCardClick}
+            aria-label={`Open ${role.type}`}
           >
-            <div className="flex items-start justify-between gap-3 text-sm font-semibold text-slate-700">
-              <div className="flex flex-col gap-1">
-                <span className="uppercase tracking-[0.12em] text-slate-500">
-                  {role.type}
-                </span>
-                <span className="text-xs font-medium text-slate-500">
-                  {role.expiryAt ? formatSessionExpiry(role.expiryAt) : "No expiry"}
-                </span>
-              </div>
-              {showOpenIcon ? (
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 text-slate-500 opacity-0 transition group-hover:opacity-100"
-                    aria-label="Open role"
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      className="h-4 w-4"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden
-                    >
-                      <path d="M7 17l10-10" />
-                      <path d="M9 7h8v8" />
-                    </svg>
-                  </button>
+            <span
+              className="pointer-events-none absolute inset-x-7 -bottom-3 h-7 rounded-full bg-[rgba(47,30,199,0.09)] opacity-0 blur-xl transition duration-200 group-hover:opacity-100"
+              aria-hidden
+            />
+            <div className="relative flex h-full min-h-[96px] flex-col px-2.5 py-2">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex min-w-0 items-start gap-2">
+                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[linear-gradient(135deg,#e04420,#2f1ec7)] text-white">
+                    <RoleGlyph type={role.type} />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="m-0 truncate text-[0.58rem] font-semibold uppercase tracking-[0.2em] text-[#72809b]">
+                      {role.type}
+                    </p>
+                    <p className="m-0 mt-0.5 truncate text-[0.62rem] font-medium text-[#71809a]">
+                      {role.expiryAt ? formatSessionExpiry(role.expiryAt) : "No expiry"}
+                    </p>
+                  </div>
                 </div>
-              ) : null}
-            </div>
-            <div className="mt-3 h-px bg-slate-200" />
-            <div className="mt-3 grid gap-2 text-sm text-slate-600">
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-[0.7rem] uppercase tracking-[0.2em] text-slate-400">
-                  {isAdminSection ? "Admin Name" : "Event Name"}
-                </span>
-                <span className="text-sm font-semibold text-slate-700">
-                  {isAdminSection ? role.adminName || "—" : role.eventName || "—"}
-                </span>
+                {showOpenIcon ? (
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-[#e2e2e2] bg-white text-[#262626] shadow-[0_5px_10px_rgba(15,23,42,0.05)] transition duration-200 group-hover:border-[#e04420] group-hover:text-[#e04420]">
+                    <OpenArrowGlyph />
+                  </span>
+                ) : null}
               </div>
-              <div className="flex items-center justify-between gap-3">
-                <span className="text-[0.7rem] uppercase tracking-[0.2em] text-slate-400">
+
+              <div className="ml-8 mt-1.5 min-w-0">
+                <p className="m-0 truncate text-[0.74rem] font-medium text-[#262626]">
+                  {isAdminSection ? role.adminName || "—" : role.eventName || "—"}
+                </p>
+                <div className="mt-1.5 h-px bg-[#ececec]" />
+              </div>
+
+              <div className="ml-8 mt-auto flex items-center justify-between gap-2 pt-1.5">
+                <span className="text-[0.54rem] font-semibold uppercase tracking-[0.2em] text-[#a0acc0]">
                   {isAdminSection ? "Admin Id" : "Event Id"}
                 </span>
-                <span className="text-sm font-semibold text-slate-700">
+                <span className="text-[0.74rem] font-semibold text-[#22304a]">
                   {isAdminSection ? role.adminId ?? "—" : role.eventId ?? "—"}
                 </span>
               </div>
             </div>
-          </article>
+          </button>
         ))}
       </section>
     );
@@ -747,19 +943,19 @@ export default function AccessPage() {
           content="Pick the AtomX module you need in one click."
         />
       </Head>
-      <main className="mx-auto flex w-full flex-col gap-3 px-4 pb-10 md:px-6">
+      <main className="min-h-[calc(100vh-58px)] w-full bg-[#f7f7f8] px-4 pb-12 md:px-5">
         <HeaderBar
           user={user}
           onSignOut={handleSignOut}
-          sessionLabel={sessionExpiry ? `Session expires ${sessionExpiry}` : null}
+          pageTitle="Workspace"
         />
 
         {status === "error" && !hideErrorBanner && (
-          <div className="relative rounded-2xl border border-red-200 bg-red-50 px-5 py-4 pr-12 text-sm text-red-700">
+          <div className="relative mt-5 rounded-lg border border-red-200 bg-red-50 px-5 py-4 pr-12 text-sm text-red-700">
             {error}
             <button
               type="button"
-              className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full border border-red-200 text-red-500 transition hover:bg-red-100"
+              className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-md border border-red-200 text-red-500 transition hover:bg-red-100"
               onClick={() => setHideErrorBanner(true)}
               aria-label="Dismiss error"
             >
@@ -781,11 +977,11 @@ export default function AccessPage() {
         )}
 
         {status === "empty" && !hideEmptyBanner && (
-          <div className="relative rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 pr-12 text-sm text-amber-700">
+          <div className="relative mt-5 rounded-lg border border-amber-200 bg-amber-50 px-5 py-4 pr-12 text-sm text-amber-700">
             No active session detected. Please log in first.
             <button
               type="button"
-              className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full border border-amber-200 text-amber-600 transition hover:bg-amber-100"
+              className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-md border border-amber-200 text-amber-600 transition hover:bg-amber-100"
               onClick={() => setHideEmptyBanner(true)}
               aria-label="Dismiss notice"
             >
@@ -806,34 +1002,34 @@ export default function AccessPage() {
           </div>
         )}
 
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="mt-6">
           <WelcomePanel user={user} actions={highlightActions} />
         </div>
 
-        {roleCards.length ? (
-          <div className="flex flex-col gap-6">
-            <div className="flex items-center gap-4">
-              <h2 className="text-lg font-semibold text-slate-800">Admin</h2>
-              <div className="h-px flex-1 bg-slate-300" />
-            </div>
-            {renderRoleCards(adminRoles, "No admin roles assigned yet.", {
-              onCardClick: handleAdminRoleClick,
-              showOpenIcon: true,
-              section: "admin"
-            })}
+        <div className="mt-4 h-px w-full bg-[#dddddd]" />
 
-            <div className="flex items-center gap-4">
-              <h2 className="text-lg font-semibold text-slate-800">Events</h2>
-              <div className="h-px flex-1 bg-slate-300" />
+        {roleCards.length ? (
+          <div className="mt-5 flex flex-col gap-7">
+            <div className="flex flex-col gap-3">
+              {renderSectionHeader(adminRoles.length, "Admin Workspaces")}
+              {renderRoleCards(adminRoles, "No admin roles assigned yet.", {
+                onCardClick: handleAdminRoleClick,
+                showOpenIcon: true,
+                section: "admin"
+              })}
             </div>
-            {renderRoleCards(eventRoles, "No event roles assigned yet.", {
-              onCardClick: handleEventRoleClick,
-              showOpenIcon: true,
-              section: "event"
-            })}
+
+            <div className="flex flex-col gap-3">
+              {renderSectionHeader(eventRoles.length, "Events")}
+              {renderRoleCards(eventRoles, "No event roles assigned yet.", {
+                onCardClick: handleEventRoleClick,
+                showOpenIcon: true,
+                section: "event"
+              })}
+            </div>
           </div>
         ) : (
-          <div className="rounded-lg border border-[#e8d9d3] bg-white px-5 py-4 text-sm text-slate-600 shadow-[0_8px_18px_rgba(15,23,42,0.08)]">
+          <div className="mt-6 rounded-lg border border-[#ececec] bg-white px-5 py-4 text-sm text-[#58677f] shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
             No roles assigned yet.
           </div>
         )}

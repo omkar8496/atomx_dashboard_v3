@@ -25,6 +25,15 @@ function mapServiceParam(type) {
   return normalized || null;
 }
 
+function formatRole(value, long = false) {
+  const raw = String(value || "member").trim();
+  if (!raw) return long ? "Member" : "Member";
+  if (raw.toLowerCase() === "admin") return long ? "Administrator" : "Admin";
+  return raw
+    .replace(/[-_]+/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
 function coerceId(value) {
   if (value === null || value === undefined || value === "") return null;
   const num = Number(value);
@@ -89,6 +98,7 @@ function getLoginUrl(returnTo) {
 function clearAuthCache() {
   if (typeof window === "undefined") return;
   window.localStorage.removeItem("atomx.portal.token");
+  window.localStorage.removeItem("atomx.dashboard.token");
   window.localStorage.removeItem("atomx.dashboard.store");
   const keysToRemove = [];
   for (let i = 0; i < window.localStorage.length; i += 1) {
@@ -164,8 +174,11 @@ const SERVICES = [
 
 export default function ProfileMenu({
   initials = "OD",
+  name = "Omkar",
   role = "Admin",
-  email = "design@atomx.in"
+  email = "design@atomx.in",
+  picture = null,
+  variant = "event"
 }) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
@@ -175,6 +188,7 @@ export default function ProfileMenu({
   const selectedService = useDashboardStore((state) => state.selectedService);
   const setToken = useDashboardStore((state) => state.setToken);
   const setSelectedService = useDashboardStore((state) => state.setSelectedService);
+  const isPortalVariant = variant === "portal";
 
   useEffect(() => {
     const handler = (event) => {
@@ -231,16 +245,43 @@ export default function ProfileMenu({
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="flex h-9 items-center gap-2 rounded-full bg-white/18 px-3 text-xs font-semibold text-white ring-1 ring-white/25"
+        className={
+          isPortalVariant
+            ? "flex h-[42px] items-center gap-2 rounded-lg border border-[#e8e8e8] bg-white px-2.5 text-left text-[#202020] shadow-[0_5px_14px_rgba(15,23,42,0.08)] transition hover:-translate-y-[1px] hover:shadow-[0_8px_18px_rgba(15,23,42,0.12)]"
+            : "flex h-9 items-center gap-2 rounded-full bg-white/18 px-3 text-xs font-semibold text-white ring-1 ring-white/25"
+        }
         aria-haspopup="menu"
         aria-expanded={open}
       >
-        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-white text-[11px] font-bold text-[#258d9c]">
-          {initials}
+        {isPortalVariant ? (
+          <div className="hidden min-w-0 flex-col leading-tight sm:flex">
+            <span className="max-w-[6.5rem] truncate text-[0.72rem] font-medium text-[#6c6c6c]">
+              {formatRole(role)}
+            </span>
+            <span className="max-w-[7rem] truncate text-[0.86rem] font-semibold text-[#202020]">
+              {name}
+            </span>
+          </div>
+        ) : null}
+        <span
+          className={
+            isPortalVariant
+              ? "flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg bg-[linear-gradient(135deg,#e04420,#2f1ec7)] text-[0.85rem] font-semibold text-white"
+              : "flex h-7 w-7 items-center justify-center rounded-full bg-white text-[11px] font-bold text-[#258d9c]"
+          }
+        >
+          {picture && isPortalVariant ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={picture} alt={name} className="h-full w-full object-cover" />
+          ) : (
+            initials
+          )}
         </span>
         <svg
           viewBox="0 0 24 24"
-          className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`}
+          className={`h-4 w-4 transition-transform ${
+            open ? "rotate-180" : ""
+          } ${isPortalVariant ? "text-[#8a8a8a]" : ""}`}
           fill="none"
           stroke="currentColor"
           strokeWidth="2.2"
@@ -249,7 +290,37 @@ export default function ProfileMenu({
         </svg>
       </button>
 
-      {open && (
+      {open && isPortalVariant && (
+        <div className="absolute right-0 top-full z-50 mt-2 w-[236px] rounded-lg border border-[#eeeeee] bg-white p-2.5 shadow-[0_20px_44px_rgba(15,23,42,0.14)]">
+          <div className="flex items-center gap-2.5 px-1 py-1">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[linear-gradient(135deg,#e04420,#2f1ec7)] text-sm font-semibold text-white">
+              {picture ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={picture} alt={name} className="h-full w-full object-cover" />
+              ) : (
+                initials
+              )}
+            </div>
+            <div className="min-w-0 leading-tight">
+              <p className="m-0 truncate text-[0.9rem] font-semibold text-[#202020]">
+                {name}
+              </p>
+              <small className="text-[0.74rem] font-medium text-[#8d8d8d]">
+                {formatRole(role, true)}
+              </small>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="mt-2 w-full rounded-md bg-[#1f1f1f] px-3 py-2.5 text-left text-[0.84rem] font-semibold text-white transition hover:bg-black"
+            onClick={handleLogout}
+          >
+            Logout
+          </button>
+        </div>
+      )}
+
+      {open && !isPortalVariant && (
         <div className="absolute right-0 top-full z-50 mt-3 w-72 rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_18px_40px_rgba(15,23,42,0.18)]">
           <div className="flex items-start justify-between">
             <div>

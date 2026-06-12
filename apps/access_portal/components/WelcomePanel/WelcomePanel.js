@@ -1,12 +1,15 @@
 export function WelcomePanel({ user, actions = [] }) {
   return (
-    <section className="mt-1 mb-2 flex flex-col gap-1">
+    <section className="flex flex-col gap-1">
       <div>
-        <h1 className="m-0 text-[2rem] font-extrabold leading-tight text-slate-900">
-          Welcome {user.name}
+        <h1 className="m-0 text-[1.55rem] font-semibold leading-tight text-[#10182b] md:text-[1.75rem]">
+          <span className="bg-[linear-gradient(135deg,#e04420,#2f1ec7)] bg-clip-text text-transparent">
+            Welcome
+          </span>
+          , {user.name}!
         </h1>
-        <p className="m-0 pt-1 text-slate-600">
-          Choose a module to jump straight into your workspace.
+        <p className="m-0 pt-1 text-[0.88rem] font-normal text-[#58677f]">
+          Choose where you want to continue.
         </p>
       </div>
       {actions.length > 0 && (

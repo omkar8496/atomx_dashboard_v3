@@ -44,8 +44,11 @@ export const useDashboardStore = create(
           set({ token: null, profile: null });
           return;
         }
-        if (get().token === token) return;
         const decoded = safeDecode(token);
+        if (get().token === token) {
+          set({ profile: decoded });
+          return;
+        }
         set({ token, profile: decoded });
       },
       setEventMeta: (meta) => {

@@ -44,18 +44,3 @@ apps.forEach((appName) => {
     }
   });
 });
-
-// Manual sync for accessx
-const accessxDir = path.join(appsDir, "livelink", "accessx");
-if (fs.existsSync(accessxDir)) {
-  console.log("\n➜ Syncing assets for accessx");
-  shareMap.forEach(({ source, target }) => {
-    const sourceDir = path.join(packagesRoot, source);
-    const targetDir = path.join(accessxDir, "public", "shared", target);
-    if (copyBucket("accessx", sourceDir, targetDir)) {
-      console.log(
-        `✓ ${source} synced to ${path.relative(root, targetDir || path.join(accessxDir, "public", "shared"))}`
-      );
-    }
-  });
-}

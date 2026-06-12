@@ -48,18 +48,17 @@ out/dashboard/
 **Routing & Page Flow**
 Key routes:
 - `/admin` (Admin event selector)
-- `/Config/operations` (Configuration operations)
-- `/Config/profile` (Profile settings)
-- `/Config/role_assign_event` ("+ Operator" flow)
+- `/Config` (Configuration operations)
 
 Access portal → dashboard flow:
-- Access portal sends users to `/admin?token=...` for admin roles
-- Access portal sends users to `/Config/operations?token=...&service=...` for event roles
+- Access portal sends users to `/admin?token=...` for admin roles when `/auth/select` returns a selected token
+- Access portal sends users to `/Config?token=...&service=...` for event roles when `/auth/select` returns a selected token
+- If `/auth/select` uses an HTTP-only cookie session instead of a token response, dashboard APIs fall back to `credentials: include`
 
 **Auth & Session**
 Token handling:
-- Tokens come from URL query (`token`) or from the dashboard store
-- Header reads URL params on the client and updates store
+- Selected dashboard tokens come from URL query (`token`) or `atomx.dashboard.token`
+- SessionGuard strips `token` from the URL after storing it
 
 Session re-login:
 - `apps/dashboard/src/app/components/Session/SessionGuard.js`

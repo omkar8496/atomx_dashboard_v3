@@ -2,44 +2,37 @@
 
 import React from "react";
 
-
 const UploadIcon = () => (
-  <svg
-    viewBox="0 0 24 24"
-    className="h-12 w-12 text-[color:rgb(var(--color-teal))]"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M12 16V4" />
-    <path d="M8 8l4-4 4 4" />
-    <rect x="4" y="16" width="16" height="6" rx="2" />
-  </svg>
+  <div className="grid h-12 w-12 place-items-center rounded-xl bg-[#ffe9e4] text-[#E04420]">
+    <svg
+      viewBox="0 0 24 24"
+      className="h-6 w-6"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M12 4v12" />
+      <path d="m7 9 5-5 5 5" />
+      <path d="M5 20h14" />
+    </svg>
+  </div>
 );
 
 export default function UploadDropzone() {
   return (
-
-    <div className="flex h-full flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[color:rgb(var(--color-teal)/0.4)] bg-white px-6 py-8 text-center text-slate-700 shadow-sm">
-    
-      <div className="flex items-center gap-3 text-[color:rgb(var(--color-teal))]">
-        <span className="text-xl font-semibold">+</span>
-        <span className="text-base font-semibold uppercase tracking-wide">Upload</span>
-      </div>
-      <div className="mt-6">
-        <UploadIcon />
-      </div>
-      <p className="mt-5 text-base text-slate-600">
-        Drag and drop your APK files here
+    <div className="flex min-h-[198px] flex-col items-center justify-center rounded-lg border border-dashed border-[#b8a8ff] bg-[linear-gradient(135deg,#ffffff_0%,#fbfaff_100%)] px-6 py-6 text-center">
+      <UploadIcon />
+      <p className="mt-5 text-[0.96rem] font-semibold text-[#1f1f1f]">
+        Drop APK files here
       </p>
-      <span className="mt-2 text-xs uppercase tracking-[0.3em] text-slate-400">
-        or
-      </span>
+      <p className="mt-2 text-[0.82rem] font-normal text-[#848484]">
+        or browse from your device
+      </p>
       <button
         type="button"
-        className="mt-4 rounded-full bg-[color:rgb(var(--color-teal))] px-8 py-2 text-sm font-semibold text-white shadow hover:brightness-105"
+        className="mt-4 h-10 rounded-lg bg-[#1c1c1c] px-7 text-[0.8rem] font-semibold text-white shadow-[0_10px_22px_rgba(28,28,28,0.13)] transition duration-200 hover:-translate-y-0.5 hover:bg-[#E04420]"
       >
         Browse Files
       </button>

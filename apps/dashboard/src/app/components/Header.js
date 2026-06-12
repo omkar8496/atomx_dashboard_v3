@@ -2,25 +2,11 @@
 
 import { useEffect, useMemo } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { getInitials } from "@atomx/lib";
 import SideDrawer from "./SideDrawer";
 import ProfileMenu from "./ProfileMenu";
 import { useDashboardStore } from "../../store/dashboardStore";
-
-const ChevronIcon = ({ className = "h-4 w-4" }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2.2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className={className}
-  >
-    <polyline points="6 9 12 15 18 9" />
-  </svg>
-);
 
 export default function Header({
   eventId = "4004",
@@ -28,11 +14,15 @@ export default function Header({
   venue = "Mahalaxmi Race Cours",
   city = "Mumbai, India",
   areaLabel = "Configuration",
+  profileName = "Omkar",
   profileInitials = "OD",
   profileRole = "Admin",
   profileEmail = "design@atomx.in",
-  breadcrumb = "Profile / Operations"
+  breadcrumb = "Profile / Operations",
+  variant = "portal",
+  showEditEventButton = false
 }) {
+  const router = useRouter();
   const profile = useDashboardStore((state) => state.profile);
   const storedEventMeta = useDashboardStore((state) => state.eventMeta);
   const selectedService = useDashboardStore((state) => state.selectedService);
@@ -77,6 +67,9 @@ export default function Header({
 
   const resolvedRole = profile?.type ?? profileRole;
   const resolvedEmail = profile?.email ?? profileEmail;
+  const resolvedName = profile?.name ?? profileName;
+  const resolvedPicture =
+    profile?.picture ?? profile?.image ?? profile?.avatar ?? profile?.photoURL ?? null;
   const resolvedEventMeta = useMemo(() => {
     return {
       eventId: storedEventMeta?.eventId ?? eventId,
@@ -86,64 +79,74 @@ export default function Header({
     };
   }, [storedEventMeta, eventId, eventName, venue, city]);
 
-  const headerHeight = "60px";
-  const crumbHeight = "44px";
+  const headerHeight = "58px";
+  const crumbHeight = "0px";
   return (
-    <div style={{ "--header-h": headerHeight, "--crumb-h": crumbHeight, "--header-total-h": `calc(${headerHeight} + ${crumbHeight})` }}>
+    <div
+      style={{
+        "--header-h": headerHeight,
+        "--crumb-h": crumbHeight,
+        "--header-total-h": "var(--header-h)"
+      }}
+    >
       <div className="fixed left-0 right-0 top-0 z-40">
         <header
-          className="w-full rounded-none bg-[#258d9c] text-white shadow-[0_14px_28px_rgba(0,0,0,0.25)]"
+          className="w-full border-b border-[#ececec] bg-white text-[#171717] shadow-[0_6px_24px_rgba(15,23,42,0.08)]"
           style={{ height: "var(--header-h)" }}
         >
-          <div className="flex h-full items-center gap-4 px-4">
-          <div className="flex items-center gap-3">
-            <Image
-              src="/shared/logos/Atomx_White.png"
-              alt="AtomX"
-              width={230}
-              height={70}
-              className="h-10 -mt-1 w-auto object-contain"
-              priority
-            />
-            <div className="h-8 w-px bg-white/35" />
-          </div>
-
-          <div className="flex flex-1 flex-col leading-tight">
-            <div className="text-2xl font-semibold text-white drop-shadow-[0_2px_2px_rgba(0,0,0,0.35)]">
-              {resolvedEventMeta.eventId} - {resolvedEventMeta.eventName}
+          <div className="flex h-full items-center gap-3 px-4 md:px-5">
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="relative block h-[40px] w-[100px] shrink-0 overflow-hidden">
+                <Image
+                  src="/shared/logos/AtomX_Logo.svg"
+                  alt="AtomX logo"
+                  width={148}
+                  height={148}
+                  priority
+                  className="absolute -left-[27px] -top-[52px] h-[132px] w-[150px] max-w-none"
+                />
+              </span>
+              <div className="hidden h-9 w-px bg-[#dddddd] sm:block" aria-hidden />
+              <div className="flex min-w-0 items-center gap-2 text-[1.35rem] font-semibold leading-none sm:text-[1.48rem]">
+                <span className="truncate text-[#202020]">Portal</span>
+                <span className="text-[#969696]">-</span>
+                <span className="truncate text-[#e04420]">{areaLabel}</span>
+              </div>
             </div>
-            <div className="flex items-center gap-1 text-sm font-semibold text-white/95">
-              <span className="text-base -ml-1">
+            <div className="flex-1" />
+            {showEditEventButton ? (
+              <button
+                type="button"
+                onClick={() => router.push("/event-edit")}
+                className="mr-1 inline-flex h-9 items-center gap-2 rounded-lg border border-[#e5e5e5] bg-white px-3 text-[0.82rem] font-bold text-[#1c1c1c] shadow-[0_8px_18px_rgba(15,23,42,0.06)] transition hover:border-[#d5b7ff] hover:text-[#e04420] hover:shadow-[0_10px_22px_rgba(224,68,32,0.09)]"
+                aria-label="Edit event"
+              >
                 <svg
                   viewBox="0 0 24 24"
-                  className="h-4 w-4 text-white/90"
+                  className="h-4 w-4"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
+                  aria-hidden
                 >
-                  <path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z" />
-                  <circle cx="12" cy="10" r="2.5" />
+                  <path d="M12 20h9" />
+                  <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" />
                 </svg>
-              </span>
-              <span>{resolvedEventMeta.venue}</span>
-              <span className="text-white/70">•</span>
-              <span className="font-normal text-white/85">{resolvedEventMeta.city}</span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <ProfileMenu initials={resolvedInitials} role={resolvedRole} email={resolvedEmail} />
-          </div>
+                <span>Event</span>
+              </button>
+            ) : null}
+            <ProfileMenu
+              initials={resolvedInitials}
+              name={resolvedName}
+              role={resolvedRole}
+              email={resolvedEmail}
+              picture={resolvedPicture}
+              variant="portal"
+            />
           </div>
         </header>
-        <div className="w-full bg-[color:rgb(var(--color-bg))] text-slate-600" style={{ height: "var(--crumb-h)" }}>
-          <div className="flex h-full w-full items-center gap-4 pr-4 pl-12 md:pr-8 md:pl-16 text-sm">
-            <div className="flex items-center gap-2 whitespace-nowrap">{breadcrumb}</div>
-            <div className="h-px flex-1 bg-slate-300" />
-          </div>
-        </div>
       </div>
       <div style={{ height: "var(--header-total-h)" }} />
       <SideDrawer />

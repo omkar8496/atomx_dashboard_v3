@@ -12,6 +12,7 @@ import SessionPrompt from "./SessionPrompt";
 const WARNING_WINDOW_MS = 10 * 60 * 1000;
 const REAUTH_CONTEXT_KEY = "atomx.portal.reauth";
 const REAUTH_CONTEXT_TTL_MS = 24 * 60 * 60 * 1000;
+const DASHBOARD_SELECTED_TOKEN_KEY = "atomx.dashboard.token";
 
 function sanitizeReturnTo(value) {
   try {
@@ -108,6 +109,7 @@ function formatCountdown(ms) {
 function clearDashboardAuthCache() {
   if (typeof window === "undefined") return;
   window.localStorage.removeItem("atomx.portal.token");
+  window.localStorage.removeItem(DASHBOARD_SELECTED_TOKEN_KEY);
   window.localStorage.removeItem("atomx.dashboard.store");
   const keysToRemove = [];
   for (let i = 0; i < window.localStorage.length; i += 1) {
@@ -117,6 +119,48 @@ function clearDashboardAuthCache() {
     }
   }
   keysToRemove.forEach((key) => window.localStorage.removeItem(key));
+}
+
+function isDashboardAuthStorageKey(key) {
+  return key === DASHBOARD_SELECTED_TOKEN_KEY;
+}
+
+function persistDashboardToken(token) {
+  if (typeof window === "undefined" || !token) return;
+  try {
+    window.localStorage.setItem(DASHBOARD_SELECTED_TOKEN_KEY, token);
+    const params = new URLSearchParams(window.location.search);
+    const service = params.get("service");
+    if (service) {
+      window.localStorage.setItem(`atomx.auth.${service}`, token);
+    }
+  } catch (err) {
+    console.error("Failed to persist dashboard token", err);
+  }
+}
+
+function readTokenFromUrl() {
+  if (typeof window === "undefined") return null;
+  return new URLSearchParams(window.location.search).get("token");
+}
+
+function removeTokenFromUrl() {
+  if (typeof window === "undefined") return;
+  const url = new URL(window.location.href);
+  if (!url.searchParams.has("token")) return;
+  url.searchParams.delete("token");
+  window.history.replaceState(window.history.state, "", url.toString());
+}
+
+function readStoredDashboardToken() {
+  if (typeof window === "undefined") return null;
+  try {
+    const selectedToken = window.localStorage.getItem(DASHBOARD_SELECTED_TOKEN_KEY);
+    if (selectedToken) return selectedToken;
+  } catch (err) {
+    console.error("Failed to read dashboard auth token", err);
+  }
+  return null;
 }
 
 export default function SessionGuard() {
@@ -131,6 +175,22 @@ export default function SessionGuard() {
   const [countdown, setCountdown] = useState("");
   const timersRef = useRef({ warn: null, expire: null, tick: null });
   const reloginRef = useRef(false);
+
+  useEffect(() => {
+    const urlToken = readTokenFromUrl();
+    if (urlToken) {
+      persistDashboardToken(urlToken);
+      removeTokenFromUrl();
+    }
+    const nextToken = urlToken || readStoredDashboardToken();
+    if (nextToken && nextToken !== token) {
+      setToken(nextToken);
+      return;
+    }
+    if (!nextToken && token) {
+      setToken(null);
+    }
+  }, [setToken, token]);
 
   const expiresAt = useMemo(() => {
     if (!token) return null;
@@ -255,11 +315,15 @@ export default function SessionGuard() {
 
   useEffect(() => {
     const onStorage = (event) => {
-      if (event.key && event.key.startsWith("atomx.auth.")) {
-        capturePostHogEvent("session_relogin_success", {
-          app: "dashboard",
-          source: "storage"
-        });
+      if (isDashboardAuthStorageKey(event.key)) {
+        const nextToken = event.newValue || readStoredDashboardToken();
+        setToken(nextToken || null);
+        if (nextToken) {
+          capturePostHogEvent("session_relogin_success", {
+            app: "dashboard",
+            source: "storage"
+          });
+        }
         reloginRef.current = false;
         setWarningOpen(false);
         setExpiredOpen(false);
@@ -267,13 +331,14 @@ export default function SessionGuard() {
     };
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
-  }, []);
+  }, [setToken]);
 
   useEffect(() => {
     const onMessage = (event) => {
       if (event?.data?.type !== "atomx.auth") return;
       const nextToken = event.data.token;
       if (nextToken) {
+        persistDashboardToken(nextToken);
         setToken(nextToken);
       }
       if (event.data.service) {

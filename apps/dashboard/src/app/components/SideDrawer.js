@@ -1,124 +1,138 @@
 "use client";
 
-import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
 const ITEMS = [
-  { id: "analytics", label: "Analytics" },
-  { id: "configuration", label: "Configuration", href: "/Config/operations", match: "/Config" },
-  { id: "admin", label: "Admin", href: "/admin", match: "/admin" },
-  { id: "create-event", label: "Create Event", href: "/admin/Create_event", match: "/admin/Create_event" },
-  { id: "reports", label: "Reports", href: "/device/Reports", match: "/device/Reports" },
-  { id: "transactions", label: "Transactions" },
-  { id: "device", label: "Devices", href: "/device", exact: true },
-  { id: "blocked", label: "Blocked", href: "/Blocked" },
-  { id: "apk", label: "APK Uploads", href: "/apk_upload" }
+  { id: "deviceMaster", label: "Device Master", href: "/device_masterlist", match: "/device_masterlist" },
+  { id: "analytics", label: "Analytics", href: "/admin", exact: true },
+  { id: "configuration", label: "Configuration", href: "/Config", match: "/Config" },
+  { id: "admin", label: "Admin", href: "/admin/Create_event", match: "/admin/Create_event" },
+  { id: "reports", label: "Reports", href: "/Reports", match: "/Reports" },
+  { id: "transactions", label: "Transactions", href: "/transactions", match: "/transactions" },
+  { id: "device", label: "Devices", href: "/device", match: "/device" },
+  { id: "blocked", label: "Blocked", href: "/Blocked", match: "/Blocked" },
+  { id: "apk", label: "APK Uploads", href: "/apk_upload", match: "/apk_upload" }
 ];
 
+const iconClass = "h-4 w-4";
+
 const ICONS = {
+  deviceMaster: (
+    <svg viewBox="0 0 24 24" className={iconClass} fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="5" y="3" width="14" height="18" rx="2" />
+      <path d="M9 8h6" />
+      <path d="M9 12h6" />
+      <path d="M9 16h3" />
+    </svg>
+  ),
   analytics: (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
-      <path d="M5 20h2V9H5v11zm6 0h2V4h-2v16zm6 0h2v-7h-2v7z" />
+    <svg viewBox="0 0 24 24" className={iconClass} fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 19h16" />
+      <path d="M7 16V9" />
+      <path d="M12 16V5" />
+      <path d="M17 16v-4" />
     </svg>
   ),
   configuration: (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
-      <path d="M4 6h16v2H4V6zm0 5h10v2H4v-2zm0 5h16v2H4v-2z" />
+    <svg viewBox="0 0 24 24" className={iconClass} fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 7h4" />
+      <path d="M14 7h6" />
+      <path d="M10 5v4" />
+      <path d="M4 12h9" />
+      <path d="M19 12h1" />
+      <path d="M15 10v4" />
+      <path d="M4 17h2" />
+      <path d="M12 17h8" />
+      <path d="M8 15v4" />
     </svg>
   ),
   admin: (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
-      <path d="M12 2l7 3v6c0 5-3.8 9.3-7 10-3.2-.7-7-5-7-10V5l7-3z" />
-      <path d="M9.5 11.5l1.8 1.8 3.5-3.5" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <svg viewBox="0 0 24 24" className={iconClass} fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" />
+      <path d="M4 21a8 8 0 0 1 16 0" />
     </svg>
   ),
-  "create-event": (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
-      <path d="M6 3h9l5 5v13a1.8 1.8 0 01-1.8 1.8H6A1.8 1.8 0 014.2 21V4.8A1.8 1.8 0 016 3z" />
-      <path d="M14 3v5h5" fill="rgb(var(--color-orange))" />
-      <path d="M12 10v6M9 13h6" stroke="#fff" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  ),
-  device: (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
-      <rect x="7" y="2.5" width="10" height="19" rx="2.2" />
-      <rect x="10" y="18" width="4" height="1.6" rx="0.8" fill="rgb(var(--color-orange))" />
-    </svg>
-  ),
-  blocked: (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
-      <path d="M12 2a10 10 0 1010 10A10 10 0 0012 2zm0 3.5a6.5 6.5 0 014.6 1.9L7.4 16.6A6.5 6.5 0 0112 5.5zm0 13a6.5 6.5 0 01-4.6-1.9L16.6 7.4A6.5 6.5 0 0112 18.5z" />
+  events: (
+    <svg viewBox="0 0 24 24" className={iconClass} fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="4" y="5" width="16" height="15" rx="2" />
+      <path d="M8 3v4" />
+      <path d="M16 3v4" />
+      <path d="M4 10h16" />
+      <path d="M8 14h3" />
+      <path d="M13 14h3" />
     </svg>
   ),
   reports: (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
-      <path d="M7 2h7l5 5v15a2 2 0 01-2 2H7a2 2 0 01-2-2V4a2 2 0 012-2zm7 1.5V8h4.5L14 3.5zM9 13h6v2H9v-2zm0 4h6v2H9v-2z" />
+    <svg viewBox="0 0 24 24" className={iconClass} fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M7 3h7l5 5v13H7V3Z" />
+      <path d="M14 3v5h5" />
+      <path d="M10 13h6" />
+      <path d="M10 17h5" />
     </svg>
   ),
   transactions: (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
-      <path d="M4 6h16a2 2 0 012 2v2H2V8a2 2 0 012-2zm-2 6h20v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4zm4 2h6v2H6v-2z" />
+    <svg viewBox="0 0 24 24" className={iconClass} fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M7 7h11" />
+      <path d="m15 4 3 3-3 3" />
+      <path d="M17 17H6" />
+      <path d="m9 14-3 3 3 3" />
+    </svg>
+  ),
+  device: (
+    <svg viewBox="0 0 24 24" className={iconClass} fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="7" y="3" width="10" height="18" rx="2" />
+      <path d="M11 17h2" />
+    </svg>
+  ),
+  blocked: (
+    <svg viewBox="0 0 24 24" className={iconClass} fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="8" />
+      <path d="M7 7l10 10" />
     </svg>
   ),
   apk: (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
-      <path d="M12 2l4 4h-3v7h-2V6H8l4-4zm-7 12h14a2 2 0 012 2v4H3v-4a2 2 0 012-2z" />
+    <svg viewBox="0 0 24 24" className={iconClass} fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 4v12" />
+      <path d="m7 9 5-5 5 5" />
+      <path d="M5 20h14" />
     </svg>
-  ),
+  )
 };
 
-export default function SideDrawer({ open, onClose, eventName = "SUNBURN" }) {
+export default function SideDrawer() {
   const pathname = usePathname();
   const router = useRouter();
-  const isAdminArea = pathname?.startsWith("/admin");
-  const visibleItems = isAdminArea
-    ? ITEMS.filter((item) => item.id === "admin" || item.id === "create-event")
-    : ITEMS.filter((item) => item.id !== "create-event");
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (event) => {
-      if (event.key === "Escape") onClose?.();
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [open, onClose]);
 
   return (
-    <div
+    <aside
       className="group fixed left-0 z-50"
       style={{ top: "var(--header-h)", height: "calc(100vh - var(--header-h))" }}
     >
-      <div
-        className="h-full w-12 bg-[color:rgb(var(--color-orange))] py-6 shadow-[0_18px_40px_rgba(0,0,0,0.25)] transition-[width] duration-500 ease-in-out group-hover:w-56"
-      >
-        <nav className="flex flex-col gap-3 px-1">
-          {visibleItems.map((item) => {
+      <div className="h-full w-[60px] overflow-hidden bg-[#34363b] py-3 shadow-[16px_0_42px_rgba(15,23,42,0.16)] transition-[width] duration-300 ease-out group-hover:w-[220px]">
+        <nav className="flex flex-col gap-2 px-2">
+          {ITEMS.map((item) => {
             const matchBase = item.match || item.href;
             const isActive = item.exact
               ? pathname === matchBase
               : Boolean(matchBase && pathname?.startsWith(matchBase));
+
             return (
               <button
                 key={item.id}
                 type="button"
                 onClick={() => {
-                  if (item.href && typeof window !== "undefined") {
-                    router.push(item.href);
-                  }
+                  if (item.href) router.push(item.href);
                 }}
-                className={`flex items-center gap-3 rounded-2xl px-2 py-2 text-sm font-semibold transition-colors duration-300 ease-in-out ${
-                  isActive ? "text-white" : "text-white/85 hover:bg-white/10"
-                } group-hover:px-4`}
+                className={`flex h-10 w-full items-center gap-3 rounded-md px-3 text-left text-[0.84rem] font-semibold transition-colors duration-200 ${
+                  isActive
+                    ? "bg-white text-[#25272b]"
+                    : "text-[#d4d4d6] hover:bg-white/10 hover:text-white"
+                }`}
               >
-                <span
-                  className={`flex h-8 w-8 items-center justify-center rounded-full ${
-                    isActive ? "bg-white/25 text-white" : "text-white/85"
-                  }`}
-                >
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center">
                   {ICONS[item.id]}
                 </span>
-                <span className="whitespace-nowrap opacity-0 translate-x-2 transition-all duration-400 ease-in-out group-hover:opacity-100 group-hover:translate-x-0">
+                <span className="whitespace-nowrap opacity-0 transition-opacity duration-200 group-hover:opacity-100">
                   {item.label}
                 </span>
               </button>
@@ -126,6 +140,6 @@ export default function SideDrawer({ open, onClose, eventName = "SUNBURN" }) {
           })}
         </nav>
       </div>
-    </div>
+    </aside>
   );
 }

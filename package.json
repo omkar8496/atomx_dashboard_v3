@@ -8,13 +8,11 @@
   ],
   "scripts": {
     "dev": "turbo dev",
-    "dev:livelink": "turbo dev --filter=@atomx/livelink",
     "dev:tag_series": "turbo dev --filter=@atomx/tag_series",
     "dev:access": "turbo dev --filter=@atomx/access-portal",
     "dev:dashboard": "turbo dev --filter=dashboard",
     "build": "turbo build",
     "build:out": "node scripts/export-all.js",
-    "build:livelink": "turbo build --filter=@atomx/livelink",
     "build:tag_series": "turbo build --filter=@atomx/tag_series",
     "build:access": "turbo build --filter=@atomx/access-portal",
     "build:dashboard": "turbo build --filter=dashboard",
@@ -36,10 +34,5 @@
       "react": "19.2.0",
       "react-dom": "19.2.0"
     }
-  },
-  "dependencies": {
-    "@next/third-parties": "^16.2.0",
-    "mermaid": "^11.14.0",
-    "posthog-js": "^1.363.0"
   }
 }

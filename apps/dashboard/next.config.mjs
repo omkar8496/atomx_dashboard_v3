@@ -15,7 +15,15 @@ const nextConfig = {
   images: {
     unoptimized: true
   },
-  trailingSlash: true
+  trailingSlash: true,
+  transpilePackages: [
+    "@atomx/shared-ui",
+    "@atomx/global-components",
+    "@atomx/lib"
+  ],
+  experimental: {
+    externalDir: true
+  }
 };
 
 export default nextConfig;

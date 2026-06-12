@@ -1,11 +1,11 @@
 ## AtomX Dashboard v3 Monorepo
 
-This repository now hosts a poly-repo style workspace built with Turborepo + npm workspaces. Two fully isolated Next.js apps (`livelink` and `tag_series`) live beside a set of shared packages for UI, auth, API clients, utilities, and shared public assets.
+This repository hosts an AtomX monorepo built with Turborepo + npm workspaces. The current checkout contains three Next.js apps beside shared packages for UI, auth helpers, API clients, utilities, and public assets.
 
 ```
 apps/
   access_portal/  → shared access landing (`/access`)
-  livelink/        → streaming control surface
+  dashboard/       → operations/admin dashboard
   tag_series/      → IoT analytics console
 packages/
   shared-ui/       → reusable design system pieces
@@ -26,23 +26,25 @@ npm install        # installs root + workspace deps and syncs shared public asse
 ### Run or build a single app
 
 ```bash
-npm run dev:livelink
+npm run dev:access
+npm run dev:dashboard
 npm run dev:tag_series
-npm run build:livelink
+npm run build:access
+npm run build:dashboard
 npm run build:tag_series
 ```
 
 ### Turborepo tasks
 
 ```bash
-npm run dev        # runs both apps in parallel (filtered via turbo)
+npm run dev        # runs workspace app dev tasks in parallel
 npm run build      # builds everything respecting dependency graph
-npm run lint       # placeholder if/when Next lint is configured
+npm run lint       # runs lint tasks where configured
 ```
 
 ### Auth & API strategy
 
-- Per-project auth screens live at `apps/<project>/app/(auth)/login/page.js`.
+- App-router auth screens live at `apps/<project>/app/(auth)/login/page.js`; the access portal currently uses the pages router.
 - Shared authentication helpers live in `packages/auth` and can be reused or swapped for a real identity provider later.
 - `packages/api` exposes `createApiClient` + route metadata so every app (and even shared packages) can consume consistent endpoints.
 

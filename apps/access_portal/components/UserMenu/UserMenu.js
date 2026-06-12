@@ -2,8 +2,18 @@
 
 import { useState } from "react";
 
+function formatRole(value, long = false) {
+  const raw = String(value || "member").trim();
+  if (!raw) return long ? "Member" : "Member";
+  if (raw.toLowerCase() === "admin") return long ? "Administrator" : "Admin";
+  return raw
+    .replace(/[-_]+/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
 export function UserMenu({ user, onSignOut = () => {} }) {
   const [open, setOpen] = useState(false);
+  const avatarText = String(user.initials || user.name || "A").slice(0, 1).toUpperCase();
 
   const handleSignOut = () => {
     setOpen(false);
@@ -14,26 +24,31 @@ export function UserMenu({ user, onSignOut = () => {} }) {
     <div className="relative">
       <button
         type="button"
-        className="flex items-center gap-2 rounded-full bg-[#0f889b] px-2.5 py-1 text-left text-white shadow-[0_8px_16px_rgba(15,136,155,0.2)] transition hover:shadow-[0_10px_20px_rgba(15,136,155,0.24)] hover:-translate-y-[1px] hover:brightness-105"
+        className="flex h-[42px] items-center gap-2 rounded-lg border border-[#e8e8e8] bg-white px-2.5 text-left shadow-[0_5px_14px_rgba(15,23,42,0.08)] transition hover:-translate-y-[1px] hover:shadow-[0_8px_18px_rgba(15,23,42,0.12)]"
         onClick={() => setOpen((prev) => !prev)}
+        aria-expanded={open}
       >
-        <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-[linear-gradient(135deg,#0f9ca3,#0a6f80)] text-[0.78rem] font-semibold">
+        <div className="hidden min-w-0 flex-col leading-tight sm:flex">
+          <span className="max-w-[6.5rem] truncate text-[0.72rem] font-medium text-[#6c6c6c]">
+            {formatRole(user.role)}
+          </span>
+          <span className="max-w-[7rem] truncate text-[0.86rem] font-semibold text-[#202020]">
+            {user.name}
+          </span>
+        </div>
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[linear-gradient(135deg,#e04420,#2f1ec7)] text-[0.85rem] font-semibold text-white">
           {user.picture ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={user.picture} alt={user.name} className="h-full w-full object-cover" />
           ) : (
-            user.initials
+            avatarText
           )}
-        </div>
-        <div className="flex flex-col text-left leading-tight">
-          <span className="text-[0.88rem] font-bold text-white leading-tight">{user.name}</span>
-          <span className="text-[0.7rem] text-[#cdeff4] leading-tight">{user.role}</span>
         </div>
         <svg
           width="16"
           height="16"
           viewBox="0 0 24 24"
-          className={`text-[#e4f6f9] transition-transform ${open ? "rotate-180" : ""}`}
+          className={`text-[#8a8a8a] transition-transform ${open ? "rotate-180" : ""}`}
           aria-hidden
         >
           <path
@@ -47,17 +62,31 @@ export function UserMenu({ user, onSignOut = () => {} }) {
         </svg>
       </button>
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-2 w-72 rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_20px_40px_rgba(0,0,0,0.1)]">
-          <div className="flex flex-col gap-1">
-            <p className="m-0 break-words text-sm font-semibold leading-snug text-slate-800">{user.email}</p>
-            <small className="text-sm leading-snug text-slate-500">Signed in from AtomX Access Portal</small>
+        <div className="absolute right-0 top-full z-50 mt-2 w-[236px] rounded-lg border border-[#eeeeee] bg-white p-2.5 shadow-[0_20px_44px_rgba(15,23,42,0.14)]">
+          <div className="flex items-center gap-2.5 px-1 py-1">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[linear-gradient(135deg,#e04420,#2f1ec7)] text-sm font-semibold text-white">
+              {user.picture ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={user.picture} alt={user.name} className="h-full w-full object-cover" />
+              ) : (
+                avatarText
+              )}
+            </div>
+            <div className="min-w-0 leading-tight">
+              <p className="m-0 truncate text-[0.9rem] font-semibold text-[#202020]">
+                {user.name}
+              </p>
+              <small className="text-[0.74rem] font-medium text-[#8d8d8d]">
+                {formatRole(user.role, true)}
+              </small>
+            </div>
           </div>
           <button
             type="button"
-            className="mt-3 w-full rounded-xl bg-[#fef2ec] px-3 py-2 text-sm font-semibold text-[#e35f1a] transition hover:brightness-105"
+            className="mt-2 w-full rounded-md bg-[#1f1f1f] px-3 py-2.5 text-left text-[0.84rem] font-semibold text-white transition hover:bg-black"
             onClick={handleSignOut}
           >
-            Sign out
+            Logout
           </button>
         </div>
       )}

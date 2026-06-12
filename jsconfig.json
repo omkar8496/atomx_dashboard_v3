@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "baseUrl": ".",
+    "ignoreDeprecations": "6.0",
     "paths": {
       "@atomx/shared-ui": ["packages/shared-ui/src"],
       "@atomx/shared-ui/*": ["packages/shared-ui/src/*"],
@@ -14,9 +15,8 @@
       "@atomx/lib/*": ["packages/lib/src/*"],
       "@atomx/utils": ["packages/utils/src"],
       "@atomx/utils/*": ["packages/utils/src/*"],
-      "@livelink/*": ["apps/livelink/*"],
       "@tag_series/*": ["apps/tag_series/*"]
     }
   },
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", ".next", "out"]
 }
