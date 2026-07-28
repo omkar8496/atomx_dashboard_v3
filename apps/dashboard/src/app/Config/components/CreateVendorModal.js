@@ -9,7 +9,7 @@ import {
 } from "./vendorPayload";
 
 const FIELD_CLASS =
-  "h-10 w-full rounded-[9px] border border-[#dedede] bg-white px-3.5 text-[0.82rem] font-medium text-[#1c1c1c] outline-none transition placeholder:text-[#a8a8a8] focus:border-[#E04420] focus:ring-2 focus:ring-[#E04420]/10";
+  "h-10 w-full rounded-[9px] border border-[#dedede] bg-white px-3.5 text-[0.82rem] font-medium text-[#1c1c1c] outline-none transition placeholder:text-[#a8a8a8] focus:border-[#E04420] focus:ring-2 focus:ring-[#E04420]/10 max-[640px]:h-9 max-[640px]:text-[0.72rem]";
 
 function CloseIcon() {
   return (
@@ -129,7 +129,7 @@ function TypeDropdown({ value, onChange, options }) {
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="flex h-10 w-full items-center justify-between rounded-full bg-[linear-gradient(135deg,#E04420,#341CD6)] px-4 text-[0.82rem] font-semibold tracking-[0.08em] text-white shadow-[0_10px_22px_rgba(52,28,214,0.22)] transition hover:brightness-105"
+        className="flex h-10 w-full items-center justify-between rounded-full bg-[linear-gradient(135deg,#E04420,#341CD6)] px-4 text-[0.82rem] font-semibold tracking-[0.08em] text-white shadow-[0_10px_22px_rgba(52,28,214,0.22)] transition hover:brightness-105 max-[640px]:h-9 max-[640px]:px-3 max-[640px]:text-[0.7rem]"
       >
         <span>{value}</span>
         <ChevronIcon />
@@ -213,7 +213,7 @@ function CharTextarea({ value, onChange, maxLength = 128, placeholder = "" }) {
         maxLength={maxLength}
         placeholder={placeholder}
         rows={3}
-        className="w-full resize-y rounded-[9px] border border-[#dedede] bg-white px-3.5 py-2.5 pr-14 text-[0.82rem] font-medium text-[#1c1c1c] outline-none transition placeholder:text-[#a8a8a8] focus:border-[#E04420] focus:ring-2 focus:ring-[#E04420]/10"
+        className="w-full resize-y rounded-[9px] border border-[#dedede] bg-white px-3.5 py-2.5 pr-14 text-[0.82rem] font-medium text-[#1c1c1c] outline-none transition placeholder:text-[#a8a8a8] focus:border-[#E04420] focus:ring-2 focus:ring-[#E04420]/10 max-[640px]:text-[0.72rem]"
       />
       <span className="absolute bottom-2.5 right-3 text-[0.64rem] font-medium text-[#a0a0a0]">
         {value.length}/{maxLength}
@@ -225,7 +225,7 @@ function CharTextarea({ value, onChange, maxLength = 128, placeholder = "" }) {
 function FormRow({ label, children }) {
   return (
     <div className="grid grid-cols-[170px_1fr] items-start gap-4 max-sm:grid-cols-1 max-sm:gap-1.5">
-      <span className="pt-2.5 text-right text-[0.78rem] font-medium text-[#555555] max-sm:pt-0 max-sm:text-left">
+      <span className="pt-2.5 text-right text-[0.78rem] font-medium text-[#555555] max-sm:pt-0 max-sm:text-left max-[640px]:text-[0.68rem]">
         {label}
       </span>
       <div>{children}</div>
@@ -345,7 +345,7 @@ export default function CreateVendorModal({ eventId, onClose, onConfirm }) {
       onClick={(e) => {
         if (e.target === overlayRef.current) onClose?.();
       }}
-      className="fixed inset-0 z-[200] flex h-dvh items-start justify-center overflow-hidden overscroll-none bg-[#1c1c1c]/45 px-4 pb-20 pt-10 backdrop-blur-[3px]"
+      className="fixed inset-0 z-[200] flex h-dvh items-start justify-center overflow-hidden overscroll-none bg-[#1c1c1c]/45 px-4 pb-20 pt-10 backdrop-blur-[3px] max-[640px]:items-center max-[640px]:px-3 max-[640px]:py-3"
     >
       <style jsx global>{`
         .create-vendor-modal {
@@ -386,6 +386,48 @@ export default function CreateVendorModal({ eventId, onClose, onConfirm }) {
           flex: 0 1 auto;
         }
 
+        @media (max-width: 640px) {
+          .create-vendor-modal,
+          .create-vendor-modal--expanded {
+            height: auto;
+            max-height: calc(100dvh - 24px);
+            border-radius: 18px;
+          }
+
+          .create-vendor-modal__header {
+            padding: 12px 16px;
+          }
+
+          .create-vendor-modal__header h2 {
+            font-size: 0.9rem;
+          }
+
+          .create-vendor-modal__header p {
+            font-size: 0.52rem;
+          }
+
+          .create-vendor-modal__body,
+          .create-vendor-modal:not(.create-vendor-modal--expanded)
+            .create-vendor-modal__body,
+          .create-vendor-modal--expanded .create-vendor-modal__body {
+            flex: 1 1 auto;
+            max-height: none;
+            padding: 14px 16px 18px;
+            scrollbar-gutter: auto;
+          }
+
+          .create-vendor-modal__footer {
+            min-height: 58px;
+            padding: 10px 16px 12px;
+          }
+
+          .create-vendor-modal__footer button {
+            height: 36px;
+            padding-inline: 20px;
+            font-size: 0.72rem;
+          }
+        }
+
         @font-face {
           font-family: "AtomX Poppins";
           src: url("/shared/fonts/Poppins/Poppins-Regular.ttf") format("truetype");
@@ -411,7 +453,7 @@ export default function CreateVendorModal({ eventId, onClose, onConfirm }) {
         }
       `}</style>
 
-      <div className="w-full max-w-[760px]">
+      <div className="w-full max-w-[760px] max-[640px]:max-h-[calc(100dvh-24px)]">
         <div
           className={`create-vendor-modal relative w-full overflow-hidden rounded-2xl border border-[#D5B7FF]/60 bg-white font-['AtomX_Poppins',sans-serif] shadow-[0_30px_80px_rgba(15,23,42,0.24)] ${
             form.showPrintDetails ? "create-vendor-modal--expanded" : ""

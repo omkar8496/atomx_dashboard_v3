@@ -32,7 +32,7 @@ const DEFAULT_FORM = {
 };
 
 const FIELD_CLASS =
-  "h-10 w-full rounded-[9px] border border-[#dedede] bg-white px-3.5 text-[0.82rem] font-medium text-[#1c1c1c] outline-none transition placeholder:text-[#a8a8a8] focus:border-[#E04420] focus:ring-2 focus:ring-[#E04420]/10";
+  "h-10 w-full rounded-[9px] border border-[#dedede] bg-white px-3.5 text-[0.82rem] font-medium text-[#1c1c1c] outline-none transition placeholder:text-[#a8a8a8] focus:border-[#E04420] focus:ring-2 focus:ring-[#E04420]/10 max-[640px]:h-9 max-[640px]:text-[0.72rem]";
 
 function CloseIcon() {
   return (
@@ -121,11 +121,11 @@ function CheckIcon() {
 
 function SegmentedChoice({ active, leftLabel, rightLabel, onChange }) {
   return (
-    <div className="grid h-10 grid-cols-2 overflow-hidden rounded-full border border-[#e5e5e5] bg-[#f6f7fb] p-1">
+    <div className="grid h-10 grid-cols-2 overflow-hidden rounded-full border border-[#e5e5e5] bg-[#f6f7fb] p-1 max-[640px]:h-9">
       <button
         type="button"
         onClick={() => onChange(false)}
-        className={`rounded-full px-3 text-[0.76rem] font-semibold transition ${
+        className={`rounded-full px-3 text-[0.76rem] font-semibold transition max-[640px]:text-[0.68rem] ${
           !active
             ? "bg-white text-[#E04420] shadow-sm"
             : "text-[#666666] hover:text-[#1c1c1c]"
@@ -136,7 +136,7 @@ function SegmentedChoice({ active, leftLabel, rightLabel, onChange }) {
       <button
         type="button"
         onClick={() => onChange(true)}
-        className={`rounded-full px-3 text-[0.76rem] font-semibold transition ${
+        className={`rounded-full px-3 text-[0.76rem] font-semibold transition max-[640px]:text-[0.68rem] ${
           active
             ? "bg-[linear-gradient(135deg,#E04420,#341CD6)] text-white shadow-[0_8px_16px_rgba(52,28,214,0.16)]"
             : "text-[#666666] hover:text-[#1c1c1c]"
@@ -154,13 +154,13 @@ function SettingChip({ label, active, onToggle }) {
       type="button"
       onClick={onToggle}
       aria-pressed={active}
-      className={`flex h-10 items-center justify-between gap-3 rounded-[10px] border px-3.5 text-left transition ${
+      className={`flex h-10 items-center justify-between gap-3 rounded-[10px] border px-3.5 text-left transition max-[640px]:h-9 max-[640px]:px-3 ${
         active
           ? "border-[#D5B7FF] bg-[#fff7f3] text-[#1c1c1c] shadow-[0_8px_18px_rgba(52,28,214,0.08)]"
           : "border-[#e3e3e3] bg-white text-[#555555] hover:border-[#D5B7FF]"
       }`}
     >
-      <span className="truncate text-[0.76rem] font-semibold">{label}</span>
+      <span className="truncate text-[0.76rem] font-semibold max-[640px]:text-[0.68rem]">{label}</span>
       <span
         className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition ${
           active
@@ -210,7 +210,7 @@ function StallDropdown({ value, onChange, options }) {
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="flex h-10 w-full items-center justify-between rounded-full bg-[linear-gradient(135deg,#E04420,#341CD6)] px-4 text-[0.82rem] font-semibold tracking-[0.08em] text-white shadow-[0_10px_22px_rgba(52,28,214,0.22)] transition hover:brightness-105"
+        className="flex h-10 w-full items-center justify-between rounded-full bg-[linear-gradient(135deg,#E04420,#341CD6)] px-4 text-[0.82rem] font-semibold tracking-[0.08em] text-white shadow-[0_10px_22px_rgba(52,28,214,0.22)] transition hover:brightness-105 max-[640px]:h-9 max-[640px]:px-3 max-[640px]:text-[0.7rem]"
       >
         <span>{value}</span>
         <ChevronIcon />
@@ -254,7 +254,7 @@ function SectionDivider({ icon, label }) {
 function FormRow({ label, children }) {
   return (
     <div className="grid grid-cols-[170px_1fr] items-center gap-4 max-sm:grid-cols-1 max-sm:gap-1.5">
-      <span className="text-right text-[0.78rem] font-medium text-[#555555] max-sm:text-left">
+      <span className="text-right text-[0.78rem] font-medium text-[#555555] max-sm:text-left max-[640px]:text-[0.68rem]">
         {label}
       </span>
       <div>{children}</div>
@@ -329,7 +329,7 @@ export default function CreateStallModal({ vendorName = "", vendorType = "", onC
       onClick={(e) => {
         if (e.target === overlayRef.current) onClose?.();
       }}
-      className="fixed inset-0 z-[200] flex h-dvh items-start justify-center overflow-hidden overscroll-none bg-[#1c1c1c]/45 px-4 pb-20 pt-10 backdrop-blur-[3px]"
+      className="fixed inset-0 z-[200] flex h-dvh items-start justify-center overflow-hidden overscroll-none bg-[#1c1c1c]/45 px-4 pb-20 pt-10 backdrop-blur-[3px] max-[640px]:items-center max-[640px]:px-3 max-[640px]:py-3"
     >
       <style jsx global>{`
         .create-stall-modal {
@@ -357,6 +357,43 @@ export default function CreateStallModal({ vendorName = "", vendorType = "", onC
           flex: 0 1 auto;
         }
 
+        @media (max-width: 640px) {
+          .create-stall-modal {
+            max-height: calc(100dvh - 24px);
+            border-radius: 18px;
+          }
+
+          .create-stall-modal__header {
+            padding: 12px 16px;
+          }
+
+          .create-stall-modal__header h2 {
+            font-size: 0.9rem;
+          }
+
+          .create-stall-modal__header p {
+            font-size: 0.52rem;
+          }
+
+          .create-stall-modal__body {
+            flex: 1 1 auto;
+            max-height: none;
+            padding: 14px 16px 18px;
+            scrollbar-gutter: auto;
+          }
+
+          .create-stall-modal__footer {
+            min-height: 58px;
+            padding: 10px 16px 12px;
+          }
+
+          .create-stall-modal__footer button {
+            height: 36px;
+            padding-inline: 20px;
+            font-size: 0.72rem;
+          }
+        }
+
         @font-face {
           font-family: "AtomX Poppins";
           src: url("/shared/fonts/Poppins/Poppins-Regular.ttf") format("truetype");
@@ -382,7 +419,7 @@ export default function CreateStallModal({ vendorName = "", vendorType = "", onC
         }
       `}</style>
 
-      <div className="w-full max-w-[760px]">
+      <div className="w-full max-w-[760px] max-[640px]:max-h-[calc(100dvh-24px)]">
         <div
           className="create-stall-modal relative w-full overflow-hidden rounded-2xl border border-[#D5B7FF]/60 bg-white font-['AtomX_Poppins',sans-serif] shadow-[0_30px_80px_rgba(15,23,42,0.24)]"
           style={{ fontFamily: '"AtomX Poppins", Poppins, sans-serif' }}

@@ -36,20 +36,20 @@ export default function BlockedPage() {
       `}</style>
       <Header areaLabel="Blocked" variant="portal" />
 
-      <div className="w-full pr-4 pl-[72px] pt-5 md:pr-7 md:pl-[88px]">
-        <section className="mb-4 flex flex-col gap-4 border-b border-[#d8d8d8] pb-4 sm:flex-row sm:items-start sm:justify-between">
+      <div className="w-full pr-4 pl-[72px] pt-5 md:pr-7 md:pl-[88px] max-[900px]:px-3 max-[640px]:pt-4">
+        <section className="mb-4 flex flex-col gap-4 border-b border-[#d8d8d8] pb-4 sm:flex-row sm:items-start sm:justify-between max-[640px]:mb-3 max-[640px]:gap-3 max-[640px]:pb-3">
           <div>
-            <h1 className="text-[1.75rem] font-semibold leading-none text-[#111827] md:text-[1.9rem]">
+            <h1 className="text-[1.75rem] font-semibold leading-none text-[#111827] md:text-[1.9rem] max-[640px]:text-[1.25rem]">
               Blocked IDs
             </h1>
-            <p className="mt-3 text-[0.9rem] font-normal text-[#777777]">
+            <p className="mt-3 text-[0.9rem] font-normal text-[#777777] max-[640px]:mt-2 max-[640px]:text-[0.7rem]">
               Search, review, and unblock IDs for the active event.
             </p>
           </div>
 
-          <div className="flex h-[54px] min-w-[92px] items-center justify-center gap-2 rounded-lg border border-[#e8e8e8] bg-white px-3 shadow-[0_10px_24px_rgba(15,23,42,0.05)]">
-            <span className="text-[1.25rem] font-bold leading-none text-[#E04420]">4</span>
-            <span className="text-[0.82rem] font-normal text-[#777777]">listed</span>
+          <div className="flex h-[54px] min-w-[92px] items-center justify-center gap-2 rounded-lg border border-[#e8e8e8] bg-white px-3 shadow-[0_10px_24px_rgba(15,23,42,0.05)] max-[640px]:h-10 max-[640px]:min-w-[72px] max-[640px]:self-start">
+            <span className="text-[1.25rem] font-bold leading-none text-[#E04420] max-[640px]:text-[0.95rem]">4</span>
+            <span className="text-[0.82rem] font-normal text-[#777777] max-[640px]:text-[0.66rem]">listed</span>
           </div>
         </section>
 

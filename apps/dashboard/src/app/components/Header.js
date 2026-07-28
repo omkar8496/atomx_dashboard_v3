@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { getInitials } from "@atomx/lib";
@@ -28,6 +28,7 @@ export default function Header({
   const selectedService = useDashboardStore((state) => state.selectedService);
   const setEventMeta = useDashboardStore((state) => state.setEventMeta);
   const setSelectedService = useDashboardStore((state) => state.setSelectedService);
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -94,9 +95,30 @@ export default function Header({
           className="w-full border-b border-[#ececec] bg-white text-[#171717] shadow-[0_6px_24px_rgba(15,23,42,0.08)]"
           style={{ height: "var(--header-h)" }}
         >
-          <div className="flex h-full items-center gap-3 px-4 md:px-5">
-            <div className="flex min-w-0 items-center gap-3">
-              <span className="relative block h-[40px] w-[100px] shrink-0 overflow-hidden">
+          <div className="flex h-full items-center gap-3 px-4 md:px-5 max-[900px]:gap-2 max-[900px]:px-3">
+            <div className="flex min-w-0 items-center gap-3 max-[900px]:gap-2">
+              <button
+                type="button"
+                onClick={() => setIsMobileDrawerOpen(true)}
+                className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-[#e6e6e6] bg-white text-[#202020] shadow-[0_8px_18px_rgba(15,23,42,0.06)] transition hover:border-[#d5b7ff] hover:text-[#e04420] min-[901px]:hidden"
+                aria-label="Open navigation"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  className="h-5 w-5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <path d="M4 7h16" />
+                  <path d="M4 12h16" />
+                  <path d="M4 17h16" />
+                </svg>
+              </button>
+              <span className="relative block h-[40px] w-[100px] shrink-0 overflow-hidden max-[900px]:w-[88px]">
                 <Image
                   src="/shared/logos/AtomX_Logo.svg"
                   alt="AtomX logo"
@@ -107,7 +129,7 @@ export default function Header({
                 />
               </span>
               <div className="hidden h-9 w-px bg-[#dddddd] sm:block" aria-hidden />
-              <div className="flex min-w-0 items-center gap-2 text-[1.35rem] font-semibold leading-none sm:text-[1.48rem]">
+              <div className="flex min-w-0 items-center gap-2 text-[1.35rem] font-semibold leading-none sm:text-[1.48rem] max-[900px]:gap-1.5 max-[900px]:text-[1.08rem]">
                 <span className="truncate text-[#202020]">Portal</span>
                 <span className="text-[#969696]">-</span>
                 <span className="truncate text-[#e04420]">{areaLabel}</span>
@@ -149,7 +171,10 @@ export default function Header({
         </header>
       </div>
       <div style={{ height: "var(--header-total-h)" }} />
-      <SideDrawer />
+      <SideDrawer
+        mobileOpen={isMobileDrawerOpen}
+        onMobileClose={() => setIsMobileDrawerOpen(false)}
+      />
     </div>
   );
 }

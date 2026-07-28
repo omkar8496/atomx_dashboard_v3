@@ -168,7 +168,7 @@ function findRoleMatch(roles, type, eventId, adminId) {
     if (byAdmin) return byAdmin;
   }
 
-  return typedRoles[0] ?? null;
+  return null;
 }
 
 function readReauthContext() {
@@ -316,6 +316,64 @@ function formatSectionCount(count) {
   return String(count).padStart(2, "0");
 }
 
+function formatChipLabel(type) {
+  const parts = String(type || "")
+    .split(/[-_\s]+/)
+    .filter(Boolean);
+  if (!parts.length) return "Access";
+  return parts
+    .map((part, index) =>
+      index === 0
+        ? part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()
+        : part.toLowerCase()
+    )
+    .join(" · ");
+}
+
+// tile = icon chip fill, text = type label color, border = subtle gradient card border
+const DEFAULT_ROLE_THEME = {
+  tile: "linear-gradient(140deg,#341CD6,#E04420)",
+  text: "#341CD6",
+  border: "linear-gradient(135deg,rgba(52,28,214,.55),rgba(224,68,32,.45))"
+};
+
+const ROLE_THEMES = {
+  admin: {
+    tile: "linear-gradient(140deg,#341CD6,#E04420)",
+    text: "#341CD6",
+    border: "linear-gradient(135deg,rgba(52,28,214,.6),rgba(224,68,32,.5) 55%,rgba(52,28,214,.12))"
+  },
+  cashless: {
+    tile: "#E04420",
+    text: "#E04420",
+    border: "linear-gradient(135deg,rgba(224,68,32,.6),rgba(224,68,32,.14))"
+  },
+  inventory: {
+    tile: "#00A9F2",
+    text: "#0284c7",
+    border: "linear-gradient(135deg,rgba(0,169,242,.6),rgba(0,169,242,.14))"
+  },
+  "tag-series": {
+    tile: "#8B5CF6",
+    text: "#8B5CF6",
+    border: "linear-gradient(135deg,rgba(139,92,246,.6),rgba(139,92,246,.14))"
+  },
+  "timeline-readonly": {
+    tile: "#341CD6",
+    text: "#341CD6",
+    border: "linear-gradient(135deg,rgba(52,28,214,.6),rgba(0,169,242,.18))"
+  },
+  "timeline-admin": {
+    tile: "#1C1C1C",
+    text: "#1C1C1C",
+    border: "linear-gradient(135deg,rgba(224,68,32,.45),rgba(52,28,214,.4))"
+  }
+};
+
+function getRoleTheme(type) {
+  return ROLE_THEMES[normalizeRoleType(type)] ?? DEFAULT_ROLE_THEME;
+}
+
 function RoleGlyph({ type }) {
   const normalized = normalizeRoleType(type);
   const iconClass = "h-3.5 w-3.5";
@@ -394,6 +452,24 @@ function RoleGlyph({ type }) {
     );
   }
 
+  if (normalized.includes("timeline")) {
+    return (
+      <svg
+        viewBox="0 0 24 24"
+        className={iconClass}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.9"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden
+      >
+        <circle cx="12" cy="12" r="8.5" />
+        <path d="M12 7.5V12l3 2" />
+      </svg>
+    );
+  }
+
   return (
     <svg
       viewBox="0 0 24 24"
@@ -440,6 +516,8 @@ export default function AccessPage() {
   const [selectError, setSelectError] = useState(null);
   const [hideErrorBanner, setHideErrorBanner] = useState(false);
   const [hideEmptyBanner, setHideEmptyBanner] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeFilter, setActiveFilter] = useState("all");
   const reauthHandledRef = useRef(false);
 
   useEffect(() => {
@@ -525,7 +603,9 @@ export default function AccessPage() {
       eventName: role?.eventName ?? null,
       eventId: role?.eventId ?? null,
       adminName: role?.adminName ?? null,
-      adminId: role?.adminId ?? null
+      adminId: role?.adminId ?? null,
+      appName: role?.appName ?? role?.moduleName ?? role?.applicationName ?? null,
+      appId: role?.appId ?? role?.moduleId ?? role?.applicationId ?? null
     }));
   }, [profile]);
 
@@ -537,9 +617,82 @@ export default function AccessPage() {
 
   const eventRoles = useMemo(() => {
     return roleCards.filter(
-      (role) => String(role.type || "").toLowerCase() !== "admin"
+      (role) =>
+        String(role.type || "").toLowerCase() !== "admin" &&
+        !role.appId &&
+        !role.appName
     );
   }, [roleCards]);
+
+  const appRoles = useMemo(() => {
+    return roleCards.filter(
+      (role) =>
+        String(role.type || "").toLowerCase() !== "admin" &&
+        (role.appId || role.appName)
+    );
+  }, [roleCards]);
+
+  // Everything that is not an admin workspace lives under "Events" in the design.
+  const eventSectionRoles = useMemo(
+    () => [...eventRoles, ...appRoles],
+    [eventRoles, appRoles]
+  );
+
+  const filters = useMemo(() => {
+    const counts = new Map();
+    const order = [];
+    roleCards.forEach((role) => {
+      const key = normalizeRoleType(role.type);
+      if (!key) return;
+      if (!counts.has(key)) {
+        counts.set(key, { key, label: formatChipLabel(role.type), count: 0 });
+        order.push(key);
+      }
+      counts.get(key).count += 1;
+    });
+    return [
+      { key: "all", label: "All access", count: roleCards.length },
+      ...order.map((key) => counts.get(key))
+    ];
+  }, [roleCards]);
+
+  // Keep the active filter valid when the available roles change.
+  useEffect(() => {
+    if (!filters.some((filter) => filter.key === activeFilter)) {
+      setActiveFilter("all");
+    }
+  }, [filters, activeFilter]);
+
+  const matchesFilters = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    return (role) => {
+      if (activeFilter !== "all" && normalizeRoleType(role.type) !== activeFilter) {
+        return false;
+      }
+      if (!query) return true;
+      const haystack = [
+        role.type,
+        role.eventName,
+        role.adminName,
+        role.eventId,
+        role.adminId
+      ]
+        .filter((value) => value !== null && value !== undefined && value !== "")
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(query);
+    };
+  }, [activeFilter, searchQuery]);
+
+  const visibleAdminRoles = useMemo(
+    () => adminRoles.filter(matchesFilters),
+    [adminRoles, matchesFilters]
+  );
+  const visibleEventRoles = useMemo(
+    () => eventSectionRoles.filter(matchesFilters),
+    [eventSectionRoles, matchesFilters]
+  );
+  const hasVisibleRoles = visibleAdminRoles.length > 0 || visibleEventRoles.length > 0;
 
   const highlightActions = useMemo(() => [], []);
 
@@ -587,6 +740,10 @@ export default function AccessPage() {
     }
     if (!apiType) {
       setSelectError("Module type is missing.");
+      return;
+    }
+    if (!roleMatch) {
+      setSelectError("Please select the workspace again. No matching access role was found.");
       return;
     }
     if (needsEventId && !eventId) {
@@ -830,6 +987,7 @@ export default function AccessPage() {
       destination,
       service,
       eventId: role.eventId,
+      adminId: role.adminId,
       requireEventDetails: !isTagSeries
     });
   };
@@ -838,98 +996,111 @@ export default function AccessPage() {
     handlePermissionClick({
       type: role.type,
       label: role.type,
-      destination: accessAdminUrl
+      destination: accessAdminUrl,
+      adminId: role.adminId
     });
   };
 
-  const renderSectionHeader = (count, label) => (
-    <div className="flex items-center gap-3">
-      <span className="flex h-7 min-w-7 items-center justify-center rounded-full bg-[#1f1f1f] px-2 text-[0.7rem] font-semibold text-white">
+  const renderSectionHeader = (count, label, caption) => (
+    <div className="mb-4 flex items-center gap-3">
+      <span className="font-vcr flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#1c1c1c] text-[10.5px] tracking-[0.04em] text-[#f2f1ee]">
         {formatSectionCount(count)}
       </span>
-      <h2 className="m-0 text-[1rem] font-medium text-[#1d2940]">{label}</h2>
+      <h2 className="font-chillax m-0 shrink-0 text-[1.35rem] font-medium tracking-[-0.01em] text-[#1c1c1c]">
+        {label}
+      </h2>
+      <span className="h-px flex-1 bg-[#1c1c1c]/[0.06]" aria-hidden />
+      {caption ? (
+        <span className="font-vcr hidden shrink-0 text-[9px] uppercase tracking-[0.14em] text-[#9b9a97] sm:block">
+          {caption}
+        </span>
+      ) : null}
     </div>
   );
 
   const renderRoleCards = (roles, emptyLabel, options = {}) => {
     const { onCardClick, showOpenIcon = false } = options;
     const isAdminSection = options.section === "admin";
-    const gridClass = isAdminSection
-      ? "grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(280px,370px))] max-[640px]:grid-cols-1"
-      : "grid gap-3 [grid-template-columns:repeat(auto-fill,minmax(205px,215px))] max-[500px]:grid-cols-1";
 
     if (!roles.length) {
       return (
-        <div className="rounded-lg border border-[#ececec] bg-white px-5 py-4 text-sm text-[#58677f] shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
+        <div className="rounded-[14px] border border-dashed border-[#1c1c1c]/12 bg-white px-5 py-4 text-sm text-[#71706e]">
           {emptyLabel}
         </div>
       );
     }
 
     return (
-      <section className={gridClass}>
-        {roles.map((role) => (
-          <button
-            key={role.id}
-            type="button"
-            className={`group relative min-h-[98px] overflow-visible rounded-lg border border-transparent bg-white p-0 text-left shadow-[0_10px_20px_rgba(15,23,42,0.055)] transition duration-200 ease-out hover:-translate-y-1.5 hover:shadow-[0_16px_28px_rgba(47,30,199,0.10),0_10px_18px_rgba(224,68,32,0.06)] ${
-              onCardClick ? "cursor-pointer" : "cursor-default"
-            }`}
-            style={{
-              background:
-                "linear-gradient(#fff, #fff) padding-box, linear-gradient(135deg, rgba(224,68,32,0.35), rgba(47,30,199,0.32)) border-box"
-            }}
-            onClick={() => {
-              if (!onCardClick || !role?.type) return;
-              onCardClick(role);
-            }}
-            disabled={!onCardClick}
-            aria-label={`Open ${role.type}`}
-          >
-            <span
-              className="pointer-events-none absolute inset-x-7 -bottom-3 h-7 rounded-full bg-[rgba(47,30,199,0.09)] opacity-0 blur-xl transition duration-200 group-hover:opacity-100"
-              aria-hidden
-            />
-            <div className="relative flex h-full min-h-[96px] flex-col px-2.5 py-2">
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex min-w-0 items-start gap-2">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[linear-gradient(135deg,#e04420,#2f1ec7)] text-white">
-                    <RoleGlyph type={role.type} />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="m-0 truncate text-[0.58rem] font-semibold uppercase tracking-[0.2em] text-[#72809b]">
-                      {role.type}
-                    </p>
-                    <p className="m-0 mt-0.5 truncate text-[0.62rem] font-medium text-[#71809a]">
-                      {role.expiryAt ? formatSessionExpiry(role.expiryAt) : "No expiry"}
-                    </p>
-                  </div>
+      <section
+        style={{
+          display: "grid",
+          gap: "clamp(12px,1.4vw,18px)",
+          gridTemplateColumns: "repeat(auto-fill,minmax(min(100%,270px),1fr))"
+        }}
+      >
+        {roles.map((role) => {
+          const theme = getRoleTheme(role.type);
+          return (
+            <button
+              key={role.id}
+              type="button"
+              className={`group relative flex flex-col overflow-hidden rounded-[14px] text-left shadow-[0_1px_2px_rgba(28,28,28,0.04),0_10px_30px_-18px_rgba(28,28,28,0.25)] transition duration-200 ease-out hover:-translate-y-[3px] hover:shadow-[0_2px_4px_rgba(28,28,28,0.05),0_18px_40px_-20px_rgba(28,28,28,0.35),0_0_0_1px_rgba(224,68,32,0.30)] ${
+                onCardClick ? "cursor-pointer" : "cursor-default"
+              }`}
+              style={{
+                border: "1px solid transparent",
+                background: `linear-gradient(#fff,#fff) padding-box, ${theme.border} border-box`,
+                "--accent": theme.text
+              }}
+              onClick={() => {
+                if (!onCardClick || !role?.type) return;
+                onCardClick(role);
+              }}
+              disabled={!onCardClick}
+              aria-label={`Open ${role.type}`}
+            >
+              <div className="flex items-start gap-3 px-4 pb-2.5 pt-4">
+                <span
+                  className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[10px] text-white"
+                  style={{ background: theme.tile }}
+                >
+                  <RoleGlyph type={role.type} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p
+                    className="font-vcr m-0 truncate text-[9.5px] tracking-[0.15em]"
+                    style={{ color: theme.text }}
+                  >
+                    {String(role.type || "—").toUpperCase()}
+                  </p>
+                  <p className="m-0 mt-1 truncate text-[11.5px] font-light text-[#71706e]">
+                    {role.expiryAt ? formatSessionExpiry(role.expiryAt) : "No expiry"}
+                  </p>
                 </div>
                 {showOpenIcon ? (
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md border border-[#e2e2e2] bg-white text-[#262626] shadow-[0_5px_10px_rgba(15,23,42,0.05)] transition duration-200 group-hover:border-[#e04420] group-hover:text-[#e04420]">
+                  <span className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-[8px] border border-[#1c1c1c]/12 text-[#71706e] transition duration-200 group-hover:border-(--accent) group-hover:text-(--accent)">
                     <OpenArrowGlyph />
                   </span>
                 ) : null}
               </div>
 
-              <div className="ml-8 mt-1.5 min-w-0">
-                <p className="m-0 truncate text-[0.74rem] font-medium text-[#262626]">
+              <div className="px-4 pb-3">
+                <p className="font-chillax m-0 truncate text-[16.5px] font-medium tracking-[-0.01em] text-[#1c1c1c]">
                   {isAdminSection ? role.adminName || "—" : role.eventName || "—"}
                 </p>
-                <div className="mt-1.5 h-px bg-[#ececec]" />
               </div>
 
-              <div className="ml-8 mt-auto flex items-center justify-between gap-2 pt-1.5">
-                <span className="text-[0.54rem] font-semibold uppercase tracking-[0.2em] text-[#a0acc0]">
-                  {isAdminSection ? "Admin Id" : "Event Id"}
+              <div className="mt-auto flex items-center justify-between gap-2.5 border-t border-[#1c1c1c]/[0.06] bg-[#f8f7f5] px-4 py-[9px]">
+                <span className="font-vcr text-[9px] tracking-[0.14em] text-[#9b9a97]">
+                  {isAdminSection ? "ADMIN ID" : "EVENT ID"}
                 </span>
-                <span className="text-[0.74rem] font-semibold text-[#22304a]">
+                <span className="font-vcr text-[13px] tracking-[0.02em] text-[#1c1c1c]">
                   {isAdminSection ? role.adminId ?? "—" : role.eventId ?? "—"}
                 </span>
               </div>
-            </div>
-          </button>
-        ))}
+            </button>
+          );
+        })}
       </section>
     );
   };
@@ -943,7 +1114,7 @@ export default function AccessPage() {
           content="Pick the AtomX module you need in one click."
         />
       </Head>
-      <main className="min-h-[calc(100vh-58px)] w-full bg-[#f7f7f8] px-4 pb-12 md:px-5">
+      <main className="min-h-[calc(100vh-58px)] w-full bg-[#f2f1ee] px-4 pb-20 md:px-8">
         <HeaderBar
           user={user}
           onSignOut={handleSignOut}
@@ -1002,37 +1173,105 @@ export default function AccessPage() {
           </div>
         )}
 
-        <div className="mt-6">
-          <WelcomePanel user={user} actions={highlightActions} />
+        <div className="mx-auto w-full max-w-[1680px]">
+          <div className="mt-8 flex flex-wrap items-end justify-between gap-4">
+            <WelcomePanel user={user} actions={highlightActions} />
+            <div className="flex h-10 w-full min-w-[210px] items-center gap-2 rounded-[11px] border border-[#1c1c1c]/12 bg-white px-3 md:w-auto md:max-w-[600px] md:flex-1">
+              <span className="pointer-events-none shrink-0 text-[#9b9a97]">
+                <svg
+                  viewBox="0 0 16 16"
+                  className="h-3.5 w-3.5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  aria-hidden
+                >
+                  <circle cx="7" cy="7" r="4.6" />
+                  <path d="M10.5 10.5 14 14" />
+                </svg>
+              </span>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search workspaces & events"
+                aria-label="Search workspaces and events"
+                className="w-full border-0 bg-transparent p-0 text-[12.5px] text-[#1c1c1c] outline-none placeholder:text-[#9b9a97]"
+              />
+            </div>
+          </div>
+
+          {filters.length > 1 ? (
+            <div className="mt-6 flex flex-wrap gap-2 pb-0.5 max-sm:flex-nowrap max-sm:overflow-x-auto max-sm:[-ms-overflow-style:none] max-sm:[scrollbar-width:none] max-sm:[&::-webkit-scrollbar]:hidden">
+              {filters.map((filter) => {
+                const isActive = filter.key === activeFilter;
+                return (
+                  <button
+                    key={filter.key}
+                    type="button"
+                    onClick={() => setActiveFilter(filter.key)}
+                    className={`flex shrink-0 items-center gap-[7px] rounded-full border px-[13px] py-[7px] text-[11.5px] font-medium transition ${
+                      isActive
+                        ? "border-[#1c1c1c] bg-[#1c1c1c] text-[#f2f1ee]"
+                        : "border-[#1c1c1c]/12 bg-white text-[#71706e] hover:border-[#e04420] hover:text-[#1c1c1c]"
+                    }`}
+                    aria-pressed={isActive}
+                  >
+                    <span>{filter.label}</span>
+                    <span className="font-vcr text-[9px] opacity-60">
+                      {formatSectionCount(filter.count)}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
+
+          <div className="mt-[22px] h-px w-full bg-[#1c1c1c]/12" />
+
+          {!roleCards.length ? (
+            <div className="mt-6 rounded-[14px] border border-dashed border-[#1c1c1c]/12 bg-white px-5 py-4 text-sm text-[#71706e]">
+              No roles assigned yet.
+            </div>
+          ) : !hasVisibleRoles ? (
+            <div className="mt-6 rounded-[14px] border border-dashed border-[#1c1c1c]/12 bg-white px-5 py-8 text-center text-sm text-[#71706e]">
+              No workspaces or events match your search.
+            </div>
+          ) : (
+            <div className="mt-[30px] flex flex-col gap-[30px]">
+              {visibleAdminRoles.length ? (
+                <div className="flex flex-col">
+                  {renderSectionHeader(
+                    visibleAdminRoles.length,
+                    "Admin Workspaces",
+                    "Full platform control"
+                  )}
+                  {renderRoleCards(visibleAdminRoles, "No admin roles assigned yet.", {
+                    onCardClick: handleAdminRoleClick,
+                    showOpenIcon: true,
+                    section: "admin"
+                  })}
+                </div>
+              ) : null}
+
+              {visibleEventRoles.length ? (
+                <div className="flex flex-col">
+                  {renderSectionHeader(
+                    visibleEventRoles.length,
+                    "Events",
+                    "Scoped module access"
+                  )}
+                  {renderRoleCards(visibleEventRoles, "No event roles assigned yet.", {
+                    onCardClick: handleEventRoleClick,
+                    showOpenIcon: true,
+                    section: "event"
+                  })}
+                </div>
+              ) : null}
+            </div>
+          )}
         </div>
-
-        <div className="mt-4 h-px w-full bg-[#dddddd]" />
-
-        {roleCards.length ? (
-          <div className="mt-5 flex flex-col gap-7">
-            <div className="flex flex-col gap-3">
-              {renderSectionHeader(adminRoles.length, "Admin Workspaces")}
-              {renderRoleCards(adminRoles, "No admin roles assigned yet.", {
-                onCardClick: handleAdminRoleClick,
-                showOpenIcon: true,
-                section: "admin"
-              })}
-            </div>
-
-            <div className="flex flex-col gap-3">
-              {renderSectionHeader(eventRoles.length, "Events")}
-              {renderRoleCards(eventRoles, "No event roles assigned yet.", {
-                onCardClick: handleEventRoleClick,
-                showOpenIcon: true,
-                section: "event"
-              })}
-            </div>
-          </div>
-        ) : (
-          <div className="mt-6 rounded-lg border border-[#ececec] bg-white px-5 py-4 text-sm text-[#58677f] shadow-[0_12px_28px_rgba(15,23,42,0.06)]">
-            No roles assigned yet.
-          </div>
-        )}
       </main>
 
       {selecting && (

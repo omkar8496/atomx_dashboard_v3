@@ -373,28 +373,28 @@ export default function AdminClient() {
     { id: "present", label: "Present", count: tabCounts.present },
     { id: "upcoming", label: "Upcomming", count: tabCounts.upcoming }
   ];
-  const contentShellClass = "w-full pr-4 pl-[72px] md:pr-6 md:pl-[88px]";
+  const contentShellClass = "w-full pl-[72px] pr-3 md:pl-[88px] md:pr-6 max-[900px]:pl-3 max-[900px]:pr-3";
 
   return (
     <main className="min-h-screen bg-[color:rgb(var(--color-bg))] pb-10">
       <Header areaLabel="Event List" breadcrumb="Admin" variant="portal" />
-      <div className={`${contentShellClass} border-b border-[#d8d8d8] pt-7 pb-3`}>
-        <div className="flex items-center justify-between gap-6">
-          <div className="flex min-w-0 flex-wrap items-center gap-8">
+      <div className={`${contentShellClass} border-b border-[#d8d8d8] pt-7 pb-3 max-[900px]:pt-4 max-[640px]:pb-2.5`}>
+        <div className="flex items-center justify-between gap-6 max-[900px]:flex-col max-[900px]:items-stretch max-[900px]:gap-3">
+          <div className="-mx-1 flex min-w-0 flex-wrap items-center gap-8 overflow-x-auto px-1 max-[900px]:flex-nowrap max-[900px]:gap-4 max-[900px]:pb-1">
             {tabs.map((tab) => {
               const active = activeTab === tab.id;
               return (
                 <button
                   key={tab.id}
                   type="button"
-                  className={`relative flex items-center gap-3 pb-3 text-[0.95rem] font-semibold transition ${
+                  className={`relative flex shrink-0 items-center gap-3 pb-3 text-[0.95rem] font-semibold transition max-[900px]:gap-2 max-[900px]:text-[0.86rem] max-[640px]:pb-2.5 max-[640px]:text-[0.72rem] ${
                     active ? "text-[#171717]" : "text-[#858585] hover:text-[#333333]"
                   }`}
                   onClick={() => setActiveTab(tab.id)}
                 >
                   <span>{tab.label}</span>
                   <span
-                    className={`flex h-6 min-w-6 items-center justify-center rounded-full px-2 text-[0.68rem] font-semibold ${
+                    className={`flex h-6 min-w-6 items-center justify-center rounded-full px-2 text-[0.68rem] font-semibold max-[900px]:h-5 max-[900px]:min-w-5 max-[900px]:text-[0.62rem] max-[640px]:h-4.5 max-[640px]:min-w-4.5 max-[640px]:px-1.5 max-[640px]:text-[0.54rem] ${
                       active
                         ? "bg-[#1f1f1f] text-white"
                         : "bg-white text-[#8c8c8c]"
@@ -410,7 +410,7 @@ export default function AdminClient() {
             })}
           </div>
 
-          <label className="flex w-[360px] max-w-[42vw] items-center gap-3 text-[#8a8a8a]">
+          <label className="flex w-[360px] max-w-[42vw] items-center gap-3 text-[#8a8a8a] max-[900px]:h-10 max-[900px]:w-full max-[900px]:max-w-none max-[900px]:rounded-lg max-[900px]:border max-[900px]:border-[#dedede] max-[900px]:bg-white max-[900px]:px-3">
             <span className="sr-only">Search events</span>
             <svg
               viewBox="0 0 24 24"
@@ -428,14 +428,14 @@ export default function AdminClient() {
             <input
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              className="h-8 min-w-0 flex-1 bg-transparent text-sm font-medium text-[#2f3544] outline-none placeholder:text-[#9b9b9b]"
+              className="h-8 min-w-0 flex-1 bg-transparent text-sm font-medium text-[#2f3544] outline-none placeholder:text-[#9b9b9b] max-[900px]:text-[0.82rem] max-[640px]:text-[0.7rem]"
               placeholder={searchPlaceholder || SEARCH_PLACEHOLDERS[0]}
             />
           </label>
         </div>
       </div>
 
-      <div className={`${contentShellClass} mt-5`}>
+      <div className={`${contentShellClass} mt-5 max-[640px]:mt-3`}>
         {loading ? (
           <div className="rounded-xl bg-white py-12 shadow-[0_12px_30px_rgba(15,23,42,0.08)]">
             <AtomXLoader label="Loading events..." size={56} />
@@ -455,7 +455,7 @@ export default function AdminClient() {
         ) : null}
 
         {!loading && visibleEvents.length > 0 ? (
-          <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+          <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 max-[900px]:grid-cols-2 max-[900px]:gap-2.5">
             {visibleEvents.map((eventItem) => {
               const eventId = String(getEventId(eventItem));
               const isOpening = openingEventId === eventId;
@@ -469,11 +469,11 @@ export default function AdminClient() {
               return (
                 <article
                   key={eventId || getEventName(eventItem)}
-                  className="w-full rounded-lg bg-white p-2.5 shadow-[0_16px_34px_rgba(18,22,33,0.10)]"
+                  className="w-full rounded-lg bg-white p-2.5 shadow-[0_16px_34px_rgba(18,22,33,0.10)] max-[900px]:p-1.5 max-[640px]:rounded-md"
                 >
                   <div
                     className="relative overflow-hidden rounded-md bg-slate-200"
-                    style={{ aspectRatio: "2.45 / 1" }}
+                    style={{ aspectRatio: "2.25 / 1" }}
                   >
                     <img
                       src={DEFAULT_EVENT_IMAGE}
@@ -485,29 +485,29 @@ export default function AdminClient() {
                         event.currentTarget.src = FALLBACK_EVENT_IMAGE;
                       }}
                     />
-                    <span className="absolute left-3 top-3 rounded-full bg-white px-3.5 py-1.5 text-[0.78rem] font-semibold text-[#262626] shadow-[0_8px_16px_rgba(0,0,0,0.08)]">
+                    <span className="absolute left-3 top-3 rounded-full bg-white px-3.5 py-1.5 text-[0.78rem] font-semibold text-[#262626] shadow-[0_8px_16px_rgba(0,0,0,0.08)] max-[900px]:left-2 max-[900px]:top-2 max-[900px]:px-2.5 max-[900px]:py-1 max-[900px]:text-[0.64rem] max-[640px]:px-2 max-[640px]:text-[0.56rem]">
                       {getEventStatusLabel(eventItem)}
                     </span>
                   </div>
 
-                  <h2 className="mt-3 truncate text-[1rem] font-medium leading-tight text-[#242424]">
+                  <h2 className="mt-3 truncate text-[1rem] font-medium leading-tight text-[#242424] max-[900px]:mt-2 max-[900px]:text-[0.78rem] max-[640px]:text-[0.68rem]">
                     {getEventName(eventItem)}
                   </h2>
 
-                  <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3">
+                  <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 max-[900px]:mt-2 max-[900px]:gap-x-2 max-[900px]:gap-y-1.5">
                     {details.map((item) => (
                       <div key={`${eventId}-${item.label}`} className="min-w-0">
-                        <div className="text-[0.72rem] font-semibold text-[#9a9a9a]">
+                        <div className="text-[0.72rem] font-semibold text-[#9a9a9a] max-[900px]:text-[0.58rem] max-[640px]:text-[0.52rem]">
                           {item.label}
                         </div>
-                        <div className="mt-1 min-h-[1.25rem] text-[0.82rem] font-semibold leading-snug text-[#555555]">
+                        <div className="mt-1 min-h-[1.25rem] text-[0.82rem] font-semibold leading-snug text-[#555555] max-[900px]:mt-0.5 max-[900px]:min-h-[1rem] max-[900px]:truncate max-[900px]:text-[0.64rem] max-[640px]:text-[0.56rem]">
                           {item.value}
                         </div>
                       </div>
                     ))}
                   </div>
 
-                  <div className="mt-4 grid grid-cols-4 gap-2">
+                  <div className="mt-4 grid grid-cols-4 gap-2 max-[900px]:mt-2.5 max-[900px]:gap-1">
                     {EVENT_ACTIONS.map((action) => (
                       <button
                         key={action.id}
@@ -516,7 +516,7 @@ export default function AdminClient() {
                         title={action.label}
                         onClick={() => handleOpenEvent(eventId)}
                         disabled={submitting || !eventId}
-                        className="flex h-9 items-center justify-center rounded-md border border-transparent text-[#202020] transition hover:translate-y-[-1px] hover:text-[#e04420] hover:shadow-[0_10px_18px_rgba(224,68,32,0.12)] disabled:cursor-not-allowed disabled:opacity-55"
+                        className="flex h-9 items-center justify-center rounded-md border border-transparent text-[#202020] transition hover:translate-y-[-1px] hover:text-[#e04420] hover:shadow-[0_10px_18px_rgba(224,68,32,0.12)] disabled:cursor-not-allowed disabled:opacity-55 max-[900px]:h-7 max-[640px]:h-6"
                         style={{
                           background:
                             "linear-gradient(#fff, #fff) padding-box, linear-gradient(135deg, #f04a35, #5c42f4) border-box"

@@ -16,7 +16,7 @@ const uploads = [
 ];
 
 const FileIcon = () => (
-  <div className="grid h-11 w-11 place-items-center rounded-lg bg-[#ffe9e4] text-[#E04420]">
+  <div className="grid h-11 w-11 place-items-center rounded-lg bg-[#ffe9e4] text-[#E04420] max-[640px]:h-8 max-[640px]:w-8">
     <svg
       viewBox="0 0 24 24"
       className="h-5 w-5"
@@ -52,44 +52,44 @@ const UploadEmptyIcon = () => (
 
 export default function RecentUploads() {
   return (
-    <section className="mt-5 rounded-xl border border-[#ded4ff] border-l-[4px] border-l-[#E04420] bg-white p-5 shadow-[0_22px_65px_rgba(15,23,42,0.10)]">
-      <div className="flex flex-col gap-2 border-b border-[#e5e5e5] pb-4 sm:flex-row sm:items-end sm:justify-between">
+    <section className="mt-5 rounded-xl border border-[#ded4ff] border-l-[4px] border-l-[#E04420] bg-white p-5 shadow-[0_22px_65px_rgba(15,23,42,0.10)] max-[640px]:mt-3 max-[640px]:rounded-lg max-[640px]:p-3">
+      <div className="flex flex-col gap-2 border-b border-[#e5e5e5] pb-4 sm:flex-row sm:items-end sm:justify-between max-[640px]:pb-3">
         <div>
-          <p className="text-[0.76rem] font-bold uppercase tracking-[0.24em] text-[#E04420]">
+          <p className="text-[0.76rem] font-bold uppercase tracking-[0.24em] text-[#E04420] max-[640px]:text-[0.58rem] max-[640px]:tracking-[0.18em]">
             Recent Uploads
           </p>
-          <h2 className="mt-1 text-[1.32rem] font-bold leading-none text-[#1c1c1c]">
+          <h2 className="mt-1 text-[1.32rem] font-bold leading-none text-[#1c1c1c] max-[640px]:text-[0.95rem]">
             2 listed
           </h2>
         </div>
-        <p className="text-[0.9rem] font-medium text-[#8f8f8f]">
+        <p className="text-[0.9rem] font-medium text-[#8f8f8f] max-[640px]:text-[0.68rem]">
           Signed packages and debug builds
         </p>
       </div>
 
-      <div className="mt-4 space-y-3">
+      <div className="mt-4 space-y-3 max-[640px]:mt-3 max-[640px]:space-y-2">
         {uploads.map((item) => (
           <div
             key={item.id}
-            className="flex items-center justify-between gap-4 rounded-lg border border-[#e5e5e5] bg-white px-4 py-3 shadow-[0_8px_22px_rgba(15,23,42,0.04)]"
+            className="flex items-center justify-between gap-4 rounded-lg border border-[#e5e5e5] bg-white px-4 py-3 shadow-[0_8px_22px_rgba(15,23,42,0.04)] max-[640px]:gap-2 max-[640px]:px-3 max-[640px]:py-2.5"
           >
-            <div className="flex min-w-0 items-center gap-4">
+            <div className="flex min-w-0 items-center gap-4 max-[640px]:gap-2.5">
               <FileIcon />
               <div className="min-w-0">
-                <p className="truncate text-[1rem] font-semibold text-[#1f1f1f]">{item.name}</p>
-                <p className="text-[0.86rem] font-medium text-[#657391]">{item.meta}</p>
+                <p className="truncate text-[1rem] font-semibold text-[#1f1f1f] max-[640px]:text-[0.74rem]">{item.name}</p>
+                <p className="text-[0.86rem] font-medium text-[#657391] max-[640px]:text-[0.62rem]">{item.meta}</p>
               </div>
             </div>
-            <span className="shrink-0 rounded-full bg-[#e4f6ff] px-4 py-2 text-[0.78rem] font-bold text-[#0285bf]">
+            <span className="shrink-0 rounded-full bg-[#e4f6ff] px-4 py-2 text-[0.78rem] font-bold text-[#0285bf] max-[640px]:px-2.5 max-[640px]:py-1 max-[640px]:text-[0.58rem]">
               {item.status}
             </span>
           </div>
         ))}
       </div>
 
-      <div className="mt-10 flex flex-col items-center justify-center gap-2 pb-3 text-[#8b96aa]">
+      <div className="mt-10 flex flex-col items-center justify-center gap-2 pb-3 text-[#8b96aa] max-[640px]:mt-6">
         <UploadEmptyIcon />
-        <p className="text-[0.9rem] font-medium">No more uploads to show</p>
+        <p className="text-[0.9rem] font-medium max-[640px]:text-[0.68rem]">No more uploads to show</p>
       </div>
     </section>
   );

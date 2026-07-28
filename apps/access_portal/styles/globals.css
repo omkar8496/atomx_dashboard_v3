@@ -2,7 +2,7 @@
 
 @font-face {
   font-family: "Poppins";
-  src: url("/shared/fonts/Poppins-Thin.ttf") format("truetype");
+  src: url("/shared/fonts/Poppins/Poppins-Thin.ttf") format("truetype");
   font-display: swap;
   font-weight: 100;
   font-style: normal;
@@ -10,7 +10,7 @@
 
 @font-face {
   font-family: "Poppins";
-  src: url("/shared/fonts/Poppins-Light.ttf") format("truetype");
+  src: url("/shared/fonts/Poppins/Poppins-Light.ttf") format("truetype");
   font-display: swap;
   font-weight: 300;
   font-style: normal;
@@ -18,7 +18,7 @@
 
 @font-face {
   font-family: "Poppins";
-  src: url("/shared/fonts/Poppins-Regular.ttf") format("truetype");
+  src: url("/shared/fonts/Poppins/Poppins-Regular.ttf") format("truetype");
   font-display: swap;
   font-weight: 400;
   font-style: normal;
@@ -26,7 +26,7 @@
 
 @font-face {
   font-family: "Poppins";
-  src: url("/shared/fonts/Poppins-MediumItalic.ttf") format("truetype");
+  src: url("/shared/fonts/Poppins/Poppins-MediumItalic.ttf") format("truetype");
   font-display: swap;
   font-weight: 500;
   font-style: italic;
@@ -34,7 +34,7 @@
 
 @font-face {
   font-family: "Poppins";
-  src: url("/shared/fonts/Poppins-SemiBold.ttf") format("truetype");
+  src: url("/shared/fonts/Poppins/Poppins-SemiBold.ttf") format("truetype");
   font-display: swap;
   font-weight: 600;
   font-style: normal;
@@ -42,10 +42,68 @@
 
 @font-face {
   font-family: "Poppins";
-  src: url("/shared/fonts/Poppins-Bold.ttf") format("truetype");
+  src: url("/shared/fonts/Poppins/Poppins-Bold.ttf") format("truetype");
   font-display: swap;
   font-weight: 700;
   font-style: normal;
+}
+
+/* AtomX primary / headline font (brand guidelines) */
+@font-face {
+  font-family: "Chillax";
+  src: url("/shared/fonts/Chillex/Chillax-Light.woff2") format("woff2");
+  font-display: swap;
+  font-weight: 300;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Chillax";
+  src: url("/shared/fonts/Chillex/Chillax-Regular.woff2") format("woff2");
+  font-display: swap;
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Chillax";
+  src: url("/shared/fonts/Chillex/Chillax-Medium.woff2") format("woff2");
+  font-display: swap;
+  font-weight: 500;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Chillax";
+  src: url("/shared/fonts/Chillex/Chillax-Semibold.woff2") format("woff2");
+  font-display: swap;
+  font-weight: 600;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Chillax";
+  src: url("/shared/fonts/Chillex/Chillax-Bold.woff2") format("woff2");
+  font-display: swap;
+  font-weight: 700;
+  font-style: normal;
+}
+
+/* AtomX accent font (brand guidelines) — used for technical/data labels */
+@font-face {
+  font-family: "VCR";
+  src: url("/shared/fonts/VCR/VCR_OSD_MONO_1.001.ttf") format("truetype");
+  font-display: swap;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.font-chillax {
+  font-family: "Chillax", "Poppins", "Segoe UI", system-ui, sans-serif;
+}
+
+.font-vcr {
+  font-family: "VCR", "VCR OSD Mono", ui-monospace, "SFMono-Regular", monospace;
 }
 
 :root {

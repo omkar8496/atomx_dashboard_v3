@@ -30,14 +30,22 @@ export function HeaderBar({ user, onSignOut, pageTitle = "Workspace" }) {
                 />
               </span>
               <div className="hidden h-9 w-px bg-[#dddddd] sm:block" aria-hidden />
-              <div className="flex min-w-0 items-center gap-2 text-[1.35rem] font-semibold leading-none sm:text-[1.48rem]">
-                <span className="truncate text-[#202020]">Portal</span>
-                <span className="text-[#969696]">-</span>
+              <div className="font-chillax flex min-w-0 items-center gap-2 text-[1.3rem] font-semibold leading-none sm:text-[1.45rem]">
+                <span className="hidden truncate text-[#1c1c1c] sm:inline">Portal</span>
+                <span className="hidden text-[#b4b4b4] sm:inline">/</span>
                 <span className="truncate text-[#e04420]">{pageTitle}</span>
               </div>
             </div>
             <div className="flex-1" />
-            <UserMenu user={user} onSignOut={onSignOut} />
+            <div className="flex items-center gap-2.5">
+              <span
+                className="font-vcr flex h-[34px] w-[34px] items-center justify-center rounded-[10px] border border-[#1c1c1c]/12 bg-white text-[11px] tracking-[0.06em] text-[#71706e]"
+                aria-hidden
+              >
+                DK
+              </span>
+              <UserMenu user={user} onSignOut={onSignOut} />
+            </div>
           </div>
         </header>
       </div>

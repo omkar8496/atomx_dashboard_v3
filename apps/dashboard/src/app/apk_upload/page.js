@@ -38,20 +38,20 @@ export default function ApkUploadPage() {
       `}</style>
       <Header areaLabel="APK Uploads" variant="portal" />
 
-      <div className="w-full pr-4 pl-[72px] pt-5 md:pr-7 md:pl-[88px]">
-        <section className="mb-4 flex flex-col gap-4 border-b border-[#d8d8d8] pb-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="w-full pr-4 pl-[72px] pt-5 md:pr-7 md:pl-[88px] max-[900px]:px-3 max-[640px]:pt-4">
+        <section className="mb-4 flex flex-col gap-4 border-b border-[#d8d8d8] pb-4 sm:flex-row sm:items-center sm:justify-between max-[640px]:mb-3 max-[640px]:gap-3 max-[640px]:pb-3">
           <div>
-            <h1 className="text-[1.75rem] font-semibold leading-none text-[#111827] md:text-[1.9rem]">
+            <h1 className="text-[1.75rem] font-semibold leading-none text-[#111827] md:text-[1.9rem] max-[640px]:text-[1.25rem]">
               APK Uploads
             </h1>
-            <p className="mt-3 text-[0.9rem] font-normal text-[#777777]">
+            <p className="mt-3 text-[0.9rem] font-normal text-[#777777] max-[640px]:mt-2 max-[640px]:text-[0.7rem]">
               Upload Android builds and track recent release packages.
             </p>
           </div>
 
           <button
             type="button"
-            className="inline-flex h-10 items-center justify-center gap-3 rounded-lg bg-[#1c1c1c] px-5 text-[0.86rem] font-semibold text-white shadow-[0_12px_26px_rgba(28,28,28,0.16)] transition duration-200 hover:-translate-y-0.5 hover:bg-[#E04420]"
+            className="inline-flex h-10 items-center justify-center gap-3 rounded-lg bg-[#1c1c1c] px-5 text-[0.86rem] font-semibold text-white shadow-[0_12px_26px_rgba(28,28,28,0.16)] transition duration-200 hover:-translate-y-0.5 hover:bg-[#E04420] max-[640px]:h-9 max-[640px]:gap-2 max-[640px]:px-3 max-[640px]:text-[0.72rem]"
           >
             <svg viewBox="0 0 24 24" className="h-[18px] w-[18px]" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 4v12" />
@@ -62,8 +62,8 @@ export default function ApkUploadPage() {
           </button>
         </section>
 
-        <section className="rounded-xl border border-[#ded4ff] border-l-[4px] border-l-[#E04420] bg-white p-3 shadow-[0_18px_52px_rgba(15,23,42,0.09)] md:p-4">
-          <div className="grid gap-4 lg:grid-cols-[0.85fr_1.15fr]">
+        <section className="rounded-xl border border-[#ded4ff] border-l-[4px] border-l-[#E04420] bg-white p-3 shadow-[0_18px_52px_rgba(15,23,42,0.09)] md:p-4 max-[640px]:rounded-lg">
+          <div className="grid gap-4 lg:grid-cols-[0.85fr_1.15fr] max-[640px]:gap-3">
             <UploadSummaryCard />
             <UploadDropzone />
           </div>

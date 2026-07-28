@@ -4,7 +4,7 @@ import EventEditContent from "./components/EventEditContent";
 export default function EventEditPage() {
   return (
     <main
-      className="event-edit-page-font min-h-screen bg-[color:rgb(var(--color-bg))] pb-10"
+      className="event-edit-page-font min-h-screen w-full max-w-full overflow-x-hidden bg-[color:rgb(var(--color-bg))] pb-10"
       style={{ fontFamily: '"AtomX Event Edit Poppins", Poppins, sans-serif' }}
     >
       <style>{`
@@ -33,10 +33,16 @@ export default function EventEditPage() {
         .event-edit-page-font * {
           font-family: "AtomX Event Edit Poppins", Poppins, sans-serif;
         }
+        @media (max-width: 900px) {
+          html,
+          body {
+            overflow-x: hidden;
+          }
+        }
       `}</style>
       <Header areaLabel="Edit Event" variant="portal" />
 
-      <div className="w-full pr-4 pl-[72px] pt-5 md:pr-7 md:pl-[88px]">
+      <div className="w-full max-w-full overflow-x-hidden pr-4 pl-[72px] pt-5 md:pr-7 md:pl-[88px] max-[900px]:px-3 max-[900px]:pt-4 max-[640px]:px-3">
         <EventEditContent />
       </div>
     </main>

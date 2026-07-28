@@ -53,7 +53,7 @@ export default function ConfigPage() {
         showEditEventButton
       />
       <ConfigTransition>
-        <div className="w-full pr-4 pl-[72px] pt-5 md:pr-7 md:pl-[88px]">
+        <div className="w-full pr-4 pl-[72px] pt-5 md:pr-7 md:pl-[88px] max-[900px]:px-3">
           <VendorConfigurationContent />
         </div>
       </ConfigTransition>

@@ -2,7 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { fetchEventDetails, updateEventDetails } from "../../../lib/dashboardApi";
+import {
+  closeEventDay,
+  fetchEventDetails,
+  updateEventBalanceSetting,
+  updateEventDetails
+} from "../../../lib/dashboardApi";
 import { useDashboardStore } from "../../../store/dashboardStore";
 import {
   CalendarIcon,
@@ -194,11 +199,11 @@ function includesQuery(query, ...values) {
   return values.join(" ").toLowerCase().includes(query);
 }
 
-function BackIcon() {
+function BackIcon({ className = "h-4 w-4" }) {
   return (
     <svg
       viewBox="0 0 24 24"
-      className="h-4 w-4"
+      className={className}
       fill="none"
       stroke="currentColor"
       strokeWidth="2.2"
@@ -207,6 +212,96 @@ function BackIcon() {
     >
       <path d="m15 18-6-6 6-6" />
     </svg>
+  );
+}
+
+function CloseIcon({ className = "h-5 w-5" }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M18 6 6 18" />
+      <path d="m6 6 12 12" />
+    </svg>
+  );
+}
+
+function CheckIcon({ className = "h-5 w-5" }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="m5 12 4 4L19 6" />
+    </svg>
+  );
+}
+
+function BalanceSettingToast({ reference, onClose }) {
+  return (
+    <>
+      <div className="fixed inset-0 z-[70] bg-[#111827]/18 backdrop-blur-[2px]" />
+      <div className="fixed left-1/2 top-20 z-[80] w-[300px] max-w-[calc(100vw-2rem)] -translate-x-1/2 animate-[balanceToastIn_260ms_ease-out] overflow-hidden rounded-lg border border-[#d5b7ff] bg-white shadow-[0_22px_54px_rgba(15,23,42,0.20)] max-[640px]:top-18 max-[640px]:w-[min(300px,calc(100vw-1.5rem))]">
+        <style jsx>{`
+          @keyframes balanceToastIn {
+            from {
+              opacity: 0;
+              transform: translate(-50%, -22px);
+            }
+            to {
+              opacity: 1;
+              transform: translate(-50%, 0);
+            }
+          }
+        `}</style>
+        <div className="h-1 bg-[linear-gradient(90deg,#E04420,#D5B7FF,#341CD6)]" />
+        <div className="flex items-center justify-between gap-3 bg-[#1c1c1c] px-4 py-3 text-white">
+          <div className="flex items-center gap-3">
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[linear-gradient(135deg,#E04420,#341CD6)] text-white shadow-[0_10px_20px_rgba(52,28,214,0.22)]">
+              <CheckIcon className="h-4.5 w-4.5" />
+            </span>
+            <div>
+              <p className="text-[0.58rem] font-bold uppercase tracking-[0.16em] text-[#D5B7FF]">
+                Balance Setting
+              </p>
+              <h3 className="text-[1rem] font-bold text-white">Done</h3>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-white/70 transition hover:bg-white/10 hover:text-white"
+            aria-label="Close balance setting message"
+          >
+            <CloseIcon className="h-4.5 w-4.5" />
+          </button>
+        </div>
+        <div className="p-4">
+          <div className="rounded-lg border border-[#f1eaff] bg-[#fbf8ff] p-3">
+            <p className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-[#8d859b]">
+              Reference
+            </p>
+            <p className="mt-1 text-[1.9rem] font-semibold leading-none text-[#E04420]">
+              {reference || "-"}
+            </p>
+          </div>
+          <p className="mt-4 text-[0.74rem] font-medium leading-5 text-[#626774]">
+            Please update all devices for the changes to reflect this reference number.
+          </p>
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -235,6 +330,10 @@ export default function EventEditContent() {
   const [topups, setTopups] = useState([]);
   const [loading, setLoading] = useState(Boolean(eventId));
   const [saving, setSaving] = useState(false);
+  const [closingDay, setClosingDay] = useState(false);
+  const [dayCloseMessage, setDayCloseMessage] = useState("");
+  const [updatingBalanceSetting, setUpdatingBalanceSetting] = useState(false);
+  const [balanceToast, setBalanceToast] = useState(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -359,43 +458,135 @@ export default function EventEditContent() {
     }
   };
 
+  const handleUpdateBalanceSetting = async () => {
+    if (!eventId) return;
+    setUpdatingBalanceSetting(true);
+    setError("");
+    try {
+      const response = await updateEventBalanceSetting({ token, eventId });
+      const updatedEvent = response?.event;
+      if (updatedEvent) {
+        setEventDetails(updatedEvent);
+        setEventMeta({
+          eventId: updatedEvent?.id ?? eventId,
+          eventName: updatedEvent?.name ?? "",
+          venue: updatedEvent?.venue ?? "",
+          city: updatedEvent?.locationCity ?? ""
+        });
+      }
+      setBalanceToast({
+        reference: updatedEvent?.locationId ?? response?.locationId ?? ""
+      });
+    } catch (err) {
+      console.error("Failed to update balance setting", err);
+      setError("Unable to update balance setting.");
+    } finally {
+      setUpdatingBalanceSetting(false);
+    }
+  };
+
+  const handleDayClose = async () => {
+    if (!eventId) return;
+    setClosingDay(true);
+    setDayCloseMessage("");
+    setError("");
+    try {
+      await closeEventDay({
+        token,
+        eventId,
+        day: "a",
+        volunteerCount: 0
+      });
+      setDayCloseMessage("Event day closed successfully.");
+    } catch (err) {
+      console.error("Failed to close event day", err);
+      setError("Unable to close the event day.");
+    } finally {
+      setClosingDay(false);
+    }
+  };
+
   return (
     <>
-      <section className="mb-4 border-b border-[#d8d8d8] pb-4">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-          <div>
+      <section className="mb-4 border-b border-[#d8d8d8] pb-4 max-[640px]:mb-3 max-[640px]:pb-3">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between max-[640px]:gap-3">
+          <div className="min-w-0">
             <button
               type="button"
               onClick={() => router.push("/Config")}
-              className="inline-flex items-center gap-1.5 text-[0.74rem] font-medium text-[#7f7f7f] transition hover:text-[#E04420]"
+              className="inline-flex max-w-full items-center gap-1.5 text-[0.74rem] font-medium text-[#7f7f7f] transition hover:text-[#E04420] max-[640px]:text-[0.64rem]"
             >
-              <BackIcon />
-              <span>
+              <BackIcon className="h-3.5 w-3.5 shrink-0 max-[640px]:h-3 max-[640px]:w-3" />
+              <span className="min-w-0 truncate">
                 Events &gt; {eventFields["Event Name"] || "Selected Event"} &gt; Settings
               </span>
             </button>
-            <h1 className="mt-2 text-[2rem] font-normal leading-none text-[#111827] md:text-[2.2rem]">
-              Edit Event Information
-            </h1>
+            <div className="mt-2 flex min-w-0 items-center justify-between gap-3 max-[640px]:mt-1.5">
+              <h1 className="min-w-0 text-[2rem] font-normal leading-none text-[#111827] md:text-[2.2rem] max-[640px]:truncate max-[640px]:text-[1.25rem]">
+                Edit Event Information
+              </h1>
+              <div className="hidden shrink-0 items-center gap-2 max-[640px]:flex">
+                <button
+                  type="button"
+                  onClick={saveChanges}
+                  disabled={saving || !eventId}
+                  className="h-8 rounded-md bg-[#1c1c1c] px-4 text-[0.68rem] font-bold text-white shadow-[0_8px_16px_rgba(28,28,28,0.12)] transition hover:bg-[#E04420] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {saving ? "Saving..." : "Save"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDayClose}
+                  disabled={closingDay || !eventId}
+                  className="h-8 rounded-md border border-[#1c1c1c] bg-white px-3 text-[0.62rem] font-bold text-[#1c1c1c] transition hover:bg-[#1c1c1c] hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {closingDay ? "Closing..." : "Day Close"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleUpdateBalanceSetting}
+                  disabled={updatingBalanceSetting || !eventId}
+                  className="h-8 w-[124px] truncate rounded-md bg-[#E04420] px-3 text-[0.62rem] font-bold text-white shadow-[0_8px_16px_rgba(224,68,32,0.16)] transition hover:bg-[#1c1c1c] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {updatingBalanceSetting ? "Setting..." : "Set New Balance"}
+                </button>
+              </div>
+            </div>
           </div>
 
-          <div className="flex flex-col gap-3 md:flex-row md:items-center">
-            <label className="flex h-10 w-full min-w-[420px] items-center gap-3 border-b border-[#bfbfbf] px-1 text-[#8a8a8a] focus-within:border-[#E04420]">
-              <SearchIcon />
+          <div className="flex min-w-0 flex-col gap-3 md:flex-row md:items-center max-[640px]:gap-2">
+            <label className="flex h-10 w-full min-w-[420px] items-center gap-3 border-b border-[#bfbfbf] px-1 text-[#8a8a8a] focus-within:border-[#E04420] max-[640px]:h-9 max-[640px]:min-w-0 max-[640px]:rounded-lg max-[640px]:border max-[640px]:border-[#dedede] max-[640px]:bg-white max-[640px]:px-3">
+              <SearchIcon className="h-4 w-4 shrink-0 max-[640px]:h-3.5 max-[640px]:w-3.5" />
               <input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Search settings, fields, passwords, services..."
-                className="min-w-0 flex-1 bg-transparent text-[0.78rem] font-semibold outline-none placeholder:text-[#7f7f7f]"
+                className="min-w-0 flex-1 bg-transparent text-[0.78rem] font-semibold outline-none placeholder:text-[#7f7f7f] max-[640px]:text-[0.7rem]"
               />
             </label>
             <button
               type="button"
               onClick={saveChanges}
               disabled={saving || !eventId}
-              className="h-9 rounded-md bg-[#1c1c1c] px-5 text-[0.78rem] font-bold text-white shadow-[0_10px_18px_rgba(28,28,28,0.12)] transition hover:bg-[#E04420]"
+              className="h-9 rounded-md bg-[#1c1c1c] px-5 text-[0.78rem] font-bold text-white shadow-[0_10px_18px_rgba(28,28,28,0.12)] transition hover:bg-[#E04420] disabled:cursor-not-allowed disabled:opacity-60 max-[640px]:hidden"
             >
               {saving ? "Saving..." : "Save"}
+            </button>
+            <button
+              type="button"
+              onClick={handleDayClose}
+              disabled={closingDay || !eventId}
+              className="h-9 shrink-0 rounded-md border border-[#1c1c1c] bg-white px-4 text-[0.74rem] font-bold text-[#1c1c1c] transition hover:bg-[#1c1c1c] hover:text-white disabled:cursor-not-allowed disabled:opacity-60 max-[640px]:hidden"
+            >
+              {closingDay ? "Closing..." : "Day Close"}
+            </button>
+            <button
+              type="button"
+              onClick={handleUpdateBalanceSetting}
+              disabled={updatingBalanceSetting || !eventId}
+              className="h-9 w-[178px] truncate rounded-md bg-[#E04420] px-5 text-[0.78rem] font-bold text-white shadow-[0_10px_18px_rgba(224,68,32,0.16)] transition hover:bg-[#1c1c1c] disabled:cursor-not-allowed disabled:opacity-60 max-[640px]:hidden"
+            >
+              {updatingBalanceSetting ? "Setting..." : "Set New Balance"}
             </button>
           </div>
         </div>
@@ -404,6 +595,20 @@ export default function EventEditContent() {
       {error ? (
         <div className="mb-4 rounded-lg bg-[#fff4ef] px-4 py-3 text-[0.84rem] font-semibold text-[#E04420]">
           {error}
+        </div>
+      ) : null}
+
+      {dayCloseMessage ? (
+        <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-[#bfe8d0] bg-[#f2fbf6] px-4 py-3 text-[0.82rem] font-semibold text-[#16794a]">
+          <span>{dayCloseMessage}</span>
+          <button
+            type="button"
+            onClick={() => setDayCloseMessage("")}
+            className="grid h-7 w-7 shrink-0 place-items-center rounded-md transition hover:bg-[#dff5e8]"
+            aria-label="Close day close message"
+          >
+            <CloseIcon className="h-4 w-4" />
+          </button>
         </div>
       ) : null}
 
@@ -420,15 +625,15 @@ export default function EventEditContent() {
       ) : null}
 
       {!loading && eventId ? (
-      <div className="grid items-start gap-4 xl:grid-cols-[1.55fr_1fr]">
-        <div className="space-y-4">
+      <div className="grid min-w-0 items-start gap-4 xl:grid-cols-[1.55fr_1fr] max-[640px]:gap-3">
+        <div className="min-w-0 space-y-4 max-[640px]:space-y-3">
           {visible.details && (
             <SectionCard
               title="Event Details"
               description="Identity, location, schedule, and billing basics."
             >
               <UploadBox />
-              <div className="mt-4 grid gap-4 md:grid-cols-3">
+              <div className="mt-4 grid gap-4 md:grid-cols-3 max-[640px]:mt-3 max-[640px]:gap-3">
                 {eventFieldOrder.map((label) => (
                   <Field
                     key={label}
@@ -445,7 +650,7 @@ export default function EventEditContent() {
 
           {visible.pos && (
             <SectionCard title="POS" description="Point-of-sale behavior and topup presets.">
-              <div className="grid gap-4 lg:grid-cols-2">
+              <div className="grid gap-4 lg:grid-cols-2 max-[640px]:gap-3">
                 <div>
                   {posLeft.map((label) => (
                     <SettingRow
@@ -471,13 +676,13 @@ export default function EventEditContent() {
                 </div>
               </div>
 
-              <div className="mt-4 rounded-md border border-[#e6e6e6] p-4">
-                <p className="mb-3 text-[0.68rem] font-bold uppercase tracking-[0.16em] text-[#888888]">
+              <div className="mt-4 rounded-md border border-[#e6e6e6] p-4 max-[640px]:mt-3 max-[640px]:p-3">
+                <p className="mb-3 text-[0.68rem] font-bold uppercase tracking-[0.16em] text-[#888888] max-[640px]:mb-2 max-[640px]:text-[0.58rem] max-[640px]:tracking-[0.12em]">
                   Topup Buttons
                 </p>
-                <div className="space-y-3">
+                <div className="space-y-3 max-[640px]:space-y-2.5">
                   {topups.length === 0 ? (
-                    <div className="rounded-md border border-dashed border-[#dddddd] px-4 py-5 text-center text-[0.78rem] font-semibold text-[#888888]">
+                    <div className="rounded-md border border-dashed border-[#dddddd] px-4 py-5 text-center text-[0.78rem] font-semibold text-[#888888] max-[640px]:px-3 max-[640px]:py-4 max-[640px]:text-[0.7rem]">
                       No topup buttons configured.
                     </div>
                   ) : (
@@ -507,7 +712,7 @@ export default function EventEditContent() {
                 </div>
               </div>
 
-              <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <div className="mt-4 grid gap-4 md:grid-cols-2 max-[640px]:mt-3 max-[640px]:gap-3">
                 {Object.keys(posPasswords).map((label) => (
                   <Field
                     key={label}
@@ -522,13 +727,13 @@ export default function EventEditContent() {
           )}
         </div>
 
-        <aside className="space-y-4">
+        <aside className="min-w-0 space-y-4 max-[640px]:space-y-3">
           {visible.services && (
             <SectionCard
               title="Active Services"
               description="Enable or disable core event capabilities."
             >
-              <div className="grid gap-x-8 md:grid-cols-2">
+              <div className="grid gap-x-8 md:grid-cols-2 max-[640px]:gap-x-0">
                 {services.map((label) => (
                   <SettingRow
                     key={label}
@@ -543,7 +748,7 @@ export default function EventEditContent() {
 
           {visible.card && (
             <SectionCard title="Card" description="Card fee, wallet limits, and return rules.">
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 md:grid-cols-2 max-[640px]:gap-3">
                 {["Card Fee", "1st Topup", "Max Wallet"].map((label) => (
                   <Field
                     key={label}
@@ -554,11 +759,11 @@ export default function EventEditContent() {
                 ))}
               </div>
 
-              <div className="mt-4 rounded-md border border-[#e6e6e6] p-4">
-                <p className="mb-3 text-[0.68rem] font-bold uppercase tracking-[0.16em] text-[#888888]">
+              <div className="mt-4 rounded-md border border-[#e6e6e6] p-4 max-[640px]:mt-3 max-[640px]:p-3">
+                <p className="mb-3 text-[0.68rem] font-bold uppercase tracking-[0.16em] text-[#888888] max-[640px]:mb-2 max-[640px]:text-[0.58rem] max-[640px]:tracking-[0.12em]">
                   Returns
                 </p>
-                <div className="grid gap-x-8 md:grid-cols-2">
+                <div className="grid gap-x-8 md:grid-cols-2 max-[640px]:gap-x-0">
                   {returns.map((label) => (
                     <SettingRow
                       key={label}
@@ -570,7 +775,7 @@ export default function EventEditContent() {
                 </div>
               </div>
 
-              <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <div className="mt-4 grid gap-4 md:grid-cols-2 max-[640px]:mt-3 max-[640px]:gap-3">
                 {["Return Min Amount", "Return Max Amount"].map((label) => (
                   <Field
                     key={label}
@@ -588,7 +793,7 @@ export default function EventEditContent() {
               title="Dash Settings"
               description="Dashboard security, visibility, and reset behavior."
             >
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 md:grid-cols-2 max-[640px]:gap-3">
                 <Field
                   label="Dashboard Password"
                   value={dashFields["Dashboard Password"]}
@@ -603,9 +808,6 @@ export default function EventEditContent() {
                     onToggle={() => toggle(setDashState, label)}
                   />
                 ))}
-                <div className="flex min-h-[38px] items-center text-[1rem] font-normal text-[#1f1f1f]">
-                  Get New Balance Setting
-                </div>
               </div>
             </SectionCard>
           )}
@@ -615,7 +817,7 @@ export default function EventEditContent() {
               title="MSWIPE Details"
               description="Payment gateway credentials and verification details."
             >
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-4 md:grid-cols-2 max-[640px]:gap-3">
                 {Object.keys(mswipeFields).map((label) => (
                   <Field
                     key={label}
@@ -636,6 +838,13 @@ export default function EventEditContent() {
         <div className="mt-8 rounded-lg border border-dashed border-[#d6d6d6] bg-white px-6 py-10 text-center text-[0.88rem] font-semibold text-[#888888]">
           No settings found for "{search}".
         </div>
+      ) : null}
+
+      {balanceToast ? (
+        <BalanceSettingToast
+          reference={balanceToast.reference}
+          onClose={() => setBalanceToast(null)}
+        />
       ) : null}
     </>
   );

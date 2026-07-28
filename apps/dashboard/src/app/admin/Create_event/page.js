@@ -40,7 +40,7 @@ export default function CreateEventPage() {
         }
       `}</style>
       <Header areaLabel="Admin" />
-      <div className="w-full pl-[72px] pr-4 pt-7 md:pl-[88px] md:pr-6">
+      <div className="w-full pl-[72px] pr-4 pt-7 md:pl-[88px] md:pr-6 max-[900px]:px-3">
         <AdminRoleManager />
       </div>
     </main>

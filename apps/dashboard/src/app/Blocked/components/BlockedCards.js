@@ -38,26 +38,26 @@ function EmptyIcon() {
 
 function BlockedCard({ item }) {
   return (
-    <article className="min-h-[126px] rounded-lg border border-[#efb9d9] bg-white p-3 shadow-[0_10px_24px_rgba(15,23,42,0.035)] transition duration-200 hover:-translate-y-0.5 hover:border-[#ded4ff] hover:shadow-[0_16px_30px_rgba(52,28,214,0.09)]">
+    <article className="min-h-[126px] rounded-lg border border-[#efb9d9] bg-white p-3 shadow-[0_10px_24px_rgba(15,23,42,0.035)] transition duration-200 hover:-translate-y-0.5 hover:border-[#ded4ff] hover:shadow-[0_16px_30px_rgba(52,28,214,0.09)] max-[640px]:min-h-[108px] max-[640px]:p-2.5">
       <div className="flex items-start justify-between gap-3">
-        <span className="text-[0.8rem] font-bold text-[#E04420]">#{item.id}</span>
-        <span className="rounded-full bg-[#e4f6ff] px-2.5 py-1 text-[0.62rem] font-bold uppercase text-[#0285bf]">
+        <span className="text-[0.8rem] font-bold text-[#E04420] max-[640px]:text-[0.68rem]">#{item.id}</span>
+        <span className="rounded-full bg-[#e4f6ff] px-2.5 py-1 text-[0.62rem] font-bold uppercase text-[#0285bf] max-[640px]:px-2 max-[640px]:py-0.5 max-[640px]:text-[0.52rem]">
           {item.status}
         </span>
       </div>
 
       <div className="mt-3">
-        <p className="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[#929292]">
+        <p className="text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[#929292] max-[640px]:text-[0.52rem]">
           Card ID
         </p>
-        <p className="mt-1 text-[1.05rem] font-bold leading-tight text-[#202020]">
+        <p className="mt-1 text-[1.05rem] font-bold leading-tight text-[#202020] max-[640px]:text-[0.86rem]">
           {item.cardId}
         </p>
       </div>
 
       <button
         type="button"
-        className="mt-3 inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-[#1c1c1c] text-[0.74rem] font-bold text-white shadow-[0_10px_20px_rgba(28,28,28,0.10)] transition duration-200 hover:bg-[#E04420]"
+        className="mt-3 inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg bg-[#1c1c1c] text-[0.74rem] font-bold text-white shadow-[0_10px_20px_rgba(28,28,28,0.10)] transition duration-200 hover:bg-[#E04420] max-[640px]:mt-2 max-[640px]:h-8 max-[640px]:text-[0.64rem]"
       >
         <LockIcon />
         Unblock
@@ -81,35 +81,35 @@ export default function BlockedCards() {
   }, [query]);
 
   return (
-    <section className="rounded-xl border border-[#ded4ff] border-l-[4px] border-l-[#E04420] bg-white p-4 shadow-[0_18px_52px_rgba(15,23,42,0.09)]">
-      <div className="flex flex-col gap-3 border-b border-[#e5e5e5] pb-3 lg:flex-row lg:items-center lg:justify-between">
+    <section className="rounded-xl border border-[#ded4ff] border-l-[4px] border-l-[#E04420] bg-white p-4 shadow-[0_18px_52px_rgba(15,23,42,0.09)] max-[640px]:rounded-lg max-[640px]:p-3">
+      <div className="flex flex-col gap-3 border-b border-[#e5e5e5] pb-3 lg:flex-row lg:items-center lg:justify-between max-[640px]:gap-2 max-[640px]:pb-2.5">
         <div className="flex items-center gap-2.5">
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-[linear-gradient(135deg,#E04420_0%,#A9379E_48%,#341CD6_100%)] text-[0.82rem] font-bold text-white shadow-[0_10px_22px_rgba(52,28,214,0.20)]">
+          <span className="grid h-8 w-8 place-items-center rounded-lg bg-[linear-gradient(135deg,#E04420_0%,#A9379E_48%,#341CD6_100%)] text-[0.82rem] font-bold text-white shadow-[0_10px_22px_rgba(52,28,214,0.20)] max-[640px]:h-7 max-[640px]:w-7 max-[640px]:text-[0.66rem]">
             4
           </span>
-          <h2 className="text-[1.05rem] font-semibold text-[#1f1f1f]">Cards</h2>
+          <h2 className="text-[1.05rem] font-semibold text-[#1f1f1f] max-[640px]:text-[0.95rem]">Cards</h2>
         </div>
 
-        <label className="flex h-9 w-full items-center gap-3 border-b border-[#cfcfcf] px-1 text-[#8f80ff] focus-within:border-[#E04420] lg:max-w-[720px]">
+        <label className="flex h-9 w-full items-center gap-3 border-b border-[#cfcfcf] px-1 text-[#8f80ff] focus-within:border-[#E04420] lg:max-w-[720px] max-[640px]:gap-2">
           <SearchIcon />
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search Card"
-            className="h-full min-w-0 flex-1 bg-transparent text-[0.84rem] font-normal text-[#1f2937] outline-none placeholder:text-[#8e98ad]"
+            className="h-full min-w-0 flex-1 bg-transparent text-[0.84rem] font-normal text-[#1f2937] outline-none placeholder:text-[#8e98ad] max-[640px]:text-[0.7rem]"
           />
         </label>
       </div>
 
-      <div className="grid gap-2.5 pt-3 sm:grid-cols-2 lg:grid-cols-4 xl:max-w-[960px]">
+      <div className="grid gap-2.5 pt-3 sm:grid-cols-2 lg:grid-cols-4 xl:max-w-[960px] max-[640px]:grid-cols-2 max-[640px]:gap-2">
         {filteredCards.map((item) => (
           <BlockedCard key={item.cardId} item={item} />
         ))}
       </div>
 
-      <div className="flex min-h-[92px] flex-col items-center justify-center gap-2 text-[#8b96aa]">
+      <div className="flex min-h-[92px] flex-col items-center justify-center gap-2 text-[#8b96aa] max-[640px]:min-h-[70px]">
         <EmptyIcon />
-        <p className="text-[0.82rem] font-normal">No more blocked IDs to show</p>
+        <p className="text-[0.82rem] font-normal max-[640px]:text-[0.68rem]">No more blocked IDs to show</p>
       </div>
     </section>
   );

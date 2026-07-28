@@ -99,47 +99,62 @@ const ICONS = {
   )
 };
 
-export default function SideDrawer() {
+export default function SideDrawer({ mobileOpen = false, onMobileClose }) {
   const pathname = usePathname();
   const router = useRouter();
 
   return (
-    <aside
-      className="group fixed left-0 z-50"
-      style={{ top: "var(--header-h)", height: "calc(100vh - var(--header-h))" }}
-    >
-      <div className="h-full w-[60px] overflow-hidden bg-[#34363b] py-3 shadow-[16px_0_42px_rgba(15,23,42,0.16)] transition-[width] duration-300 ease-out group-hover:w-[220px]">
-        <nav className="flex flex-col gap-2 px-2">
-          {ITEMS.map((item) => {
-            const matchBase = item.match || item.href;
-            const isActive = item.exact
-              ? pathname === matchBase
-              : Boolean(matchBase && pathname?.startsWith(matchBase));
+    <>
+      {mobileOpen ? (
+        <button
+          type="button"
+          className="fixed inset-x-0 bottom-0 z-[49] bg-[#111827]/35 backdrop-blur-[2px] min-[901px]:hidden"
+          style={{ top: "var(--header-h)" }}
+          onClick={onMobileClose}
+          aria-label="Close navigation overlay"
+        />
+      ) : null}
 
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => {
-                  if (item.href) router.push(item.href);
-                }}
-                className={`flex h-10 w-full items-center gap-3 rounded-md px-3 text-left text-[0.84rem] font-semibold transition-colors duration-200 ${
-                  isActive
-                    ? "bg-white text-[#25272b]"
-                    : "text-[#d4d4d6] hover:bg-white/10 hover:text-white"
-                }`}
-              >
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center">
-                  {ICONS[item.id]}
-                </span>
-                <span className="whitespace-nowrap opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                  {item.label}
-                </span>
-              </button>
-            );
-          })}
-        </nav>
-      </div>
-    </aside>
+      <aside
+        className={`group fixed left-0 z-50 transition-transform duration-300 ease-out max-[900px]:z-[60] ${
+          mobileOpen ? "max-[900px]:translate-x-0" : "max-[900px]:-translate-x-full"
+        }`}
+        style={{ top: "var(--header-h)", height: "calc(100vh - var(--header-h))" }}
+      >
+        <div className="h-full w-[60px] overflow-hidden bg-[#34363b] py-3 shadow-[16px_0_42px_rgba(15,23,42,0.16)] transition-[width] duration-300 ease-out group-hover:w-[220px] max-[900px]:w-[220px]">
+          <nav className="flex flex-col gap-2 px-2">
+            {ITEMS.map((item) => {
+              const matchBase = item.match || item.href;
+              const isActive = item.exact
+                ? pathname === matchBase
+                : Boolean(matchBase && pathname?.startsWith(matchBase));
+
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => {
+                    if (item.href) router.push(item.href);
+                    onMobileClose?.();
+                  }}
+                  className={`flex h-10 w-full items-center gap-3 rounded-md px-3 text-left text-[0.84rem] font-semibold transition-colors duration-200 ${
+                    isActive
+                      ? "bg-white text-[#25272b]"
+                      : "text-[#d4d4d6] hover:bg-white/10 hover:text-white"
+                  }`}
+                >
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+                    {ICONS[item.id]}
+                  </span>
+                  <span className="whitespace-nowrap opacity-0 transition-opacity duration-200 group-hover:opacity-100 max-[900px]:opacity-100">
+                    {item.label}
+                  </span>
+                </button>
+              );
+            })}
+          </nav>
+        </div>
+      </aside>
+    </>
   );
 }

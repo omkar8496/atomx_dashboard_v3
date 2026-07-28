@@ -1,93 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
-
-const DEVICES = [
-  {
-    id: 1,
-    code: "888",
-    type: "CARD",
-    vendorTag: "wisepos+",
-    stall: "TOPUP CARD M...",
-    stallFull: "TOPUP CARD MSWIPE",
-    vendor: "Topup",
-    loginAt: "2025-07-28 15:...",
-    loginAtFull: "2025-07-28 15:01:16",
-    version: "5.58",
-    closedAt: "2025-07-28 18:20:04",
-    closed: true
-  },
-  {
-    id: 2,
-    code: "1002",
-    type: "CARD",
-    vendorTag: "",
-    stall: "TOPUP CARD M...",
-    stallFull: "TOPUP CARD MSWIPE",
-    vendor: "Topup",
-    loginAt: "2025-07-28 15:...",
-    loginAtFull: "2025-07-28 15:01:16",
-    version: "5.58",
-    closedAt: "-",
-    closed: false
-  },
-  {
-    id: 3,
-    code: "1050",
-    type: "CARD",
-    vendorTag: "",
-    stall: "TOPUP CARD",
-    stallFull: "TOPUP CARD",
-    vendor: "Topup",
-    loginAt: "2025-07-13 23:...",
-    loginAtFull: "2025-07-13 23:05:42",
-    version: "5.57",
-    closedAt: "-",
-    closed: false
-  },
-  {
-    id: 4,
-    code: "1096",
-    type: "ACCESSX",
-    vendorTag: "",
-    stall: "AccessX",
-    stallFull: "AccessX",
-    vendor: "AccessX",
-    loginAt: "2025-03-12 14:...",
-    loginAtFull: "2025-03-12 14:38:10",
-    version: "5.33",
-    closedAt: "-",
-    closed: false
-  },
-  {
-    id: 5,
-    code: "1099",
-    type: "MENU",
-    vendorTag: "",
-    stall: "DEMO SALE",
-    stallFull: "DEMO SALE",
-    vendor: "Sale",
-    loginAt: "2025-06-04 15:...",
-    loginAtFull: "2025-06-04 15:13:53",
-    version: "4.90",
-    closedAt: "-",
-    closed: false
-  },
-  {
-    id: 6,
-    code: "1114",
-    type: "ITEM_SALE",
-    vendorTag: "",
-    stall: "BEER",
-    stallFull: "BEER",
-    vendor: "Sale",
-    loginAt: "2025-06-24 13:...",
-    loginAtFull: "2025-06-24 13:21:29",
-    version: "5.57",
-    closedAt: "-",
-    closed: false
-  }
-];
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { AtomXLoader } from "@atomx/global-components";
+import { fetchEventDevices } from "../../../lib/dashboardApi";
+import { useDashboardStore } from "../../../store/dashboardStore";
 
 function SearchIcon() {
   return (
@@ -147,6 +63,89 @@ function EditIcon() {
       <path d="M12 20h9" />
       <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
     </svg>
+  );
+}
+
+function formatDeviceDate(value) {
+  if (!value) {
+    return { short: "-", full: "-" };
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    const fallback = String(value);
+    return {
+      short: fallback.length > 18 ? `${fallback.slice(0, 18)}...` : fallback,
+      full: fallback
+    };
+  }
+
+  const formatted = new Intl.DateTimeFormat("en-GB", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false
+  })
+    .format(date)
+    .replace(",", "");
+
+  return {
+    short: formatted.length > 18 ? `${formatted.slice(0, 18)}...` : formatted,
+    full: formatted
+  };
+}
+
+function formatDeviceType(value) {
+  const type = String(value || "-").trim();
+  if (!type || type === "-") return "-";
+  return type.replace(/-/g, "_").toUpperCase();
+}
+
+function normalizeDevice(device, index) {
+  const printId = device?.devices_main_printId ?? device?.printId ?? device?.device_id ?? "-";
+  const loginAt = formatDeviceDate(device?.device_last_login_at);
+  const closedAt = formatDeviceDate(device?.device_day_closed_at ?? device?.device_event_closed_at);
+  const closed = Boolean(device?.device_day_closed || device?.device_event_closed);
+  const printer = String(device?.device_printer || "").trim();
+
+  return {
+    key: `${device?.devices_main_id ?? device?.device_id ?? printId ?? "device"}-${index}`,
+    id: device?.devices_main_id ?? device?.device_id ?? index + 1,
+    code: String(printId ?? "-"),
+    type: formatDeviceType(device?.device_type),
+    vendorTag: printer && printer.toLowerCase() !== "none" ? printer : "",
+    stall: device?.stall_name ?? "-",
+    stallFull: device?.stall_name ?? "-",
+    vendor: device?.vendor_name ?? "-",
+    loginAt: loginAt.short,
+    loginAtFull: loginAt.full,
+    version: device?.device_latest_app_version ?? "-",
+    closedAt: closedAt.full,
+    closed,
+    status: device?.device_status ?? "-",
+    hardwareId: device?.devices_main_hardwareId ?? "",
+    mainType: device?.devices_main_type ?? "",
+    stallId: device?.device_stall ?? "",
+    deviceId: device?.device_id ?? ""
+  };
+}
+
+function DeviceEmptyState({ message }) {
+  return (
+    <div className="grid min-h-[150px] place-items-center pt-3 text-center text-[0.8rem] font-medium text-[#8e98ad]">
+      {message}
+    </div>
+  );
+}
+
+function DeviceLoadingState() {
+  return (
+    <div className="grid min-h-[150px] place-items-center pt-3">
+      <AtomXLoader label="Loading devices..." />
+    </div>
   );
 }
 
@@ -285,14 +284,48 @@ function DeviceRow({ device }) {
 }
 
 export default function DeviceList() {
+  const token = useDashboardStore((state) => state.token);
+  const eventMeta = useDashboardStore((state) => state.eventMeta);
+  const eventDetails = useDashboardStore((state) => state.eventDetails);
+  const eventId = eventMeta?.eventId ?? eventDetails?.id;
   const [query, setQuery] = useState("");
   const [viewMode, setViewMode] = useState("list");
+  const [devices, setDevices] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState("");
+
+  const loadDevices = useCallback(async () => {
+    if (!eventId) {
+      setDevices([]);
+      setLoadError("");
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    setLoadError("");
+
+    try {
+      const eventDevices = await fetchEventDevices({ eventId, token });
+      setDevices(Array.isArray(eventDevices) ? eventDevices.map(normalizeDevice) : []);
+    } catch (error) {
+      console.error("Failed to load event devices", error);
+      setDevices([]);
+      setLoadError("Unable to load devices.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [eventId, token]);
+
+  useEffect(() => {
+    loadDevices();
+  }, [loadDevices]);
 
   const filteredDevices = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
-    if (!normalizedQuery) return DEVICES;
+    if (!normalizedQuery) return devices;
 
-    return DEVICES.filter((device) =>
+    return devices.filter((device) =>
       [
         device.id,
         device.code,
@@ -302,19 +335,64 @@ export default function DeviceList() {
         device.vendor,
         device.loginAt,
         device.version,
-        device.closedAt
+        device.closedAt,
+        device.status,
+        device.hardwareId,
+        device.mainType,
+        device.stallId,
+        device.deviceId
       ]
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(normalizedQuery))
     );
-  }, [query]);
+  }, [devices, query]);
+
+  const renderDeviceContent = () => {
+    if (!eventId) {
+      return <DeviceEmptyState message="Select an event to load devices." />;
+    }
+
+    if (isLoading) {
+      return <DeviceLoadingState />;
+    }
+
+    if (loadError) {
+      return <DeviceEmptyState message={loadError} />;
+    }
+
+    if (filteredDevices.length === 0) {
+      return <DeviceEmptyState message="No devices found." />;
+    }
+
+    if (viewMode === "grid") {
+      return (
+        <div className="max-h-[535px] overflow-y-auto pr-1 pt-3 [scrollbar-width:thin] [scrollbar-color:#d5b7ff_transparent]">
+          <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+            {filteredDevices.map((device) => (
+              <DeviceCard key={device.key} device={device} />
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="max-h-[420px] overflow-y-auto pr-1 pt-3 [scrollbar-width:thin] [scrollbar-color:#d5b7ff_transparent]">
+        <div>
+          {filteredDevices.map((device) => (
+            <DeviceRow key={device.key} device={device} />
+          ))}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <section className="rounded-xl border border-[#ded4ff] border-l-[4px] border-l-[#E04420] bg-white p-3.5 shadow-[0_18px_52px_rgba(15,23,42,0.09)]">
       <div className="flex flex-col gap-3 border-b border-[#e5e5e5] pb-2.5 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-2.5">
           <span className="grid h-8 w-8 place-items-center rounded-lg bg-[linear-gradient(135deg,#E04420_0%,#A9379E_48%,#341CD6_100%)] text-[0.8rem] font-bold text-white shadow-[0_10px_22px_rgba(52,28,214,0.20)]">
-            6
+            {devices.length}
           </span>
           <h2 className="text-[0.98rem] font-semibold text-[#1f1f1f]">Device List</h2>
         </div>
@@ -353,19 +431,7 @@ export default function DeviceList() {
         </div>
       </div>
 
-      {viewMode === "grid" ? (
-        <div className="grid gap-2.5 pt-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-          {filteredDevices.map((device) => (
-            <DeviceCard key={device.id} device={device} />
-          ))}
-        </div>
-      ) : (
-        <div className="pt-3">
-          {filteredDevices.map((device) => (
-            <DeviceRow key={device.id} device={device} />
-          ))}
-        </div>
-      )}
+      {renderDeviceContent()}
     </section>
   );
 }

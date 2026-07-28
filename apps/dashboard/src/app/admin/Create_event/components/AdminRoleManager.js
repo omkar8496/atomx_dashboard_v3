@@ -9,36 +9,6 @@ const TABS = [
   { id: "operator", label: "Operators" }
 ];
 
-const DUMMY_ADMINS = [
-  {
-    email: "design@atomx.in",
-    whenAdded: "Workspace setup",
-    date: "20 Sept 2026",
-    time: "5:26 pm"
-  },
-  {
-    email: "admin@atomx.in",
-    whenAdded: "Recently",
-    date: "24 Mar 2027",
-    time: "10:00 am"
-  }
-];
-
-const DUMMY_OPERATORS = [
-  {
-    email: "cashless.operator@atomx.in",
-    whenAdded: "Event setup",
-    date: "20 Sept 2026",
-    time: "5:26 pm"
-  },
-  {
-    email: "support.operator@atomx.in",
-    whenAdded: "Recently",
-    date: "24 Mar 2027",
-    time: "10:00 am"
-  }
-];
-
 function nowParts() {
   const now = new Date();
   return {
@@ -197,8 +167,8 @@ export default function AdminRoleManager() {
   const [activeTab, setActiveTab] = useState("admin");
   const [adminEmail, setAdminEmail] = useState("");
   const [operatorEmail, setOperatorEmail] = useState("");
-  const [admins, setAdmins] = useState(DUMMY_ADMINS);
-  const [operators, setOperators] = useState(DUMMY_OPERATORS);
+  const [admins, setAdmins] = useState([]);
+  const [operators, setOperators] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -207,12 +177,13 @@ export default function AdminRoleManager() {
     const email = (isAdmin ? adminEmail : operatorEmail).trim();
     const normalizedAdminId = String(initialAdminId || "").trim();
     const normalizedEventId = String(initialEventId || "").trim();
-    if (!email || !normalizedAdminId || (!isAdmin && !normalizedEventId)) {
-      setError(
-        isAdmin
-          ? "Email and active workspace Admin ID are required."
-          : "Email, active workspace Admin ID, and active Event ID are required."
-      );
+    if (!email) {
+      setError(`Enter the ${isAdmin ? "admin" : "operator"} email address.`);
+      return;
+    }
+
+    if (!normalizedAdminId || (!isAdmin && !normalizedEventId)) {
+      setError("Active workspace context is unavailable. Select a workspace and try again.");
       return;
     }
 
@@ -264,16 +235,6 @@ export default function AdminRoleManager() {
       </div>
 
       <section className="rounded-lg border border-[#ded4ff] border-l-[3px] border-l-[#ed4522] bg-white p-4 shadow-[0_18px_36px_rgba(15,23,42,0.08)]">
-        <div className="mb-3 flex flex-wrap gap-2 text-[0.72rem] font-semibold text-[#6f7280]">
-          <span className="rounded-full bg-[#f7f7f7] px-3 py-1">
-            Workspace Admin ID: {initialAdminId || "-"}
-          </span>
-          {!isAdmin && (
-            <span className="rounded-full bg-[#f7f7f7] px-3 py-1">
-              Event ID: {initialEventId || "-"}
-            </span>
-          )}
-        </div>
         <div className="grid grid-cols-[minmax(260px,1fr)_auto] items-end gap-3 max-sm:grid-cols-1">
           <Field label={isAdmin ? "Admin Email" : "Operator Email"}>
             <TextInput

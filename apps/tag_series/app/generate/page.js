@@ -3,7 +3,7 @@
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import * as XLSX from "xlsx";
-import { createTagSeriesLog, fetchBatchRecords, fetchSeriesMeta } from "../../api/api";
+import { createTagSeriesLog, fetchBatchRecords } from "../../api/api";
 import { getStepOneState } from "../../lib/setupStorage";
 import { capturePostHogEvent } from "@atomx/global-components";
 
@@ -115,6 +115,12 @@ function normalizeSeriesList(response) {
   if (Array.isArray(response)) return response;
 
   const candidates = [
+    response.tagSeries_existing,
+    response.data?.tagSeries_existing,
+    response.tagSeriesExisting,
+    response.data?.tagSeriesExisting,
+    response.tag_series_existing,
+    response.data?.tag_series_existing,
     response.series,
     response.data?.series,
     response.tagSeries,
@@ -140,6 +146,84 @@ function normalizeSeriesList(response) {
   }
 
   return [];
+}
+
+function isSeriesEntry(value) {
+  return (
+    value &&
+    typeof value === "object" &&
+    (value.series !== undefined || value.tagSeries !== undefined) &&
+    (value.id !== undefined ||
+      value.eventwiseId !== undefined ||
+      value.tagSeriesId !== undefined ||
+      value.tagSeriesExistingId !== undefined)
+  );
+}
+
+function collectSeriesEntries(value, seen = new Set()) {
+  if (!value) return [];
+  if (typeof value === "string") {
+    try {
+      return collectSeriesEntries(JSON.parse(value), seen);
+    } catch (error) {
+      return [];
+    }
+  }
+  if (typeof value !== "object" || seen.has(value)) return [];
+  seen.add(value);
+
+  if (Array.isArray(value)) {
+    return value.flatMap((item) => collectSeriesEntries(item, seen));
+  }
+
+  const direct = isSeriesEntry(value) ? [value] : [];
+  return direct.concat(
+    Object.values(value).flatMap((item) => collectSeriesEntries(item, seen))
+  );
+}
+
+function getSeriesEntryKeys(entry) {
+  return [
+    entry?.id,
+    entry?.eventwiseId,
+    entry?.eventwise_id,
+    entry?.tagSeriesId,
+    entry?.tag_series_id,
+    entry?.tagSeriesExistingId,
+    entry?.tag_series_existing_id
+  ]
+    .map((value) => Number(value))
+    .filter((value) => Number.isFinite(value));
+}
+
+function buildSeriesMap(seriesList = []) {
+  const map = new Map();
+  seriesList.forEach((entry) => {
+    getSeriesEntryKeys(entry).forEach((key) => {
+      map.set(key, entry);
+    });
+  });
+  return map;
+}
+
+function getSeriesMetaForLog(seriesMap, log) {
+  const keys = [
+    log?.eventwiseId,
+    log?.eventwise_id,
+    log?.tagSeriesId,
+    log?.tag_series_id,
+    log?.tagSeriesExistingId,
+    log?.tag_series_existing_id
+  ]
+    .map((value) => Number(value))
+    .filter((value) => Number.isFinite(value));
+
+  for (const key of keys) {
+    const seriesMeta = seriesMap?.get?.(key);
+    if (seriesMeta) return seriesMeta;
+  }
+
+  return null;
 }
 
 function getBatchRecords(response) {
@@ -175,7 +259,7 @@ function formatRequestTime({ requestId, createdAt }) {
 }
 
 function formatRanges(logs = [], options = {}) {
-  const { seriesMap, fallbackYear, fallbackBrand, fallbackSeries } = options;
+  const { seriesMap, fallbackYear, fallbackBrand } = options;
   const list = Array.isArray(logs)
     ? logs
     : typeof logs === "object" && logs
@@ -185,28 +269,30 @@ function formatRanges(logs = [], options = {}) {
 
   return list
     .map((log) => {
-      const seriesMeta = seriesMap?.get?.(Number(log.eventwiseId));
-      const seriesValue = String(
-        seriesMeta?.series ??
-          seriesMeta?.tagSeries ??
-          log.series ??
-          fallbackSeries ??
-          ""
-      ).padStart(2, "0");
+      const seriesMeta = getSeriesMetaForLog(seriesMap, log);
+      const seriesSource = seriesMeta?.series ?? seriesMeta?.tagSeries ?? log.series;
+      const yearSource = seriesMeta?.yearSeries ?? seriesMeta?.year ?? fallbackYear;
+      const brandSource = seriesMeta?.brand ?? seriesMeta?.brandSeries ?? fallbackBrand ?? "0";
+      const hasSeries =
+        seriesSource !== undefined && seriesSource !== null && String(seriesSource).trim() !== "";
+      const hasYear =
+        yearSource !== undefined && yearSource !== null && String(yearSource).trim() !== "";
+      const hasBrand =
+        brandSource !== undefined && brandSource !== null && String(brandSource).trim() !== "";
+      if (!hasSeries || !hasYear || !hasBrand) return null;
+
+      const seriesValue = String(seriesSource).padStart(2, "0");
       const yearValue = String(
         seriesMeta?.yearSeries ?? seriesMeta?.year ?? fallbackYear ?? ""
       ).padStart(2, "0");
-      const brandValue = String(fallbackBrand ?? "0");
-      const hasPrefix = seriesValue.trim() && yearValue.trim() && brandValue.trim();
-      if (!hasPrefix) {
-        return `${pad(log.start, LOG_SERIAL_WIDTH)}–${pad(log.end, LOG_SERIAL_WIDTH)}`;
-      }
+      const brandValue = String(brandSource);
       const prefix = `${yearValue}${brandValue}${seriesValue}`;
       const startTag = buildTag(prefix, log.start);
       const endTag = buildTag(prefix, log.end);
       return `${startTag}–${endTag}`;
     })
-    .join(", ");
+    .filter(Boolean)
+    .join(", ") || "—";
 }
 
 function getRecordLogs(record) {
@@ -223,6 +309,148 @@ function getRecordLogs(record) {
 function formatCount(value) {
   const next = Number(value);
   return Number.isFinite(next) ? next.toLocaleString("en-IN") : "—";
+}
+
+function getRecordKey(record, index) {
+  return String(record.id ?? record.requestId ?? `batch-${index}`);
+}
+
+function getRangeFormType(record, seriesMeta, fallbackFormType) {
+  const value =
+    record?.formFactor ??
+    record?.form_factor ??
+    seriesMeta?.formFactor ??
+    seriesMeta?.form_factor ??
+    fallbackFormType;
+  const next = Number(value);
+  return Number.isFinite(next) ? next : fallbackFormType;
+}
+
+function buildRangesFromLogs(logs = [], options = {}) {
+  const {
+    seriesMap,
+    fallbackYear,
+    fallbackBrand,
+    fallbackFormType,
+    eventId,
+    requireSeriesMeta = false
+  } = options;
+  const list = Array.isArray(logs)
+    ? logs
+    : typeof logs === "object" && logs
+      ? Object.values(logs)
+      : [];
+
+  return list
+    .map((log, index) => {
+      const seriesMeta = getSeriesMetaForLog(seriesMap, log);
+      const seriesSource =
+        seriesMeta?.series ??
+        seriesMeta?.tagSeries ??
+        log.series;
+
+      if (requireSeriesMeta && (seriesSource === undefined || seriesSource === null || seriesSource === "")) {
+        return null;
+      }
+
+      const seriesValue = String(seriesSource ?? "").padStart(2, "0");
+      const yearValue = String(
+        seriesMeta?.yearSeries ?? seriesMeta?.year ?? log.yearSeries ?? fallbackYear ?? ""
+      ).padStart(2, "0");
+      const brandValue = String(
+        seriesMeta?.clientSeries ?? seriesMeta?.brandSeries ?? log.brandSeries ?? fallbackBrand ?? "0"
+      );
+      const start = Number(log.start);
+      const end = Number(log.end);
+      const hasPrefix =
+        seriesValue.trim() &&
+        yearValue.trim() &&
+        brandValue.trim() &&
+        Number.isFinite(start) &&
+        Number.isFinite(end);
+
+      if (!hasPrefix) return null;
+
+      const prefix = `${yearValue}${brandValue}${seriesValue}`;
+      const formTypeValue = getRangeFormType(log, seriesMeta, fallbackFormType);
+      const startTag = buildTag(prefix, start);
+      const endTag = buildTag(prefix, end);
+
+      return {
+        id: log.id ?? index,
+        eventwiseId: log.eventwiseId,
+        series: seriesSource,
+        start,
+        end,
+        count: Number(log.count ?? 0),
+        prefix,
+        startTag,
+        endTag,
+        formType: formTypeValue,
+        firstUrl: buildTagUrl({ eventId, formType: formTypeValue, tag: startTag }),
+        lastUrl: buildTagUrl({ eventId, formType: formTypeValue, tag: endTag })
+      };
+    })
+    .filter(Boolean);
+}
+
+function buildExcelRows(ranges, includeUrls, eventId, fallbackFormType) {
+  const rows = [];
+
+  ranges.forEach((range) => {
+    for (let serial = range.start; serial <= range.end; serial += 1) {
+      const tag = buildTag(range.prefix, serial);
+      const digits = tag.split("").map((char) => Number(char));
+      const code = digits.reduce((sum, value) => sum + value, 0);
+      const codeSquared = code * code;
+      const lastDigit = digits[digits.length - 1] ?? 0;
+      const adjusted = codeSquared - lastDigit;
+      const finalCode = String(Math.abs(adjusted) % 100).padStart(2, "0");
+      const row = {
+        "Final Series": `${tag} / ${finalCode}`
+      };
+      if (includeUrls) {
+        row.URL = buildTagUrl({
+          eventId,
+          formType: range.formType ?? fallbackFormType,
+          tag
+        });
+      }
+      rows.push(row);
+    }
+  });
+
+  return rows;
+}
+
+function downloadRangesExcel({ ranges, eventId, formType, includeUrls, fileLabel = "Tag" }) {
+  if (!ranges?.length) return null;
+
+  const headers = includeUrls ? ["Final Series", "URL"] : ["Final Series"];
+  const rows = buildExcelRows(ranges, includeUrls, eventId, formType);
+  const worksheet = XLSX.utils.json_to_sheet(rows, { header: headers });
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Tags");
+
+  const safeLabel = fileLabel.replace(/[\\/:*?"<>|]/g, "-");
+  const allTags = ranges.flatMap((range) => [range.startTag, range.endTag]);
+  const minMax = allTags.reduce(
+    (acc, tag) => {
+      if (!acc[0] || BigInt(tag) < BigInt(acc[0])) acc[0] = tag;
+      if (!acc[1] || BigInt(tag) > BigInt(acc[1])) acc[1] = tag;
+      return acc;
+    },
+    [null, null]
+  );
+  const [minTag, maxTag] = minMax;
+  const fileName = `${safeLabel}-Series ${minTag} to ${maxTag}.xlsx`;
+
+  XLSX.writeFile(workbook, fileName);
+
+  return {
+    fileName,
+    rowCount: rows.length
+  };
 }
 
 function getRequestId() {
@@ -264,6 +492,7 @@ function GenerateForm() {
   const [out, setOut] = useState(null);
   const [err, setErr] = useState("");
   const [includeLinks, setIncludeLinks] = useState(true);
+  const [recentIncludeLinks, setRecentIncludeLinks] = useState({});
   const [clientMeta, setClientMeta] = useState(null);
   const [batchRecords, setBatchRecords] = useState([]);
   const [batchLoading, setBatchLoading] = useState(false);
@@ -281,9 +510,12 @@ function GenerateForm() {
         adminId: clientMeta.clientId
       });
       const recordList = getBatchRecords(response);
-      const seriesList = normalizeSeriesList(response);
+      const seriesList = [
+        ...normalizeSeriesList(response),
+        ...collectSeriesEntries(response)
+      ];
       if (seriesList.length) {
-        setBatchSeriesMap(new Map(seriesList.map((entry) => [Number(entry.id), entry])));
+        setBatchSeriesMap(buildSeriesMap(seriesList));
       }
       const sorted = recordList
         .slice()
@@ -316,38 +548,6 @@ function GenerateForm() {
   useEffect(() => {
     fetchAndSetBatchRecords();
   }, [fetchAndSetBatchRecords]);
-
-  useEffect(() => {
-    if (!eventId || !clientMeta?.clientId || !yy || typeof window === "undefined") return;
-    let cancelled = false;
-
-    async function loadSeriesMeta() {
-      try {
-        const token = getTagSeriesToken();
-        const response = await fetchSeriesMeta(token, {
-          eventId,
-          adminId: clientMeta.clientId,
-          yearSeries: yy
-        });
-        const seriesList = normalizeSeriesList(response);
-        if (!cancelled) {
-          const nextMap = new Map(
-            seriesList.map((entry) => [Number(entry.id), entry])
-          );
-          setBatchSeriesMap(nextMap);
-        }
-      } catch (error) {
-        if (!cancelled) {
-          setBatchSeriesMap(new Map());
-        }
-      }
-    }
-
-    loadSeriesMeta();
-    return () => {
-      cancelled = true;
-    };
-  }, [eventId, clientMeta?.clientId, yy]);
 
   useEffect(() => {
     if (clientMeta?.yearSeries) {
@@ -418,12 +618,10 @@ function GenerateForm() {
         return;
       }
 
-      const seriesMap = new Map(
-        seriesList.map((entry) => [Number(entry.id), entry])
-      );
+      const seriesMap = buildSeriesMap(seriesList);
 
       const ranges = logs.map((log, index) => {
-        const seriesMeta = seriesMap.get(Number(log.eventwiseId));
+        const seriesMeta = getSeriesMetaForLog(seriesMap, log);
         if (!seriesMeta) {
           throw new Error(`Missing series metadata for eventwiseId ${log.eventwiseId}`);
         }
@@ -487,59 +685,61 @@ function GenerateForm() {
     if (!out) return;
 
     const { ranges, params } = out;
-    const headers = includeLinks ? ["Final Series", "URL"] : ["Final Series"];
-    const rows = [];
-
-    ranges.forEach((range) => {
-      for (let serial = range.start; serial <= range.end; serial += 1) {
-        const tag = buildTag(range.prefix, serial);
-        const digits = tag.split("").map((char) => Number(char));
-        const code = digits.reduce((sum, value) => sum + value, 0);
-        const codeSquared = code * code;
-        const lastDigit = digits[digits.length - 1] ?? 0;
-        const adjusted = codeSquared - lastDigit;
-        const finalCode = String(Math.abs(adjusted) % 100).padStart(2, "0");
-        const row = {
-          "Final Series": `${tag} / ${finalCode}`
-        };
-        if (includeLinks) {
-          row.URL = buildTagUrl({ eventId: params.eventId, formType: params.formType, tag });
-        }
-        rows.push(row);
-      }
-    });
-
-    const worksheet = XLSX.utils.json_to_sheet(rows, { header: headers });
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Tags");
-
     const formLabel =
       FORM_TYPES.find((ft) => ft.value === params.formType)?.label ?? "Tag";
-    const safeLabel = formLabel.replace(/[\\/:*?"<>|]/g, "-");
-    const allTags = ranges.flatMap((range) => [range.startTag, range.endTag]);
-    const minMax = allTags.reduce(
-      (acc, tag) => {
-        if (!acc[0] || BigInt(tag) < BigInt(acc[0])) acc[0] = tag;
-        if (!acc[1] || BigInt(tag) > BigInt(acc[1])) acc[1] = tag;
-        return acc;
-      },
-      [null, null]
-    );
-    const [minTag, maxTag] = minMax;
-    const fileName = `${safeLabel}-Series ${minTag} to ${maxTag}.xlsx`;
+    const result = downloadRangesExcel({
+      ranges,
+      eventId: params.eventId,
+      formType: params.formType,
+      includeUrls: includeLinks,
+      fileLabel: formLabel
+    });
+    if (!result) return;
 
-    XLSX.writeFile(
-      workbook,
-      fileName
-    );
     capturePostHogEvent("operation_tag_excel_downloaded", {
       app: "tag_series",
       event_id: params.eventId,
       form_type: params.formType,
       form_type_label: formLabel,
       include_urls: includeLinks,
-      row_count: rows.length,
-      file_name: fileName
+      row_count: result.rowCount,
+      file_name: result.fileName
+    });
+  };
+
+  const handleDownloadRecentBatch = (record, index) => {
+    const key = getRecordKey(record, index);
+    const includeUrls = recentIncludeLinks[key] ?? true;
+    const logs = getRecordLogs(record);
+    const ranges = buildRangesFromLogs(logs, {
+      seriesMap: batchSeriesMap,
+      fallbackYear: yy,
+      fallbackBrand: brand,
+      fallbackFormType: formType,
+      eventId,
+      requireSeriesMeta: true
+    });
+    const selectedFormType = ranges[0]?.formType ?? formType;
+    const formLabel =
+      FORM_TYPES.find((ft) => ft.value === selectedFormType)?.label ?? "Tag";
+    const result = downloadRangesExcel({
+      ranges,
+      eventId,
+      formType: selectedFormType,
+      includeUrls,
+      fileLabel: formLabel
+    });
+    if (!result) return;
+
+    capturePostHogEvent("operation_tag_recent_batch_downloaded", {
+      app: "tag_series",
+      event_id: eventId,
+      form_type: selectedFormType,
+      form_type_label: formLabel,
+      include_urls: includeUrls,
+      row_count: result.rowCount,
+      file_name: result.fileName,
+      request_id: record.requestId ?? null
     });
   };
 
@@ -594,34 +794,90 @@ function GenerateForm() {
                     <th className="py-2 pr-4">Count</th>
                     <th className="py-2 pr-4">Start - End</th>
                     <th className="py-2 pr-4">Spare</th>
-                    <th className="py-2">Batch Note</th>
+                    <th className="py-2 pr-4">Batch Note</th>
+                    <th className="py-2">Download</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {batchRecords.map((record, index) => (
-                    <tr key={`${record.id ?? "batch"}-${record.requestId ?? index}`}>
-                      <td className="py-3 pr-4 font-medium text-slate-900">
-                        {formatRequestTime(record)}
-                      </td>
-                      <td className="py-3 pr-4 text-slate-700">
-                        {formatCount(record.count)}
-                      </td>
-                      <td className="py-3 pr-4 text-slate-700">
-                        {formatRanges(getRecordLogs(record), {
-                          seriesMap: batchSeriesMap,
-                          fallbackYear: yy,
-                          fallbackBrand: brand,
-                          fallbackSeries: series
-                        })}
-                      </td>
-                      <td className="py-3 pr-4 text-slate-700">
-                        {formatCount(record.spare)}
-                      </td>
-                      <td className="py-3 text-slate-700">
-                        {record.batchNote || "—"}
-                      </td>
-                    </tr>
-                  ))}
+                  {batchRecords.map((record, index) => {
+                    const recordKey = getRecordKey(record, index);
+                    const recordLogs = getRecordLogs(record);
+                    const includeRecentLinks = recentIncludeLinks[recordKey] ?? true;
+                    const downloadableRanges = buildRangesFromLogs(recordLogs, {
+                      seriesMap: batchSeriesMap,
+                      fallbackYear: yy,
+                      fallbackBrand: brand,
+                      fallbackFormType: formType,
+                      eventId,
+                      requireSeriesMeta: true
+                    });
+                    const canDownload = downloadableRanges.length > 0;
+
+                    return (
+                      <tr key={recordKey}>
+                        <td className="py-3 pr-4 font-medium text-slate-900">
+                          {formatRequestTime(record)}
+                        </td>
+                        <td className="py-3 pr-4 text-slate-700">
+                          {formatCount(record.count)}
+                        </td>
+                        <td className="py-3 pr-4 text-slate-700">
+                          {formatRanges(recordLogs, {
+                            seriesMap: batchSeriesMap,
+                            fallbackYear: yy,
+                            fallbackBrand: brand
+                          })}
+                        </td>
+                        <td className="py-3 pr-4 text-slate-700">
+                          {formatCount(record.spare)}
+                        </td>
+                        <td className="py-3 pr-4 text-slate-700">
+                          {record.batchNote || "—"}
+                        </td>
+                        <td className="py-3">
+                          <div className="flex min-w-[9rem] flex-col gap-2">
+                            <button
+                              type="button"
+                              role="switch"
+                              aria-checked={includeRecentLinks}
+                              onClick={() =>
+                                setRecentIncludeLinks((prev) => ({
+                                  ...prev,
+                                  [recordKey]: !(prev[recordKey] ?? true)
+                                }))
+                              }
+                              className="inline-flex items-center gap-2 text-xs font-medium text-slate-600"
+                            >
+                              <span
+                                className={`relative inline-flex h-5 w-9 items-center rounded-full transition ${
+                                  includeRecentLinks ? "bg-[#e04420]" : "bg-gray-300"
+                                }`}
+                              >
+                                <span
+                                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
+                                    includeRecentLinks ? "translate-x-4" : "translate-x-1"
+                                  }`}
+                                />
+                              </span>
+                              URLs
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDownloadRecentBatch(record, index)}
+                              disabled={!canDownload}
+                              className={`inline-flex items-center justify-center rounded-lg px-3 py-2 text-xs font-semibold shadow-sm ring-1 ring-inset transition ${
+                                canDownload
+                                  ? "bg-white text-[#e04420] ring-[#e04420]/40 hover:bg-[#e04420] hover:text-white"
+                                  : "cursor-not-allowed bg-slate-100 text-slate-400 ring-slate-200"
+                              }`}
+                            >
+                              Download
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

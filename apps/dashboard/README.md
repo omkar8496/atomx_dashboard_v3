@@ -1,128 +1,101 @@
-# Dashboard App (AtomX)
+# AtomX Dashboard
 
-This app is the main AtomX Dashboard that handles configuration, admin flows, and module-level operations. It is a **static export** (Next.js `output: "export"`) and is intended to be served from a base path like `/dashboard`.
+The Dashboard is the main event-operations application. It contains event
+selection and editing, vendor/stall configuration, device operations,
+transactions, reports, blocked IDs, APK uploads, menu setup, and related admin
+screens.
 
-**Overview**
-- Framework: Next.js (App Router)
-- Build target: Static export (`out/`)
-- Base path: `NEXT_PUBLIC_DASHBOARD_BASEPATH` (default `/`)
-- Assets path: same as base path via `assetPrefix`
+Read the root `README.md`, `AGENTS.md`, and `CONTEXT.md`, then this app's
+[CONTEXT.md](./CONTEXT.md) before changing behavior.
 
-**Local Dev**
-- Start dev server:
-```
-npm run dev
-```
-- Open:
-```
-http://localhost:3000
-```
+## Run
 
-**Environment (Shared Root `.env`)**
-This app loads the **repo root** `.env` file via `dotenv` in `apps/dashboard/next.config.mjs`.
+From the repository root:
 
-Common keys used by the dashboard:
-- `NEXT_PUBLIC_BASE_URL` (API base; falls back to `https://dapi.atomx.in`)
-- `NEXT_PUBLIC_DASHBOARD_API_KEY` (API key used in requests)
-- `NEXT_PUBLIC_DASHBOARD_BASEPATH` (default `/`)
-- `NEXT_PUBLIC_ACCESS_PORTAL_URL` or `NEXT_PUBLIC_PORTAL_URL` (for re-login flow)
-
-**Build & Export**
-- Dashboard only:
-```
+```bash
+npm run dev:dashboard
 npm run build:dashboard
 ```
-- Combined export for all apps:
+
+The development server uses port `3000`.
+
+## Stack
+
+- Next.js App Router
+- React 19
+- Static export with optional dashboard base path
+- Zustand with persisted localStorage state
+- Tailwind CSS 4 plus page/component CSS
+- `xlsx` where browser workbook support is needed
+- Shared AtomX components, helpers, fonts, logos, and analytics
+
+## Routes
+
+| Route | Screen |
+| --- | --- |
+| `/admin` | Event list and selection |
+| `/admin/Create_event` | Admin/operator role linking |
+| `/Config` | Vendor and stall configuration |
+| `/Config/menu` | Menu/category/item editor |
+| `/event-edit` | Event settings |
+| `/Reports` | Report filters |
+| `/transactions` | Transaction filters/results with on-demand row details |
+| `/device` | Event device list |
+| `/device_masterlist` | Device Master List |
+| `/Blocked` | Blocked IDs |
+| `/apk_upload` | APK uploads |
+| `/timeline` | Timeline |
+
+Route casing is part of the static URL contract.
+
+## State Management
+
+The app uses Zustand `persist` in `src/store/dashboardStore.js`.
+
+Storage key:
+
+```text
+atomx.dashboard.store
 ```
-npm run build:out
+
+Persisted state includes the selected token/profile, event metadata/details,
+selected service, and vendor/stall caches keyed by event ID. Component-only
+state stays in React.
+
+An IndexedDB draft utility exists, but current screens do not use it.
+
+## API
+
+Use `src/lib/dashboardApi.js` for dashboard API calls. Requests use:
+
+- `NEXT_PUBLIC_BASE_URL`
+- `NEXT_PUBLIC_DASHBOARD_API_KEY`
+- `credentials: "include"`
+- a Bearer token when present
+
+The API module includes GET de-duplication and a cookie-only GET retry. Do not
+hardcode event IDs in components.
+
+See [CONTEXT.md](./CONTEXT.md) for the endpoint inventory and live/prototype
+status of each screen.
+
+## UI Shell
+
+The app shell uses:
+
+- a fixed AtomX header
+- profile/session controls
+- a dark hover-expanding side drawer
+- responsive content below the header
+- Poppins and the shared AtomX palette
+
+Reuse these components rather than creating route-specific shells.
+
+## Verification
+
+There is no automated test suite. Build the app and manually verify affected
+routes:
+
+```bash
+npm run build:dashboard
 ```
-- Combined output:
-```
-out/
-```
-- Dashboard output (inside combined):
-```
-out/dashboard/
-```
-
-**Routing & Page Flow**
-Key routes:
-- `/admin` (Admin event selector)
-- `/Config` (Configuration operations)
-
-Access portal → dashboard flow:
-- Access portal sends users to `/admin?token=...` for admin roles when `/auth/select` returns a selected token
-- Access portal sends users to `/Config?token=...&service=...` for event roles when `/auth/select` returns a selected token
-- If `/auth/select` uses an HTTP-only cookie session instead of a token response, dashboard APIs fall back to `credentials: include`
-
-**Auth & Session**
-Token handling:
-- Selected dashboard tokens come from URL query (`token`) or `atomx.dashboard.token`
-- SessionGuard strips `token` from the URL after storing it
-
-Session re-login:
-- `apps/dashboard/src/app/components/Session/SessionGuard.js`
-- Reads JWT `exp`, warns 10 minutes before expiry
-- Opens the Access Portal login and posts back updated token
-- Uses `localStorage` key `atomx.portal.reauth` for reauth context
-
-**State Management (Zustand)**
-Store file:
-- `apps/dashboard/src/store/dashboardStore.js`
-
-Persisted keys (`localStorage`, `atomx.dashboard.store`):
-- `token`
-- `profile` (decoded JWT)
-- `eventMeta` (eventId, eventName, venue, city)
-- `eventDetails`
-- `selectedService`
-- `vendorsByEventId`
-- `stallsByEventId`
-
-**Storage**
-LocalStorage keys used:
-- `atomx.dashboard.store` (Zustand persist)
-- `atomx.portal.reauth` (reauth context for session flow)
-
-IndexedDB drafts:
-- Database: `atomx.drafts`
-- Store: `drafts`
-- Autosave helper: `apps/dashboard/src/lib/useFormAutosave.js`
-
-Draft keys currently used:
-- `dashboard:profile:<userId>:<eventId>`
-- `dashboard:vendor:<userId>:<eventId>:<vendorId|new>`
-- `dashboard:stall:<userId>:<eventId>:<stallId|new>`
-- `dashboard:create-event:about:<userId>`
-- `dashboard:create-event:pos:<userId>`
-- `dashboard:create-event:cashless:<userId>`
-
-**API Layer**
-API helpers:
-- `apps/dashboard/src/lib/dashboardApi.js`
-
-API base URL:
-- Uses `@atomx/lib` → `getBaseUrl()`
-- `NEXT_PUBLIC_BASE_URL` or default `https://dapi.atomx.in`
-
-API key:
-- `apps/dashboard/src/lib/apiConfig.js`
-- Env: `NEXT_PUBLIC_DASHBOARD_API_KEY` (fallback value is present in code)
-
-Headers:
-- `Authorization: Bearer <token>` when available
-- `x-api-key` when configured
-
-**Important Notes**
-- `/admin` is **client-only** (no SSR) to avoid static export errors
-- `basePath` and `assetPrefix` must be set correctly for assets to load under `/dashboard`
-- If assets 404, verify `NEXT_PUBLIC_DASHBOARD_BASEPATH` and rebuild
-
-**Key Files**
-- `apps/dashboard/next.config.mjs`
-- `apps/dashboard/src/app/components/Header.js`
-- `apps/dashboard/src/app/components/Session/SessionGuard.js`
-- `apps/dashboard/src/lib/dashboardApi.js`
-- `apps/dashboard/src/store/dashboardStore.js`
-- `apps/dashboard/src/lib/useFormAutosave.js`
-- `apps/dashboard/src/lib/idb.js`

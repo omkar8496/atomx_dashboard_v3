@@ -32,11 +32,11 @@ export function CalendarIcon({ className = "h-4 w-4" }) {
 
 export function SectionCard({ title, description, children, className = "" }) {
   return (
-    <section className={`rounded-lg border border-[#e8e8e8] border-l-[3px] border-l-[#E04420] bg-white p-5 shadow-[0_18px_48px_rgba(15,23,42,0.08)] ${className}`}>
-      <div className="mb-4">
-        <h2 className="text-[1.1rem] font-medium leading-none text-[#1f1f1f]">{title}</h2>
+    <section className={`min-w-0 rounded-lg border border-[#e8e8e8] border-l-[3px] border-l-[#E04420] bg-white p-5 shadow-[0_18px_48px_rgba(15,23,42,0.08)] max-[640px]:p-3 max-[640px]:shadow-[0_12px_28px_rgba(15,23,42,0.07)] ${className}`}>
+      <div className="mb-4 max-[640px]:mb-3">
+        <h2 className="text-[1.1rem] font-medium leading-none text-[#1f1f1f] max-[640px]:text-[0.96rem]">{title}</h2>
         {description ? (
-          <p className="mt-3 text-[0.78rem] font-normal text-[#888888]">{description}</p>
+          <p className="mt-3 text-[0.78rem] font-normal text-[#888888] max-[640px]:mt-1.5 max-[640px]:text-[0.68rem]">{description}</p>
         ) : null}
       </div>
       {children}
@@ -54,10 +54,10 @@ export function Field({
 }) {
   return (
     <label className="block">
-      <span className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-[#858585]">
+      <span className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-[#858585] max-[640px]:text-[0.54rem] max-[640px]:tracking-[0.12em]">
         {label}
       </span>
-      <span className="mt-2 flex h-10 items-center rounded-md border border-[#dedede] bg-[#fbfbfb] px-3 text-[0.78rem] font-semibold text-[#858585] transition focus-within:border-[#E04420] focus-within:ring-2 focus-within:ring-[#E04420]/10">
+      <span className="mt-2 flex h-10 items-center rounded-md border border-[#dedede] bg-[#fbfbfb] px-3 text-[0.78rem] font-semibold text-[#858585] transition focus-within:border-[#E04420] focus-within:ring-2 focus-within:ring-[#E04420]/10 max-[640px]:mt-1.5 max-[640px]:h-9 max-[640px]:px-2.5 max-[640px]:text-[0.72rem]">
         <input
           type={type}
           value={value}
@@ -74,13 +74,13 @@ export function Field({
 export function SelectField({ label, value = "Select Printer", onChange, options = ["Select Printer", "sprin_3", "USB Printer", "Network Printer"] }) {
   return (
     <label className="block">
-      <span className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-[#858585]">
+      <span className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-[#858585] max-[640px]:text-[0.54rem] max-[640px]:tracking-[0.12em]">
         {label}
       </span>
       <select
         value={value}
         onChange={(event) => onChange?.(event.target.value)}
-        className="mt-2 flex h-10 w-full rounded-md border border-[#dedede] bg-[#fbfbfb] px-3 text-[0.78rem] font-semibold text-[#1f1f1f] outline-none transition focus:border-[#E04420] focus:ring-2 focus:ring-[#E04420]/10"
+        className="mt-2 flex h-10 w-full rounded-md border border-[#dedede] bg-[#fbfbfb] px-3 text-[0.78rem] font-semibold text-[#1f1f1f] outline-none transition focus:border-[#E04420] focus:ring-2 focus:ring-[#E04420]/10 max-[640px]:mt-1.5 max-[640px]:h-9 max-[640px]:px-2.5 max-[640px]:text-[0.72rem]"
       >
         {options.map((option) => (
           <option key={option} value={option}>
@@ -109,8 +109,8 @@ export function Toggle({ on = true, onToggle }) {
 
 export function SettingRow({ label, checked = true, onToggle, children = null }) {
   return (
-    <div className="flex min-h-[38px] items-center justify-between gap-4 border-b border-[#eeeeee] py-2 last:border-b-0">
-      <span className="text-[0.78rem] font-semibold text-[#3f3f3f]">{label}</span>
+    <div className="flex min-h-[38px] items-center justify-between gap-4 border-b border-[#eeeeee] py-2 last:border-b-0 max-[640px]:min-h-[34px] max-[640px]:gap-2 max-[640px]:py-1.5">
+      <span className="text-[0.78rem] font-semibold text-[#3f3f3f] max-[640px]:text-[0.7rem]">{label}</span>
       {children || <Toggle on={checked} onToggle={onToggle} />}
     </div>
   );
@@ -118,11 +118,11 @@ export function SettingRow({ label, checked = true, onToggle, children = null })
 
 export function UploadBox() {
   return (
-    <div className="grid min-h-[135px] place-items-center rounded-md border border-dashed border-[#ff9b89] bg-[#fff9f8] px-4 py-5 text-center">
+    <div className="grid min-h-[135px] place-items-center rounded-md border border-dashed border-[#ff9b89] bg-[#fff9f8] px-4 py-5 text-center max-[640px]:min-h-[96px] max-[640px]:px-3 max-[640px]:py-3">
       <div className="flex flex-col items-center justify-center text-[#E04420]">
-        <UploadIcon className="h-7 w-7" />
-        <p className="mt-3 text-[0.86rem] font-bold text-[#1f1f1f]">Upload event poster</p>
-        <p className="mt-3 text-[0.76rem] font-normal text-[#888888]">Drag and drop or browse media</p>
+        <UploadIcon className="h-7 w-7 max-[640px]:h-5 max-[640px]:w-5" />
+        <p className="mt-3 text-[0.86rem] font-bold text-[#1f1f1f] max-[640px]:mt-2 max-[640px]:text-[0.74rem]">Upload event poster</p>
+        <p className="mt-3 text-[0.76rem] font-normal text-[#888888] max-[640px]:mt-1 max-[640px]:text-[0.64rem]">Drag and drop or browse media</p>
       </div>
     </div>
   );
@@ -130,10 +130,14 @@ export function UploadBox() {
 
 export function TopupRow({ index, cash, token, onCashChange, onTokenChange }) {
   return (
-    <div className="grid grid-cols-[52px_1fr_1fr] items-end gap-3">
-      <span className="pb-3 text-[0.95rem] font-bold text-[#0f8797]">#{index}</span>
-      <Field label="Cash" value={cash} onChange={onCashChange} />
-      <Field label="Token" value={token} onChange={onTokenChange} />
+    <div className="grid grid-cols-[52px_minmax(0,1fr)_minmax(0,1fr)] items-end gap-3 max-[640px]:grid-cols-[26px_minmax(0,1fr)_minmax(0,1fr)] max-[640px]:gap-1.5">
+      <span className="pb-3 text-[0.95rem] font-bold text-[#0f8797] max-[640px]:pb-2.5 max-[640px]:text-[0.72rem]">#{index}</span>
+      <div className="min-w-0">
+        <Field label="Cash" value={cash} onChange={onCashChange} />
+      </div>
+      <div className="min-w-0">
+        <Field label="Token" value={token} onChange={onTokenChange} />
+      </div>
     </div>
   );
 }
