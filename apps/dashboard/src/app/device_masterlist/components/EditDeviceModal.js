@@ -2,65 +2,29 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { updateDeviceMasterlist } from "../../../lib/dashboardApi";
+import DeviceFormModal, { Field, SelectField } from "./DeviceFormModal";
+import DeviceBankCredentials, {
+  DEFAULT_BANK_TYPES,
+  DEFAULT_DEVICE_TYPES,
+  DEFAULT_MODEL_TYPES,
+  getDefaultBankData,
+  sanitizeBankData
+} from "./DeviceBankCredentials";
 
-const BANK_FIELDS = [
-  ["bank_mswipe_username", "Mswipe username"],
-  ["bank_mswipe_password", "Mswipe password"],
-  ["bank_mswipe_verify_client_code", "Verify client code"],
-  ["bank_mswipe_verify_user_id", "Verify user ID"],
-  ["bank_mswipe_verify_password", "Verify password"],
-  ["bank_mswipe_upi_api", "UPI API"]
+const SECTIONS = [
+  {
+    label: "Device Information",
+    hint: "IDENTITY & HARDWARE",
+    title: "DEVICE INFORMATION",
+    sub: "Identity, hardware and NFC configuration for this device."
+  },
+  {
+    label: "Bank Credentials",
+    hint: "PAYMENT CREDENTIALS",
+    title: "BANK CREDENTIALS",
+    sub: "Acquirer credentials used for card and UPI transactions."
+  }
 ];
-
-function CloseIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-4.5 w-4.5" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-      <path d="M18 6 6 18" />
-      <path d="m6 6 12 12" />
-    </svg>
-  );
-}
-
-function Field({ label, name, value, onChange, type = "text", required = false, readOnly = false }) {
-  return (
-    <label className="block min-w-0">
-      <span className="mb-1.5 block text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-[#858585]">
-        {label}
-      </span>
-      <input
-        name={name}
-        value={value ?? ""}
-        onChange={onChange}
-        type={type}
-        required={required}
-        readOnly={readOnly}
-        className={`h-10 w-full rounded-lg border px-3 text-[0.78rem] font-medium outline-none transition ${
-          readOnly
-            ? "border-[#ececec] bg-[#f5f5f5] text-[#8a8a8a]"
-            : "border-[#dedede] bg-white text-[#1c1c1c] focus:border-[#E04420] focus:ring-3 focus:ring-[#E04420]/10"
-        }`}
-      />
-    </label>
-  );
-}
-
-function SelectField({ label, name, value, onChange, children }) {
-  return (
-    <label className="block min-w-0">
-      <span className="mb-1.5 block text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-[#858585]">
-        {label}
-      </span>
-      <select
-        name={name}
-        value={value}
-        onChange={onChange}
-        className="h-10 w-full rounded-lg border border-[#dedede] bg-white px-3 text-[0.78rem] font-medium text-[#1c1c1c] outline-none transition focus:border-[#E04420] focus:ring-3 focus:ring-[#E04420]/10"
-      >
-        {children}
-      </select>
-    </label>
-  );
-}
 
 function normalizeBankData(value) {
   if (value && typeof value === "object" && !Array.isArray(value)) {
@@ -70,14 +34,18 @@ function normalizeBankData(value) {
 }
 
 function createFormState(device) {
-  const bankData = normalizeBankData(device?.bankData);
+  const bank = device?.bank ?? "";
+  const bankData = {
+    ...getDefaultBankData(bank),
+    ...normalizeBankData(device?.bankData)
+  };
   return {
     id: device?.id ?? "",
     printId: device?.printId ?? "",
     hardwareId: device?.hardwareId ?? "",
     androidId: device?.androidId ?? "",
     type: device?.type ?? "",
-    bank: device?.bank ?? "",
+    bank,
     model: device?.model ?? "",
     reference: device?.reference ?? "",
     description: device?.description ?? "",
@@ -86,9 +54,7 @@ function createFormState(device) {
     status: device?.status ?? "active",
     updatedAt: device?.updatedAt ?? null,
     createdAt: device?.createdAt ?? null,
-    bankData: Object.fromEntries(
-      BANK_FIELDS.map(([key]) => [key, bankData[key] ?? ""])
-    )
+    bankData
   };
 }
 
@@ -115,29 +81,24 @@ export default function EditDeviceModal({ device, token, onClose, onSaved }) {
   const [form, setForm] = useState(initialState);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [section, setSection] = useState(0);
+  const [dirty, setDirty] = useState(false);
 
   useEffect(() => {
     setForm(initialState);
     setError("");
+    setSection(0);
+    setDirty(false);
   }, [initialState]);
-
-  useEffect(() => {
-    const previousOverflow = document.body.style.overflow;
-    const handleKeyDown = (event) => {
-      if (event.key === "Escape" && !saving) onClose?.();
-    };
-
-    document.body.style.overflow = "hidden";
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [onClose, saving]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
-    setForm((current) => ({ ...current, [name]: value }));
+    setForm((current) => ({
+      ...current,
+      [name]: value,
+      ...(name === "bank" ? { bankData: getDefaultBankData(value) } : {})
+    }));
+    setDirty(true);
     setError("");
   };
 
@@ -147,6 +108,7 @@ export default function EditDeviceModal({ device, token, onClose, onSaved }) {
       ...current,
       bankData: { ...current.bankData, [name]: value }
     }));
+    setDirty(true);
     setError("");
   };
 
@@ -178,9 +140,7 @@ export default function EditDeviceModal({ device, token, onClose, onSaved }) {
       updatedAt: form.updatedAt,
       createdAt: form.createdAt,
       status: form.status,
-      bankData: Object.fromEntries(
-        BANK_FIELDS.map(([key]) => [key, String(form.bankData[key] ?? "").trim()])
-      )
+      bankData: sanitizeBankData(form.bank, form.bankData)
     };
 
     setSaving(true);
@@ -198,106 +158,72 @@ export default function EditDeviceModal({ device, token, onClose, onSaved }) {
   };
 
   return (
-    <div
-      className="fixed inset-0 z-[230] flex h-dvh items-center justify-center overflow-hidden bg-[#1c1c1c]/45 px-4 py-6 backdrop-blur-[3px] max-[640px]:px-3 max-[640px]:py-3"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget && !saving) onClose?.();
-      }}
+    <DeviceFormModal
+      eyebrow="EDIT DEVICE"
+      heading={form.printId || `#${form.id}`}
+      identityName={form.description || form.androidId || form.model || "Master device"}
+      identityMac={form.hardwareId}
+      sections={SECTIONS}
+      activeSection={section}
+      onSectionChange={setSection}
+      activeTitle={SECTIONS[section].title}
+      activeSub={SECTIONS[section].sub}
+      dirty={dirty}
+      error={error}
+      saving={saving}
+      submitLabel="Save Changes"
+      onClose={onClose}
+      onSubmit={handleSubmit}
     >
-      <form
-        onSubmit={handleSubmit}
-        className="flex max-h-[calc(100dvh-48px)] w-full max-w-[920px] flex-col overflow-hidden rounded-xl border border-[#d5b7ff]/70 bg-white shadow-[0_30px_80px_rgba(15,23,42,0.28)] max-[640px]:max-h-[calc(100dvh-24px)]"
-      >
-        <header className="flex shrink-0 items-center justify-between bg-[#1c1c1c] px-6 py-4 text-white max-[640px]:px-4 max-[640px]:py-3">
-          <div className="min-w-0">
-            <p className="m-0 text-[0.6rem] font-bold uppercase tracking-[0.24em] text-[#D5B7FF]">
-              Device Master List
-            </p>
-            <h2 className="m-0 mt-1 truncate text-[1.08rem] font-semibold">
-              Edit device {form.printId || `#${form.id}`}
-            </h2>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={saving}
-            className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-white/15 text-white/75 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
-            aria-label="Close edit device"
-          >
-            <CloseIcon />
-          </button>
-        </header>
-
-        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5 max-[640px]:px-4 max-[640px]:py-4">
-          <section>
-            <h3 className="m-0 text-[0.75rem] font-bold uppercase tracking-[0.18em] text-[#E04420]">
-              Device information
-            </h3>
-            <div className="mt-3 grid grid-cols-3 gap-x-4 gap-y-3 max-[760px]:grid-cols-2 max-[520px]:grid-cols-1">
-              <Field label="Device ID" name="id" value={form.id} onChange={handleChange} readOnly />
-              <Field label="Print ID" name="printId" value={form.printId} onChange={handleChange} required />
-              <Field label="Hardware ID" name="hardwareId" value={form.hardwareId} onChange={handleChange} required />
-              <Field label="Android ID" name="androidId" value={form.androidId} onChange={handleChange} />
-              <Field label="Type" name="type" value={form.type} onChange={handleChange} />
-              <Field label="Bank" name="bank" value={form.bank} onChange={handleChange} />
-              <Field label="Model" name="model" value={form.model} onChange={handleChange} />
-              <Field label="Reference" name="reference" value={form.reference} onChange={handleChange} />
-              <Field label="Description" name="description" value={form.description} onChange={handleChange} />
-              <SelectField label="NFC" name="hasNfc" value={form.hasNfc} onChange={handleChange}>
-                <option value="1">Enabled</option>
-                <option value="0">Disabled</option>
-              </SelectField>
-              <Field label="NFC type" name="nfcType" value={form.nfcType} onChange={handleChange} />
-              <SelectField label="Status" name="status" value={form.status} onChange={handleChange}>
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
-              </SelectField>
-            </div>
-          </section>
-
-          <section className="mt-6 border-t border-[#ececec] pt-5">
-            <h3 className="m-0 text-[0.75rem] font-bold uppercase tracking-[0.18em] text-[#E04420]">
-              Mswipe bank data
-            </h3>
-            <div className="mt-3 grid grid-cols-3 gap-x-4 gap-y-3 max-[760px]:grid-cols-2 max-[520px]:grid-cols-1">
-              {BANK_FIELDS.map(([name, label]) => (
-                <Field
-                  key={name}
-                  label={label}
-                  name={name}
-                  value={form.bankData[name]}
-                  onChange={handleBankChange}
-                  type={name.includes("password") ? "password" : "text"}
-                />
-              ))}
-            </div>
-          </section>
-
-          {error ? (
-            <p className="m-0 mt-4 rounded-lg border border-[#E04420]/20 bg-[#fff4f1] px-3 py-2 text-[0.74rem] font-semibold text-[#c73617]">
-              {error}
-            </p>
-          ) : null}
-        </div>
-
-        <footer className="flex shrink-0 items-center justify-end gap-3 border-t border-[#ececec] bg-[#fafafa] px-6 py-4 max-[640px]:px-4 max-[640px]:py-3">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={saving}
-            className="h-10 rounded-lg border border-[#dedede] bg-white px-5 text-[0.76rem] font-semibold text-[#4b4b4b] transition hover:border-[#b8b8b8] disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={saving}
-            className="h-10 rounded-lg bg-[#1c1c1c] px-6 text-[0.76rem] font-semibold text-white shadow-[0_12px_24px_rgba(28,28,28,0.16)] transition hover:bg-[#E04420] disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {saving ? "Saving..." : "Save Changes"}
-          </button>
-        </footer>
-      </form>
-    </div>
+      {section === 0 ? (
+        <>
+          <Field label="DEVICE ID" name="id" value={form.id} onChange={handleChange} readOnly />
+          <Field label="PRINT ID" name="printId" value={form.printId} onChange={handleChange} required />
+          <Field label="HARDWARE ID" name="hardwareId" value={form.hardwareId} onChange={handleChange} required />
+          <Field label="ANDROID ID" name="androidId" value={form.androidId} onChange={handleChange} />
+          <SelectField label="TYPE" name="type" value={form.type} onChange={handleChange}>
+            {form.type && !DEFAULT_DEVICE_TYPES.some(([value]) => value === form.type) ? (
+              <option value={form.type}>{form.type}</option>
+            ) : null}
+            {DEFAULT_DEVICE_TYPES.map(([value, label]) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </SelectField>
+          <SelectField label="BANK" name="bank" value={form.bank} onChange={handleChange}>
+            {form.bank && !DEFAULT_BANK_TYPES.some(([value]) => value === form.bank) ? (
+              <option value={form.bank}>{form.bank}</option>
+            ) : null}
+            {DEFAULT_BANK_TYPES.map(([value, label]) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </SelectField>
+          <SelectField label="MODEL" name="model" value={form.model} onChange={handleChange}>
+            {form.model && !DEFAULT_MODEL_TYPES.some(([value]) => value === form.model) ? (
+              <option value={form.model}>{form.model}</option>
+            ) : null}
+            {DEFAULT_MODEL_TYPES.map(([value, label]) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </SelectField>
+          <Field label="REFERENCE" name="reference" value={form.reference} onChange={handleChange} />
+          <Field label="NFC TYPE" name="nfcType" value={form.nfcType} onChange={handleChange} />
+          <SelectField label="NFC" name="hasNfc" value={form.hasNfc} onChange={handleChange}>
+            <option value="1">Enabled</option>
+            <option value="0">Disabled</option>
+          </SelectField>
+          <SelectField label="STATUS" name="status" value={form.status} onChange={handleChange}>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+          </SelectField>
+          <Field label="DESCRIPTION" name="description" value={form.description} onChange={handleChange} wide />
+        </>
+      ) : (
+        <DeviceBankCredentials
+          bank={form.bank}
+          bankData={form.bankData}
+          onChange={handleBankChange}
+        />
+      )}
+    </DeviceFormModal>
   );
 }

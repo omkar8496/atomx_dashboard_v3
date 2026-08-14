@@ -1,11 +1,120 @@
 @import "tailwindcss";
 
+/* AtomX primary / headline font */
+@font-face {
+  font-family: "Chillax";
+  src: url("/shared/fonts/Chillex/Chillax-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Chillax";
+  src: url("/shared/fonts/Chillex/Chillax-Medium.woff2") format("woff2");
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Chillax";
+  src: url("/shared/fonts/Chillex/Chillax-Semibold.woff2") format("woff2");
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Chillax";
+  src: url("/shared/fonts/Chillex/Chillax-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-display: swap;
+}
+
+/* AtomX secondary / body font */
+@font-face {
+  font-family: "Poppins";
+  src: url("/shared/fonts/Poppins/Poppins-Light.ttf") format("truetype");
+  font-weight: 300;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Poppins";
+  src: url("/shared/fonts/Poppins/Poppins-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Poppins";
+  src: url("/shared/fonts/Poppins/Poppins-SemiBold.ttf") format("truetype");
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Poppins";
+  src: url("/shared/fonts/Poppins/Poppins-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-display: swap;
+}
+
+/* AtomX accent / data font */
+@font-face {
+  font-family: "VCR";
+  src: url("/shared/fonts/VCR/VCR_OSD_MONO_1.001.ttf") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
   --color-teal: 20 149 171;
   --color-orange: 248 140 67;
   --color-bg: 243 247 251;
+
+  /* AtomX semantic tokens — light theme */
+  --bg: #f2f1ee;
+  --surface: #ffffff;
+  --surface2: #f8f7f5;
+  --text: #1c1c1c;
+  --muted: #71706e;
+  --faint: #9b9a97;
+  --line: rgba(28, 28, 28, 0.12);
+  --line2: rgba(28, 28, 28, 0.06);
+  --chip: rgba(28, 28, 28, 0.045);
+
+  --orange: #e04420;
+  --blue: #341cd6;
+  --lblue: #00a9f2;
+  --purple: #8b5cf6;
+  --egg: #ebebeb;
+
+  --rail: #1c1c1c;
+  --railText: #ebebeb;
+
+  --shadow: 0 1px 2px rgba(28, 28, 28, 0.04), 0 10px 30px -18px rgba(28, 28, 28, 0.25);
+  --shadowUp: 0 2px 4px rgba(28, 28, 28, 0.05), 0 18px 40px -20px rgba(28, 28, 28, 0.35);
+
+  color-scheme: light;
+}
+
+html[data-atx="dark"] {
+  --background: #0c0c0c;
+  --foreground: #ededed;
+  --color-bg: 12 12 12;
+
+  --bg: #0c0c0c;
+  --surface: #181818;
+  --surface2: #212120;
+  --text: #ebebeb;
+  --muted: #8e8d8a;
+  --faint: #6b6a67;
+  --line: rgba(235, 235, 235, 0.14);
+  --line2: rgba(235, 235, 235, 0.07);
+  --chip: rgba(235, 235, 235, 0.06);
+
+  --purple: #d5b7ff;
+  --rail: #181818;
+
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 10px 30px -18px rgba(0, 0, 0, 0.9);
+  --shadowUp: 0 2px 6px rgba(0, 0, 0, 0.6), 0 18px 40px -20px rgba(0, 0, 0, 1);
+
+  color-scheme: dark;
 }
 
 @theme inline {
@@ -15,11 +124,12 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.font-chillax {
+  font-family: "Chillax", "Poppins", "Segoe UI", system-ui, sans-serif;
+}
+
+.font-vcr {
+  font-family: "VCR", "VCR OSD Mono", ui-monospace, "SFMono-Regular", monospace;
 }
 
 body {

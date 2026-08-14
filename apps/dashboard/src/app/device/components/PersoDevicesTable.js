@@ -6,54 +6,49 @@ import { fetchPersoDevices, removePersoDevice } from "../../../lib/dashboardApi"
 import { useDashboardStore } from "../../../store/dashboardStore";
 import AddPersoDeviceModal from "./AddPersoDeviceModal";
 
+const COLUMNS = [
+  { key: "rowNumber", label: "#", sortable: false, className: "" },
+  { key: "device", label: "DEVICE", sortable: true, className: "" },
+  { key: "mac", label: "MAC", sortable: true, className: "" },
+  { key: "type", label: "TYPE", sortable: true, className: "" },
+  { key: "addedAt", label: "ADDED AT", sortable: true, className: "" },
+  { key: "status", label: "STATUS", sortable: false, className: "" },
+  { key: "action", label: "ADD / REMOVE", sortable: false, className: "text-right" }
+];
+
+const GRID_TEMPLATE = "44px 1.1fr 1.4fr 1fr 1.3fr 0.9fr 96px";
+
 function SearchIcon() {
   return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="11" cy="11" r="7" />
-      <path d="m20 20-3.5-3.5" />
+    <svg viewBox="0 0 16 16" className="h-3.5 w-3.5 shrink-0 opacity-50" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+      <circle cx="7" cy="7" r="4.6" />
+      <path d="M10.5 10.5 14 14" />
     </svg>
   );
 }
 
 function PlusIcon() {
   return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 5v14" />
-      <path d="M5 12h14" />
+    <svg viewBox="0 0 14 14" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round">
+      <path d="M7 2.6v8.8M2.6 7h8.8" />
     </svg>
   );
 }
 
 function RemoveIcon() {
   return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M18 6 6 18" />
-      <path d="m6 6 12 12" />
+    <svg viewBox="0 0 14 14" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+      <path d="M3.5 3.5l7 7M10.5 3.5l-7 7" />
     </svg>
   );
 }
 
-function SortIcon() {
+function SortArrows({ active, dir }) {
   return (
-    <span className="inline-flex flex-col gap-0.5 text-[#c8ced8]" aria-hidden="true">
-      <svg viewBox="0 0 10 6" className="h-1.5 w-2.5" fill="currentColor">
-        <path d="M5 0 10 6H0z" />
-      </svg>
-      <svg viewBox="0 0 10 6" className="h-1.5 w-2.5" fill="currentColor">
-        <path d="M5 6 0 0h10z" />
-      </svg>
-    </span>
-  );
-}
-
-function TableHead({ children, sortable = true }) {
-  return (
-    <th className="px-4 py-3 text-left text-[0.64rem] font-semibold uppercase tracking-[0.16em] text-[#E04420]/70">
-      <span className="inline-flex items-center gap-1.5">
-        {children}
-        {sortable ? <SortIcon /> : null}
-      </span>
-    </th>
+    <svg width="9" height="11" viewBox="0 0 9 11" fill="currentColor" className="shrink-0">
+      <path d="M4.5 0l3 3.4h-6z" opacity={active && dir === 1 ? "1" : "0.3"} />
+      <path d="M4.5 11l-3-3.4h6z" opacity={active && dir === -1 ? "1" : "0.3"} />
+    </svg>
   );
 }
 
@@ -99,20 +94,18 @@ function PersoStatusBadge({ status }) {
 
   return (
     <span
-      className={`rounded-full px-2.5 py-1 text-[0.62rem] font-bold uppercase ${
-        isInactive
-          ? "bg-[#f4f4f4] text-[#8b8b8b]"
-          : "bg-[#e4f6ff] text-[#0285bf]"
+      className={`font-vcr inline-flex items-center rounded-full px-2.5 py-1 text-[9px] tracking-[0.12em] ${
+        isInactive ? "bg-(--chip) text-(--faint)" : "bg-[rgba(0,169,242,0.1)] text-[#0284c7]"
       }`}
     >
-      {normalizedStatus || "-"}
+      {(normalizedStatus || "-").toUpperCase()}
     </span>
   );
 }
 
 function PersoEmptyState({ message }) {
   return (
-    <div className="rounded-lg border border-dashed border-[#dfdfdf] px-4 py-8 text-center text-sm font-semibold text-[#8a8a8a]">
+    <div className="rounded-[11px] border border-dashed border-(--line) px-4 py-8 text-center text-sm font-medium text-(--muted)">
       {message}
     </div>
   );
@@ -130,48 +123,47 @@ function PersoMobileCard({ item, onRemove, isRemoving }) {
   const isInactive = item.status === "inactive";
 
   return (
-    <article className="rounded-lg border border-transparent p-px"
+    <div
+      className="rounded-[12px] border border-transparent p-[11px] shadow-(--shadow)"
       style={{
         background:
-          "linear-gradient(#fff, #fff) padding-box, linear-gradient(110deg, #ffb7ac, #d5c9ff) border-box"
+          "linear-gradient(var(--surface),var(--surface)) padding-box, linear-gradient(135deg,rgba(224,68,32,0.32),rgba(139,92,246,0.24)) border-box"
       }}
     >
-      <div className="rounded-[7px] bg-white p-3">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-[0.56rem] font-bold uppercase tracking-[0.15em] text-[#929292]">Device</p>
-            <p className="mt-1 text-[0.92rem] font-semibold text-[#202020]">{item.device}</p>
-          </div>
-          <PersoStatusBadge status={item.status} />
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="font-vcr text-[7.5px] tracking-[0.15em] text-(--faint)">DEVICE</p>
+          <p className="font-chillax mt-1 text-[15px] font-semibold">{item.device}</p>
         </div>
-
-        <div className="mt-3 grid grid-cols-2 gap-3">
-          <div className="min-w-0">
-            <p className="text-[0.56rem] font-bold uppercase tracking-[0.12em] text-[#929292]">MAC</p>
-            <p className="mt-1 truncate text-[0.72rem] font-semibold text-[#657391]">{item.mac}</p>
-          </div>
-          <div>
-            <p className="text-[0.56rem] font-bold uppercase tracking-[0.12em] text-[#929292]">Type</p>
-            <p className="mt-1 text-[0.72rem] font-semibold text-[#202020]">{item.type}</p>
-          </div>
-          <div className="col-span-2">
-            <p className="text-[0.56rem] font-bold uppercase tracking-[0.12em] text-[#929292]">Added At</p>
-            <p className="mt-1 text-[0.72rem] font-semibold text-[#202020]">{item.addedAt}</p>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => onRemove(item)}
-          disabled={isInactive || isRemoving}
-          className="mt-3 inline-flex h-8 items-center gap-2 rounded-lg border border-[#e6e6e6] bg-white px-3 text-[0.68rem] font-bold text-[#6d6d6d] transition hover:border-[#E04420] hover:text-[#E04420] disabled:cursor-not-allowed disabled:opacity-45"
-          aria-label={`Remove perso device ${item.device}`}
-        >
-          <RemoveIcon />
-          {isRemoving ? "Removing..." : isInactive ? "Inactive" : "Remove"}
-        </button>
+        <PersoStatusBadge status={item.status} />
       </div>
-    </article>
+
+      <div className="mt-3 grid grid-cols-2 gap-3">
+        <div className="min-w-0">
+          <p className="font-vcr text-[7.5px] tracking-[0.14em] text-(--faint)">MAC</p>
+          <p className="font-vcr mt-1 truncate text-[12px] text-(--muted)">{item.mac}</p>
+        </div>
+        <div>
+          <p className="font-vcr text-[7.5px] tracking-[0.14em] text-(--faint)">TYPE</p>
+          <p className="mt-1 text-[12.5px] font-semibold">{item.type}</p>
+        </div>
+        <div className="col-span-2">
+          <p className="font-vcr text-[7.5px] tracking-[0.14em] text-(--faint)">ADDED AT</p>
+          <p className="font-vcr mt-1 text-[11.5px]">{item.addedAt}</p>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => onRemove(item)}
+        disabled={isInactive || isRemoving}
+        className="mt-3 inline-flex h-8 items-center gap-2 rounded-[8px] border border-(--line) px-3 text-[11px] font-semibold text-(--muted) transition hover:border-(--orange) hover:text-(--orange) disabled:cursor-not-allowed disabled:opacity-45"
+        aria-label={`Remove perso device ${item.device}`}
+      >
+        <RemoveIcon />
+        {isRemoving ? "Removing..." : isInactive ? "Inactive" : "Remove"}
+      </button>
+    </div>
   );
 }
 
@@ -187,6 +179,7 @@ export default function PersoDevicesTable() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [removingId, setRemovingId] = useState(null);
   const [actionError, setActionError] = useState("");
+  const [sort, setSort] = useState({ key: "rowNumber", dir: 1 });
 
   const loadPersoDevices = useCallback(async () => {
     if (!eventId) {
@@ -239,94 +232,104 @@ export default function PersoDevicesTable() {
     }
   }, [eventId, loadPersoDevices, token]);
 
+  const toggleSort = (key) => {
+    setSort((current) =>
+      current.key === key ? { key, dir: -current.dir } : { key, dir: 1 }
+    );
+  };
+
   const filteredDevices = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
-    if (!normalizedQuery) return devices;
+    const base = !normalizedQuery
+      ? devices
+      : devices.filter((item) =>
+          [item.id, item.device, item.mac, item.type, item.addedAt, item.status]
+            .filter(Boolean)
+            .some((value) => String(value).toLowerCase().includes(normalizedQuery))
+        );
 
-    return devices.filter((item) =>
-      [item.id, item.device, item.mac, item.type, item.addedAt, item.status]
-        .filter(Boolean)
-        .some((value) => String(value).toLowerCase().includes(normalizedQuery))
-    );
-  }, [devices, query]);
+    const { key, dir } = sort;
+    return [...base].sort((a, b) => {
+      const av = key === "rowNumber" ? Number(a.rowNumber) : a[key];
+      const bv = key === "rowNumber" ? Number(b.rowNumber) : b[key];
+      if (av > bv) return dir;
+      if (av < bv) return -dir;
+      return 0;
+    });
+  }, [devices, query, sort]);
 
   const renderDesktopRows = () => {
-    if (!eventId) {
-      return <PersoEmptyState message="Select an event to load perso devices." />;
-    }
-
-    if (isLoading) {
-      return <PersoLoadingState />;
-    }
-
-    if (loadError) {
-      return <PersoEmptyState message={loadError} />;
-    }
-
-    if (filteredDevices.length === 0) {
-      return <PersoEmptyState message="No perso devices found." />;
-    }
+    if (!eventId) return <PersoEmptyState message="Select an event to load perso devices." />;
+    if (isLoading) return <PersoLoadingState />;
+    if (loadError) return <PersoEmptyState message={loadError} />;
+    if (filteredDevices.length === 0) return <PersoEmptyState message="No perso devices found." />;
 
     return (
-      <div className="max-h-[334px] overflow-y-auto [scrollbar-width:thin] [scrollbar-color:#d5b7ff_transparent]">
-        <table className="min-w-[920px] w-full border-collapse">
-          <thead className="sticky top-0 z-10 bg-white">
-            <tr className="border-b border-[#e5e9f0]">
-              <TableHead sortable={false}>#</TableHead>
-              <TableHead>Device</TableHead>
-              <TableHead>MAC</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead>Added At</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead sortable={false}>Add / Remove</TableHead>
-            </tr>
-          </thead>
-          <tbody>
+      <div className="overflow-x-auto px-[15px] pb-[15px]">
+        <div className="min-w-[640px]">
+          <div
+            className="grid gap-2.5 border-b border-(--line) px-2 pb-2.5"
+            style={{ gridTemplateColumns: GRID_TEMPLATE }}
+          >
+            {COLUMNS.map((col) => {
+              const active = sort.key === col.key;
+              return (
+                <button
+                  key={col.key}
+                  type="button"
+                  onClick={() => col.sortable && toggleSort(col.key)}
+                  className={`font-vcr flex items-center gap-1.5 whitespace-nowrap text-[9.5px] tracking-[0.15em] text-(--orange) ${
+                    col.className
+                  } ${col.sortable ? "cursor-pointer" : "cursor-default"}`}
+                >
+                  <span>{col.label}</span>
+                  {col.sortable ? <SortArrows active={active} dir={sort.dir} /> : null}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="max-h-[360px] overflow-y-auto [scrollbar-color:var(--line)_transparent] [scrollbar-width:thin]">
             {filteredDevices.map((item) => (
-              <tr key={item.key} className={`border-b border-[#edf0f5] transition hover:bg-[#fbfbff] ${item.status === "inactive" ? "opacity-70" : ""}`}>
-                <td className="px-4 py-3 text-[0.76rem] font-medium text-[#777777]">{item.rowNumber}</td>
-                <td className="px-4 py-3 text-[0.78rem] font-semibold text-[#4d4d4d]">{item.device}</td>
-                <td className="px-4 py-3 text-[0.78rem] font-medium text-[#6f7480]">{item.mac}</td>
-                <td className="px-4 py-3 text-[0.78rem] font-medium text-[#6f7480]">{item.type}</td>
-                <td className="px-4 py-3 text-[0.78rem] font-medium text-[#6f7480]">{item.addedAt}</td>
-                <td className="px-4 py-3">
+              <div
+                key={item.key}
+                className={`grid items-center gap-2.5 border-b border-(--line2) px-2 py-[11px] transition-colors duration-150 hover:bg-(--surface2) ${
+                  item.status === "inactive" ? "opacity-70" : ""
+                }`}
+                style={{ gridTemplateColumns: GRID_TEMPLATE }}
+              >
+                <div className="font-vcr text-[12px] text-(--muted)">{item.rowNumber}</div>
+                <div className="truncate text-[13.5px] font-semibold">{item.device}</div>
+                <div className="font-vcr truncate text-[12px] text-(--muted)">{item.mac}</div>
+                <div className="text-[13.5px] text-(--muted)">{item.type}</div>
+                <div className="font-vcr whitespace-nowrap text-[11.5px]">{item.addedAt}</div>
+                <div>
                   <PersoStatusBadge status={item.status} />
-                </td>
-                <td className="px-4 py-3">
+                </div>
+                <div className="flex justify-end">
                   <button
                     type="button"
                     onClick={() => handleRemoveDevice(item)}
                     disabled={item.status === "inactive" || removingId === item.id}
-                    className="grid h-7 w-7 place-items-center rounded-md border border-[#e5e5e5] bg-white text-[#686868] transition hover:border-[#E04420] hover:text-[#E04420] disabled:cursor-not-allowed disabled:opacity-45"
+                    className="grid h-[30px] w-[30px] place-items-center rounded-[8px] border border-(--line) text-(--muted) transition hover:border-(--orange) hover:text-(--orange) disabled:cursor-not-allowed disabled:opacity-45"
                     aria-label={`Remove perso device ${item.device}`}
                   >
                     <RemoveIcon />
                   </button>
-                </td>
-              </tr>
+                </div>
+              </div>
             ))}
-          </tbody>
-        </table>
+          </div>
+        </div>
       </div>
     );
   };
 
   const renderMobileRows = () => {
-    if (!eventId) {
-      return <PersoEmptyState message="Select an event to load perso devices." />;
-    }
-
-    if (isLoading) {
-      return <PersoLoadingState />;
-    }
-
-    if (loadError) {
-      return <PersoEmptyState message={loadError} />;
-    }
-
-    if (filteredDevices.length === 0) {
-      return <PersoEmptyState message="No perso devices found." />;
-    }
+    if (!eventId) return <PersoEmptyState message="Select an event to load perso devices." />;
+    if (isLoading) return <PersoLoadingState />;
+    if (loadError) return <PersoEmptyState message={loadError} />;
+    if (filteredDevices.length === 0) return <PersoEmptyState message="No perso devices found." />;
 
     return filteredDevices.map((item) => (
       <PersoMobileCard
@@ -339,52 +342,50 @@ export default function PersoDevicesTable() {
   };
 
   return (
-    <section className="mt-4 rounded-xl border border-[#ded4ff] border-l-[4px] border-l-[#E04420] bg-white p-3.5 shadow-[0_18px_52px_rgba(15,23,42,0.09)]">
-      <div className="flex flex-col gap-3 border-b border-[#e5e5e5] pb-3 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex min-w-fit items-center gap-2.5">
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-[linear-gradient(135deg,#E04420_0%,#A9379E_48%,#341CD6_100%)] text-[0.8rem] font-bold text-white shadow-[0_10px_22px_rgba(52,28,214,0.20)]">
-            {devices.length}
-          </span>
-          <div>
-            <h2 className="text-[0.98rem] font-semibold text-[#1f1f1f]">Perso Devices</h2>
-            <p className="mt-0.5 text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-[#8f8f8f]">
-              Perso devices ({devices.length})
-            </p>
-          </div>
+    <section className="mt-[clamp(14px,1.8vw,20px)] overflow-hidden rounded-[14px] border border-(--line) border-l-[3px] border-l-(--orange) bg-(--surface) shadow-(--shadow)">
+      <div className="flex flex-wrap items-center gap-3 px-[15px] py-[14px]">
+        <span className="font-vcr grid h-[38px] w-[38px] shrink-0 place-items-center rounded-[10px] bg-[linear-gradient(140deg,#e04420,#8b5cf6)] text-[13px] text-white">
+          {devices.length}
+        </span>
+        <div className="min-w-0">
+          <h2 className="font-chillax text-[18px] font-semibold tracking-[-0.01em]">Perso Devices</h2>
+          <p className="font-vcr mt-0.5 text-[9px] tracking-[0.15em] text-(--muted)">
+            PERSO DEVICES ({devices.length})
+          </p>
         </div>
-
+        <div className="flex-1" />
         <button
           type="button"
           onClick={() => setIsAddModalOpen(true)}
-          className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg bg-[#202020] px-3 text-[0.76rem] font-bold text-white shadow-[0_8px_16px_rgba(15,23,42,0.14)] transition hover:bg-[#E04420] max-[640px]:w-full"
+          className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-[10px] bg-(--text) px-[18px] text-[13px] font-semibold text-(--bg) transition hover:bg-(--orange) max-[640px]:w-full"
         >
           <PlusIcon />
           Add Device
         </button>
       </div>
 
-      <label className="mt-3 flex h-9 w-full items-center gap-2.5 rounded-lg border border-[#dfe3ea] bg-white px-3 text-[#8f80ff] transition focus-within:border-[#E04420] focus-within:ring-2 focus-within:ring-[#E04420]/10">
-        <span className="sr-only">Search perso device</span>
-        <SearchIcon />
-        <input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search Device"
-          className="h-full min-w-0 flex-1 bg-transparent text-[0.78rem] font-normal text-[#1f2937] outline-none placeholder:text-[#8e98ad]"
-        />
-      </label>
+      <div className="px-[15px] pb-3">
+        <label className="flex h-11 items-center gap-2.5 rounded-[11px] border border-(--line) bg-(--surface2) px-3.5 text-(--muted) focus-within:border-(--orange)">
+          <span className="sr-only">Search perso device</span>
+          <SearchIcon />
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search Device"
+            className="h-full min-w-0 flex-1 bg-transparent text-[13px] text-(--text) outline-none placeholder:text-(--faint)"
+          />
+        </label>
+      </div>
 
       {actionError ? (
-        <p className="mt-2 rounded-lg border border-[#ffd4cc] bg-[#fff7f5] px-3 py-2 text-[0.72rem] font-semibold text-[#E04420]">
+        <p className="mx-[15px] mb-2 rounded-[10px] border border-[rgba(224,68,32,0.25)] bg-[rgba(224,68,32,0.06)] px-3 py-2 text-[12px] font-semibold text-(--orange)">
           {actionError}
         </p>
       ) : null}
 
-      <div className="hidden overflow-x-auto pt-3 md:block">
-        {renderDesktopRows()}
-      </div>
+      <div className="hidden md:block">{renderDesktopRows()}</div>
 
-      <div className="grid max-h-[510px] gap-2.5 overflow-y-auto pr-1 pt-3 [scrollbar-width:thin] [scrollbar-color:#d5b7ff_transparent] md:hidden">
+      <div className="grid max-h-[510px] gap-2.5 overflow-y-auto px-[15px] pb-[15px] [scrollbar-color:var(--line)_transparent] [scrollbar-width:thin] md:hidden">
         {renderMobileRows()}
       </div>
 

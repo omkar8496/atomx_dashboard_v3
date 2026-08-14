@@ -1,9 +1,48 @@
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { UserMenu } from "../UserMenu/UserMenu";
 
 const LOGO_SRC = "/shared/logos/AtomX_Logo.svg";
+const THEME_KEY = "atomx.theme";
+
+function useTheme() {
+  const [theme, setTheme] = useState("light");
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const current =
+      document.documentElement.getAttribute("data-atx") === "dark"
+        ? "dark"
+        : "light";
+    setTheme(current);
+  }, []);
+
+  const toggleTheme = () => {
+    setTheme((prev) => {
+      const next = prev === "dark" ? "light" : "dark";
+      if (typeof document !== "undefined") {
+        if (next === "dark") {
+          document.documentElement.setAttribute("data-atx", "dark");
+        } else {
+          document.documentElement.removeAttribute("data-atx");
+        }
+      }
+      try {
+        window.localStorage.setItem(THEME_KEY, next);
+      } catch (err) {
+        /* ignore storage failures */
+      }
+      return next;
+    });
+  };
+
+  return { theme, toggleTheme };
+}
 
 export function HeaderBar({ user, onSignOut, pageTitle = "Workspace" }) {
+  const { theme, toggleTheme } = useTheme();
+  const isDark = theme === "dark";
+
   return (
     <div
       style={{
@@ -14,7 +53,7 @@ export function HeaderBar({ user, onSignOut, pageTitle = "Workspace" }) {
     >
       <div className="fixed left-0 right-0 top-0 z-40">
         <header
-          className="w-full border-b border-[#ececec] bg-white text-[#171717] shadow-[0_6px_24px_rgba(15,23,42,0.08)]"
+          className="w-full border-b border-(--line) bg-(--surface) text-(--text) shadow-(--shadow)"
           style={{ height: "var(--header-h)" }}
         >
           <div className="flex h-full items-center gap-3 px-4 md:px-5">
@@ -29,21 +68,25 @@ export function HeaderBar({ user, onSignOut, pageTitle = "Workspace" }) {
                   className="absolute -left-[28px] -top-[52px] h-[132px] w-[150px] max-w-none"
                 />
               </span>
-              <div className="hidden h-9 w-px bg-[#dddddd] sm:block" aria-hidden />
+              <div className="hidden h-9 w-px bg-(--line) sm:block" aria-hidden />
               <div className="font-chillax flex min-w-0 items-center gap-2 text-[1.3rem] font-semibold leading-none sm:text-[1.45rem]">
-                <span className="hidden truncate text-[#1c1c1c] sm:inline">Portal</span>
-                <span className="hidden text-[#b4b4b4] sm:inline">/</span>
-                <span className="truncate text-[#e04420]">{pageTitle}</span>
+                <span className="hidden truncate text-(--text) sm:inline">Portal</span>
+                <span className="hidden text-(--faint) sm:inline">/</span>
+                <span className="truncate text-(--orange)">{pageTitle}</span>
               </div>
             </div>
             <div className="flex-1" />
             <div className="flex items-center gap-2.5">
-              <span
-                className="font-vcr flex h-[34px] w-[34px] items-center justify-center rounded-[10px] border border-[#1c1c1c]/12 bg-white text-[11px] tracking-[0.06em] text-[#71706e]"
-                aria-hidden
+              <button
+                type="button"
+                onClick={toggleTheme}
+                title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+                aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+                aria-pressed={isDark}
+                className="font-vcr flex h-[34px] w-[34px] items-center justify-center rounded-[10px] border border-(--line) bg-(--surface) text-[11px] tracking-[0.06em] text-(--muted) transition hover:border-(--orange) hover:text-(--text)"
               >
-                DK
-              </span>
+                {isDark ? "LT" : "DK"}
+              </button>
               <UserMenu user={user} onSignOut={onSignOut} />
             </div>
           </div>

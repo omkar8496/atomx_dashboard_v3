@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 const FIELD_CLASS =
-  "h-10 w-full rounded-lg border border-[#dedede] bg-white px-3 text-[0.8rem] font-semibold text-[#242424] outline-none transition placeholder:text-[#a5a5a5] focus:border-[#E04420] focus:ring-2 focus:ring-[#E04420]/10 max-[640px]:h-9 max-[640px]:text-[0.72rem]";
+  "h-11 w-full rounded-[10px] border border-(--line) bg-(--surface) px-3.5 text-[13px] font-medium text-(--text) outline-none transition placeholder:text-(--faint) focus:border-(--orange) focus:shadow-[0_0_0_3px_rgba(224,68,32,0.12)]";
 
 const ALLOW_OPTIONS = [
   { label: "Always Allow", value: 0 },
@@ -32,17 +32,8 @@ function createForm(category) {
 
 function CloseIcon() {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      className="h-4 w-4"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.4"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M18 6 6 18M6 6l12 12" />
+    <svg viewBox="0 0 14 14" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
+      <path d="M3.5 3.5l7 7M10.5 3.5l-7 7" />
     </svg>
   );
 }
@@ -50,9 +41,7 @@ function CloseIcon() {
 function FormField({ label, value, onChange, type = "text", placeholder = "" }) {
   return (
     <label className="block min-w-0">
-      <span className="mb-1.5 block text-[0.6rem] font-bold uppercase tracking-[0.13em] text-[#8c8c8c]">
-        {label}
-      </span>
+      <span className="font-vcr mb-1.5 block text-[8.5px] uppercase tracking-[0.16em] text-(--muted)">{label}</span>
       <input
         type={type}
         value={value}
@@ -64,12 +53,7 @@ function FormField({ label, value, onChange, type = "text", placeholder = "" }) 
   );
 }
 
-export default function EditAccessXCategoryModal({
-  category,
-  mode = "edit",
-  onClose,
-  onConfirm
-}) {
+export default function EditAccessXCategoryModal({ category, mode = "edit", onClose, onConfirm }) {
   const [form, setForm] = useState(() => createForm(category));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -116,7 +100,7 @@ export default function EditAccessXCategoryModal({
 
   return (
     <div
-      className="fixed inset-0 z-[90] flex items-center justify-center bg-[#111827]/42 p-4 backdrop-blur-[2px]"
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-[rgba(12,12,12,0.5)] p-4 backdrop-blur-[3px] max-[640px]:p-0"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose?.();
       }}
@@ -125,118 +109,90 @@ export default function EditAccessXCategoryModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="edit-accessx-category-title"
-        className="max-h-[calc(100vh-2rem)] w-full max-w-[680px] overflow-y-auto rounded-lg border border-[#ded4ff] bg-white shadow-[0_28px_75px_rgba(15,23,42,0.24)]"
+        className="flex max-h-[calc(100dvh-48px)] w-full max-w-[680px] flex-col overflow-hidden rounded-[16px] border border-(--line) bg-(--surface) shadow-(--shadowUp) max-[640px]:h-full max-[640px]:max-h-full max-[640px]:rounded-none"
       >
-        <header className="sticky top-0 z-10 flex items-center justify-between border-b border-white/10 bg-[#1c1c1c] px-5 py-4 text-white max-[640px]:px-4 max-[640px]:py-3">
-          <div>
-            <p className="text-[0.58rem] font-bold uppercase tracking-[0.17em] text-[#ff9a86]">
-              AccessX Category
-            </p>
-            <h2 id="edit-accessx-category-title" className="mt-1 text-[1.15rem] font-semibold">
-              {isCreate ? "Add Category" : `Edit ${category?.name || "Category"}`}
-            </h2>
+        <header
+          className="relative shrink-0 overflow-hidden px-5 py-4"
+          style={{ background: "linear-gradient(120deg,#1C1C1C 0%,#341CD6 62%,#E04420 130%)" }}
+        >
+          <div className="relative flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="font-vcr text-[9px] uppercase tracking-[0.2em] text-(--purple)">AccessX Category</p>
+              <h2 id="edit-accessx-category-title" className="font-chillax mt-1 truncate text-[clamp(18px,2.2vw,24px)] font-semibold tracking-[-0.01em] text-white">
+                {isCreate ? "Add Category" : `Edit ${category?.name || "Category"}`}
+              </h2>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="grid h-8 w-8 shrink-0 place-items-center rounded-[9px] border border-white/20 text-white/80 transition hover:border-(--orange) hover:bg-(--orange)"
+              aria-label="Close category editor"
+            >
+              <CloseIcon />
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="grid h-8 w-8 place-items-center rounded-md text-white/75 transition hover:bg-white/10 hover:text-white"
-            aria-label="Close category editor"
-          >
-            <CloseIcon />
-          </button>
         </header>
 
-        <form onSubmit={handleSubmit} className="p-5 max-[640px]:p-4">
-          <div className="grid gap-4 sm:grid-cols-2 max-[640px]:gap-3">
-            <div className="sm:col-span-2">
-              <FormField
-                label="Name"
-                value={form.name}
-                onChange={(value) => setField("name", value)}
-                placeholder="Category name"
-              />
+        <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+          <div className="min-h-0 flex-1 overflow-y-auto p-5 max-[640px]:p-4">
+            <div className="grid gap-4 sm:grid-cols-2 max-[640px]:gap-3">
+              <div className="sm:col-span-2">
+                <FormField label="Name" value={form.name} onChange={(value) => setField("name", value)} placeholder="Category name" />
+              </div>
+
+              <label className="block min-w-0">
+                <span className="font-vcr mb-1.5 block text-[8.5px] uppercase tracking-[0.16em] text-(--muted)">Access Allow Count</span>
+                <div className="relative">
+                  <select
+                    value={form.allowCount}
+                    onChange={(event) => setField("allowCount", Number(event.target.value))}
+                    className={`${FIELD_CLASS} cursor-pointer appearance-none pr-9`}
+                  >
+                    {ALLOW_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  <svg viewBox="0 0 12 12" className="pointer-events-none absolute right-3.5 top-1/2 h-2.5 w-2.5 -translate-y-1/2 opacity-50" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                    <path d="M2.5 4.5 6 8l3.5-3.5" />
+                  </svg>
+                </div>
+              </label>
+
+              <FormField label="Position" type="number" value={form.position} onChange={(value) => setField("position", value)} placeholder="Position" />
+
+              <FormField label="Issuer ID" value={form.qrLogicIssuerId} onChange={(value) => setField("qrLogicIssuerId", value)} placeholder="Issuer ID" />
+              <FormField label="Sector ID" value={form.qrLogicSectorId} onChange={(value) => setField("qrLogicSectorId", value)} placeholder="Sector ID" />
+              <FormField label="Discount ID" value={form.qrLogicDiscountId} onChange={(value) => setField("qrLogicDiscountId", value)} placeholder="Discount ID" />
+              <FormField label="Ticket Type" value={form.qrLogicTicketType} onChange={(value) => setField("qrLogicTicketType", value)} placeholder="Ticket type" />
+              <div className="sm:col-span-2">
+                <FormField label="Ticket / Accred" value={form.qrLogicTktAccred} onChange={(value) => setField("qrLogicTktAccred", value)} placeholder="Ticket or accreditation" />
+              </div>
             </div>
 
-            <label className="block min-w-0">
-              <span className="mb-1.5 block text-[0.6rem] font-bold uppercase tracking-[0.13em] text-[#8c8c8c]">
-                Access Allow Count
-              </span>
-              <select
-                value={form.allowCount}
-                onChange={(event) => setField("allowCount", Number(event.target.value))}
-                className={`${FIELD_CLASS} appearance-none bg-[linear-gradient(45deg,transparent_50%,#777_50%),linear-gradient(135deg,#777_50%,transparent_50%)] bg-[position:calc(100%-16px)_17px,calc(100%-11px)_17px] bg-[size:5px_5px,5px_5px] bg-no-repeat pr-9 max-[640px]:bg-[position:calc(100%-16px)_15px,calc(100%-11px)_15px]`}
-              >
-                {ALLOW_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <FormField
-              label="Position"
-              type="number"
-              value={form.position}
-              onChange={(value) => setField("position", value)}
-              placeholder="Position"
-            />
-
-            <FormField
-              label="Issuer ID"
-              value={form.qrLogicIssuerId}
-              onChange={(value) => setField("qrLogicIssuerId", value)}
-              placeholder="Issuer ID"
-            />
-            <FormField
-              label="Sector ID"
-              value={form.qrLogicSectorId}
-              onChange={(value) => setField("qrLogicSectorId", value)}
-              placeholder="Sector ID"
-            />
-            <FormField
-              label="Discount ID"
-              value={form.qrLogicDiscountId}
-              onChange={(value) => setField("qrLogicDiscountId", value)}
-              placeholder="Discount ID"
-            />
-            <FormField
-              label="Ticket Type"
-              value={form.qrLogicTicketType}
-              onChange={(value) => setField("qrLogicTicketType", value)}
-              placeholder="Ticket type"
-            />
-            <div className="sm:col-span-2">
-              <FormField
-                label="Ticket / Accred"
-                value={form.qrLogicTktAccred}
-                onChange={(value) => setField("qrLogicTktAccred", value)}
-                placeholder="Ticket or accreditation"
-              />
-            </div>
+            {error ? (
+              <p className="mt-4 rounded-[10px] border border-[rgba(224,68,32,0.25)] bg-[rgba(224,68,32,0.06)] px-3 py-2 text-[12px] font-semibold text-(--orange)">
+                {error}
+              </p>
+            ) : null}
           </div>
 
-          {error ? (
-            <p className="mt-4 rounded-md border border-[#ffd2ca] bg-[#fff6f3] px-3 py-2 text-[0.7rem] font-semibold text-[#E04420]">
-              {error}
-            </p>
-          ) : null}
-
-          <div className="mt-5 flex justify-end gap-2 border-t border-[#ececec] pt-4">
+          <div className="flex shrink-0 justify-end gap-2.5 border-t border-(--line) bg-(--surface2) px-5 py-4 max-[640px]:grid max-[640px]:grid-cols-2">
             <button
               type="button"
               onClick={onClose}
               disabled={saving}
-              className="h-9 rounded-md border border-[#dedede] bg-white px-4 text-[0.75rem] font-bold text-[#686868] transition hover:border-[#1c1c1c] hover:text-[#1c1c1c]"
+              className="flex h-11 items-center justify-center rounded-[10px] border border-(--line) bg-(--surface) px-5 text-[13px] font-semibold text-(--muted) transition hover:border-(--orange) hover:text-(--orange)"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={saving || !form.name.trim()}
-              className="h-9 rounded-md bg-[#1c1c1c] px-5 text-[0.75rem] font-bold text-white transition hover:bg-[#E04420] disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex h-11 items-center justify-center rounded-[10px] bg-(--text) px-6 text-[13px] font-semibold text-(--bg) transition hover:bg-(--orange) disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {saving ? "Saving..." : isCreate ? "Add Category" : "Confirm"}
+              {saving ? "Saving…" : isCreate ? "Add Category" : "Confirm"}
             </button>
           </div>
         </form>

@@ -2,10 +2,10 @@ export function WelcomePanel({ user, actions = [] }) {
   return (
     <section className="flex flex-col gap-1">
       <div>
-        <h1 className="font-chillax m-0 text-[30px] font-semibold leading-[1.06] tracking-[-0.02em] text-[#1c1c1c] md:text-[38px] lg:text-[44px]">
-          <span className="text-[#e04420]">Welcome</span>, {user.name}.
+        <h1 className="font-chillax m-0 text-[30px] font-semibold leading-[1.06] tracking-[-0.02em] text-(--text) md:text-[38px] lg:text-[44px]">
+          <span className="text-(--orange)">Welcome</span>, {user.name}.
         </h1>
-        <p className="m-0 pt-2.5 text-[15px] font-light text-[#71706e]">
+        <p className="m-0 pt-2.5 text-[15px] font-light text-(--muted)">
           Choose where you want to continue.
         </p>
       </div>

@@ -1003,15 +1003,15 @@ export default function AccessPage() {
 
   const renderSectionHeader = (count, label, caption) => (
     <div className="mb-4 flex items-center gap-3">
-      <span className="font-vcr flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#1c1c1c] text-[10.5px] tracking-[0.04em] text-[#f2f1ee]">
+      <span className="font-vcr flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-(--text) text-[10.5px] tracking-[0.04em] text-(--bg)">
         {formatSectionCount(count)}
       </span>
-      <h2 className="font-chillax m-0 shrink-0 text-[1.35rem] font-medium tracking-[-0.01em] text-[#1c1c1c]">
+      <h2 className="font-chillax m-0 shrink-0 text-[1.35rem] font-medium tracking-[-0.01em] text-(--text)">
         {label}
       </h2>
-      <span className="h-px flex-1 bg-[#1c1c1c]/[0.06]" aria-hidden />
+      <span className="h-px flex-1 bg-(--line2)" aria-hidden />
       {caption ? (
-        <span className="font-vcr hidden shrink-0 text-[9px] uppercase tracking-[0.14em] text-[#9b9a97] sm:block">
+        <span className="font-vcr hidden shrink-0 text-[9px] uppercase tracking-[0.14em] text-(--faint) sm:block">
           {caption}
         </span>
       ) : null}
@@ -1024,7 +1024,7 @@ export default function AccessPage() {
 
     if (!roles.length) {
       return (
-        <div className="rounded-[14px] border border-dashed border-[#1c1c1c]/12 bg-white px-5 py-4 text-sm text-[#71706e]">
+        <div className="rounded-[14px] border border-dashed border-(--line) bg-(--surface) px-5 py-4 text-sm text-(--muted)">
           {emptyLabel}
         </div>
       );
@@ -1044,12 +1044,12 @@ export default function AccessPage() {
             <button
               key={role.id}
               type="button"
-              className={`group relative flex flex-col overflow-hidden rounded-[14px] text-left shadow-[0_1px_2px_rgba(28,28,28,0.04),0_10px_30px_-18px_rgba(28,28,28,0.25)] transition duration-200 ease-out hover:-translate-y-[3px] hover:shadow-[0_2px_4px_rgba(28,28,28,0.05),0_18px_40px_-20px_rgba(28,28,28,0.35),0_0_0_1px_rgba(224,68,32,0.30)] ${
+              className={`group relative flex flex-col overflow-hidden rounded-[14px] text-left shadow-(--shadow) transition duration-200 ease-out hover:-translate-y-[3px] hover:shadow-[var(--shadowUp),0_0_0_1px_rgba(224,68,32,0.30)] ${
                 onCardClick ? "cursor-pointer" : "cursor-default"
               }`}
               style={{
                 border: "1px solid transparent",
-                background: `linear-gradient(#fff,#fff) padding-box, ${theme.border} border-box`,
+                background: `linear-gradient(var(--surface),var(--surface)) padding-box, ${theme.border} border-box`,
                 "--accent": theme.text
               }}
               onClick={() => {
@@ -1073,28 +1073,28 @@ export default function AccessPage() {
                   >
                     {String(role.type || "—").toUpperCase()}
                   </p>
-                  <p className="m-0 mt-1 truncate text-[11.5px] font-light text-[#71706e]">
+                  <p className="m-0 mt-1 truncate text-[11.5px] font-light text-(--muted)">
                     {role.expiryAt ? formatSessionExpiry(role.expiryAt) : "No expiry"}
                   </p>
                 </div>
                 {showOpenIcon ? (
-                  <span className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-[8px] border border-[#1c1c1c]/12 text-[#71706e] transition duration-200 group-hover:border-(--accent) group-hover:text-(--accent)">
+                  <span className="flex h-[26px] w-[26px] shrink-0 items-center justify-center rounded-[8px] border border-(--line) text-(--muted) transition duration-200 group-hover:border-(--accent) group-hover:text-(--accent)">
                     <OpenArrowGlyph />
                   </span>
                 ) : null}
               </div>
 
               <div className="px-4 pb-3">
-                <p className="font-chillax m-0 truncate text-[16.5px] font-medium tracking-[-0.01em] text-[#1c1c1c]">
+                <p className="font-chillax m-0 truncate text-[16.5px] font-medium tracking-[-0.01em] text-(--text)">
                   {isAdminSection ? role.adminName || "—" : role.eventName || "—"}
                 </p>
               </div>
 
-              <div className="mt-auto flex items-center justify-between gap-2.5 border-t border-[#1c1c1c]/[0.06] bg-[#f8f7f5] px-4 py-[9px]">
-                <span className="font-vcr text-[9px] tracking-[0.14em] text-[#9b9a97]">
+              <div className="mt-auto flex items-center justify-between gap-2.5 border-t border-(--line2) bg-(--surface2) px-4 py-[9px]">
+                <span className="font-vcr text-[9px] tracking-[0.14em] text-(--faint)">
                   {isAdminSection ? "ADMIN ID" : "EVENT ID"}
                 </span>
-                <span className="font-vcr text-[13px] tracking-[0.02em] text-[#1c1c1c]">
+                <span className="font-vcr text-[13px] tracking-[0.02em] text-(--text)">
                   {isAdminSection ? role.adminId ?? "—" : role.eventId ?? "—"}
                 </span>
               </div>
@@ -1114,7 +1114,7 @@ export default function AccessPage() {
           content="Pick the AtomX module you need in one click."
         />
       </Head>
-      <main className="min-h-[calc(100vh-58px)] w-full bg-[#f2f1ee] px-4 pb-20 md:px-8">
+      <main className="min-h-[calc(100vh-58px)] w-full bg-(--bg) px-4 pb-20 md:px-8">
         <HeaderBar
           user={user}
           onSignOut={handleSignOut}
@@ -1176,8 +1176,8 @@ export default function AccessPage() {
         <div className="mx-auto w-full max-w-[1680px]">
           <div className="mt-8 flex flex-wrap items-end justify-between gap-4">
             <WelcomePanel user={user} actions={highlightActions} />
-            <div className="flex h-10 w-full min-w-[210px] items-center gap-2 rounded-[11px] border border-[#1c1c1c]/12 bg-white px-3 md:w-auto md:max-w-[600px] md:flex-1">
-              <span className="pointer-events-none shrink-0 text-[#9b9a97]">
+            <div className="flex h-10 w-full min-w-[210px] items-center gap-2 rounded-[11px] border border-(--line) bg-(--surface) px-3 md:w-auto md:max-w-[600px] md:flex-1">
+              <span className="pointer-events-none shrink-0 text-(--faint)">
                 <svg
                   viewBox="0 0 16 16"
                   className="h-3.5 w-3.5"
@@ -1197,7 +1197,7 @@ export default function AccessPage() {
                 onChange={(event) => setSearchQuery(event.target.value)}
                 placeholder="Search workspaces & events"
                 aria-label="Search workspaces and events"
-                className="w-full border-0 bg-transparent p-0 text-[12.5px] text-[#1c1c1c] outline-none placeholder:text-[#9b9a97]"
+                className="w-full border-0 bg-transparent p-0 text-[12.5px] text-(--text) outline-none placeholder:text-(--faint)"
               />
             </div>
           </div>
@@ -1213,8 +1213,8 @@ export default function AccessPage() {
                     onClick={() => setActiveFilter(filter.key)}
                     className={`flex shrink-0 items-center gap-[7px] rounded-full border px-[13px] py-[7px] text-[11.5px] font-medium transition ${
                       isActive
-                        ? "border-[#1c1c1c] bg-[#1c1c1c] text-[#f2f1ee]"
-                        : "border-[#1c1c1c]/12 bg-white text-[#71706e] hover:border-[#e04420] hover:text-[#1c1c1c]"
+                        ? "border-(--text) bg-(--text) text-(--bg)"
+                        : "border-(--line) bg-(--surface) text-(--muted) hover:border-(--orange) hover:text-(--text)"
                     }`}
                     aria-pressed={isActive}
                   >
@@ -1228,14 +1228,14 @@ export default function AccessPage() {
             </div>
           ) : null}
 
-          <div className="mt-[22px] h-px w-full bg-[#1c1c1c]/12" />
+          <div className="mt-[22px] h-px w-full bg-(--line)" />
 
           {!roleCards.length ? (
-            <div className="mt-6 rounded-[14px] border border-dashed border-[#1c1c1c]/12 bg-white px-5 py-4 text-sm text-[#71706e]">
+            <div className="mt-6 rounded-[14px] border border-dashed border-(--line) bg-(--surface) px-5 py-4 text-sm text-(--muted)">
               No roles assigned yet.
             </div>
           ) : !hasVisibleRoles ? (
-            <div className="mt-6 rounded-[14px] border border-dashed border-[#1c1c1c]/12 bg-white px-5 py-8 text-center text-sm text-[#71706e]">
+            <div className="mt-6 rounded-[14px] border border-dashed border-(--line) bg-(--surface) px-5 py-8 text-center text-sm text-(--muted)">
               No workspaces or events match your search.
             </div>
           ) : (
@@ -1275,8 +1275,8 @@ export default function AccessPage() {
       </main>
 
       {selecting && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/70 backdrop-blur-sm">
-          <div className="rounded-2xl bg-white px-6 py-4 shadow-[0_20px_45px_rgba(15,23,42,0.18)]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[color-mix(in_srgb,var(--bg)_72%,transparent)] backdrop-blur-sm">
+          <div className="rounded-2xl bg-(--surface) px-6 py-4 text-(--text) shadow-(--shadowUp)">
             <AtomXLoader label="Switching access..." size={62} />
           </div>
         </div>
@@ -1310,9 +1310,9 @@ export default function AccessPage() {
 
       {modalApp && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 px-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 text-center shadow-[0_32px_65px_rgba(15,23,42,0.24)]">
+          <div className="w-full max-w-md rounded-2xl bg-(--surface) p-6 text-center text-(--text) shadow-[0_32px_65px_rgba(0,0,0,0.35)]">
             <h2 className="m-0 text-xl font-semibold">{modalApp.title}</h2>
-            <p className="mt-3 text-base text-slate-600">
+            <p className="mt-3 text-base text-(--muted)">
               {modalApp.description || "This module is going live soon. We’ll notify you when access is ready."}
             </p>
             <button

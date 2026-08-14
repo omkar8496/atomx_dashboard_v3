@@ -14,14 +14,42 @@ const SEARCH_PLACEHOLDERS = [
   "Name Try Sunburn Arena",
   "Search by Event ID"
 ];
-const DEFAULT_EVENT_IMAGE = "/images/event_card.avif";
-const FALLBACK_EVENT_IMAGE = "/images/event_card.png";
 const EVENT_ACTIONS = [
-  { id: "open", label: "Open event" },
+  { id: "open", label: "Open dashboard" },
   { id: "reports", label: "Reports" },
-  { id: "analytics", label: "Analytics" },
+  // { id: "analytics", label: "Analytics" },
   { id: "devices", label: "Devices" }
 ];
+
+const STATUS_STYLES = {
+  past: {
+    a: "#3a3a38",
+    b: "#1c1c1c",
+    badgeBg: "rgba(255,255,255,0.9)",
+    badgeFg: "#1c1c1c",
+    dot: "#9b9a97",
+    pulse: false,
+    border: "linear-gradient(135deg,rgba(28,28,28,.22),rgba(28,28,28,.07))"
+  },
+  present: {
+    a: "#e04420",
+    b: "#341cd6",
+    badgeBg: "rgba(224,68,32,0.92)",
+    badgeFg: "#fff",
+    dot: "#fff",
+    pulse: true,
+    border: "linear-gradient(135deg,rgba(224,68,32,.65),rgba(52,28,214,.35))"
+  },
+  upcoming: {
+    a: "#341cd6",
+    b: "#00a9f2",
+    badgeBg: "rgba(52,28,214,0.9)",
+    badgeFg: "#fff",
+    dot: "#00a9f2",
+    pulse: false,
+    border: "linear-gradient(135deg,rgba(52,28,214,.5),rgba(0,169,242,.22))"
+  }
+};
 
 function parseDate(value) {
   if (!value) return null;
@@ -133,50 +161,111 @@ function getEventDate(eventItem) {
   }).format(eventDate);
 }
 
-function getEventStatusLabel(eventItem) {
-  const bucket = classifyEvent(eventItem);
-  if (bucket === "past") return "Past";
-  if (bucket === "upcoming") return "Upcomming";
-  return "Present";
+function posterBackground(status, id) {
+  const style = STATUS_STYLES[status] ?? STATUS_STYLES.present;
+  const seed = Number(String(id).replace(/\D/g, "")) || 0;
+  const rot = 110 + (seed % 7) * 14;
+  return `linear-gradient(${rot}deg, ${style.a}, ${style.b})`;
 }
 
 function EventActionIcon({ type }) {
   if (type === "reports") {
     return (
-      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-        <path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z" />
-        <path d="M14 2v5h5" />
-        <path d="M9 13h6" />
-        <path d="M9 17h6" />
+      <svg viewBox="0 0 16 16" className="h-[15px] w-[15px]" fill="none" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <path d="M4 1.9h4.9L12.1 5.1v9H4z" />
+        <path d="M8.9 1.9v3.2h3.2" />
+        <path d="M6.1 8.7h4M6.1 11.1h2.9" />
       </svg>
     );
   }
-
   if (type === "analytics") {
     return (
-      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-        <path d="M4 19h16" />
-        <path d="M7 16V9" />
-        <path d="M12 16V5" />
-        <path d="M17 16v-4" />
+      <svg viewBox="0 0 16 16" className="h-[15px] w-[15px]" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" aria-hidden>
+        <path d="M2.3 13.4h11.4" />
+        <path d="M4.6 13.4V7.2M8 13.4V3.4M11.4 13.4V9.4" />
       </svg>
     );
   }
-
   if (type === "devices") {
     return (
-      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-        <rect x="7" y="2" width="10" height="20" rx="2" />
-        <path d="M11 18h2" />
+      <svg viewBox="0 0 16 16" className="h-[15px] w-[15px]" fill="none" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <rect x="4.4" y="1.9" width="7.2" height="12.2" rx="1.4" />
+        <path d="M6.6 4.4h2.8M6.8 11.7h2.4" />
       </svg>
     );
   }
+  return (
+    <svg viewBox="0 0 16 16" className="h-[15px] w-[15px]" fill="currentColor" aria-hidden>
+      <rect x="2" y="2" width="5" height="6.6" rx="1.2" />
+      <rect x="9" y="2" width="5" height="4.2" rx="1.2" opacity=".55" />
+      <rect x="2" y="10.2" width="5" height="3.8" rx="1.2" opacity=".55" />
+      <rect x="9" y="7.8" width="5" height="6.2" rx="1.2" />
+    </svg>
+  );
+}
+
+function EventPoster({ eventItem, status }) {
+  const style = STATUS_STYLES[status] ?? STATUS_STYLES.present;
+  const id = String(getEventId(eventItem));
+  const words = getEventName(eventItem)
+    .toUpperCase()
+    .split(/[\s-]+/)
+    .filter(Boolean)
+    .slice(0, 3);
 
   return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="M7 7h10v10" />
-      <path d="M7 17 17 7" />
-    </svg>
+    <div
+      className="relative overflow-hidden border-b border-(--line2)"
+      style={{ aspectRatio: "16 / 9", background: posterBackground(status, id) }}
+    >
+      <svg className="pointer-events-none absolute -right-6 -top-8 h-[150%] w-auto opacity-70" viewBox="0 0 300 300" fill="none" aria-hidden>
+        {[0, 1, 2].map((ring) => (
+          <circle
+            key={ring}
+            cx="230"
+            cy="70"
+            r={60 + ring * 42}
+            stroke="#fff"
+            strokeOpacity={0.16 - ring * 0.04}
+            strokeWidth="1.5"
+          />
+        ))}
+      </svg>
+
+      <div className="relative flex h-full flex-col justify-between p-3">
+        <div className="flex items-start justify-between">
+          <span
+            className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 backdrop-blur"
+            style={{ background: style.badgeBg, color: style.badgeFg }}
+          >
+            <span
+              className="h-1.5 w-1.5 rounded-full"
+              style={{ background: style.dot, animation: style.pulse ? "atxLive 1.4s ease-in-out infinite" : undefined }}
+            />
+            <span className="font-vcr text-[9px] tracking-[0.14em]">{status.toUpperCase()}</span>
+          </span>
+          <span className="font-vcr rounded-[7px] bg-[rgba(28,28,28,0.62)] px-2 py-1.5 text-[9px] tracking-[0.12em] text-[#ebebeb] backdrop-blur">
+            #{id || "—"}
+          </span>
+        </div>
+
+        <div>
+          <span className="mb-2 block h-1 w-10 rounded-full bg-white/85" />
+          {words.map((word, index) => (
+            <div
+              key={`${word}-${index}`}
+              className="text-[22px] font-bold uppercase leading-[1.02] tracking-[-0.01em] text-white"
+              style={{ opacity: 1 - index * 0.22 }}
+            >
+              {word}
+            </div>
+          ))}
+          <div className="font-vcr mt-2 text-[9px] tracking-[0.24em] text-white/60">
+            ATOMX · {String(getEventCity(eventItem)).toUpperCase()}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -371,143 +460,124 @@ export default function AdminClient() {
     { id: "all", label: "All", count: tabCounts.all },
     { id: "past", label: "Past", count: tabCounts.past },
     { id: "present", label: "Present", count: tabCounts.present },
-    { id: "upcoming", label: "Upcomming", count: tabCounts.upcoming }
+    { id: "upcoming", label: "Upcoming", count: tabCounts.upcoming }
   ];
-  const contentShellClass = "w-full pl-[72px] pr-3 md:pl-[88px] md:pr-6 max-[900px]:pl-3 max-[900px]:pr-3";
+  const shellClass = "mx-auto w-full max-w-[1680px] px-[clamp(16px,3vw,32px)]";
 
   return (
-    <main className="min-h-screen bg-[color:rgb(var(--color-bg))] pb-10">
-      <Header areaLabel="Event List" breadcrumb="Admin" variant="portal" />
-      <div className={`${contentShellClass} border-b border-[#d8d8d8] pt-7 pb-3 max-[900px]:pt-4 max-[640px]:pb-2.5`}>
-        <div className="flex items-center justify-between gap-6 max-[900px]:flex-col max-[900px]:items-stretch max-[900px]:gap-3">
-          <div className="-mx-1 flex min-w-0 flex-wrap items-center gap-8 overflow-x-auto px-1 max-[900px]:flex-nowrap max-[900px]:gap-4 max-[900px]:pb-1">
+    <main className="min-h-screen bg-(--bg) pb-24">
+      <style>{`@keyframes atxLive{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.7)}}@keyframes atxCardIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}`}</style>
+      <Header areaLabel="Event List" variant="portal" hideNav />
+
+      <div className="sticky top-[58px] z-30 border-b border-(--line) bg-(--bg) pt-3">
+        <div className={`${shellClass} flex flex-wrap items-center gap-4`}>
+          <div className="flex min-w-0 flex-1 gap-1 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {tabs.map((tab) => {
               const active = activeTab === tab.id;
               return (
                 <button
                   key={tab.id}
                   type="button"
-                  className={`relative flex shrink-0 items-center gap-3 pb-3 text-[0.95rem] font-semibold transition max-[900px]:gap-2 max-[900px]:text-[0.86rem] max-[640px]:pb-2.5 max-[640px]:text-[0.72rem] ${
-                    active ? "text-[#171717]" : "text-[#858585] hover:text-[#333333]"
-                  }`}
                   onClick={() => setActiveTab(tab.id)}
+                  className={`flex shrink-0 items-center gap-2 border-b-2 px-3.5 pb-2.5 pt-2 text-[13px] transition ${
+                    active
+                      ? "border-(--orange) font-semibold text-(--text)"
+                      : "border-transparent font-normal text-(--muted) hover:text-(--text)"
+                  }`}
                 >
                   <span>{tab.label}</span>
                   <span
-                    className={`flex h-6 min-w-6 items-center justify-center rounded-full px-2 text-[0.68rem] font-semibold max-[900px]:h-5 max-[900px]:min-w-5 max-[900px]:text-[0.62rem] max-[640px]:h-4.5 max-[640px]:min-w-4.5 max-[640px]:px-1.5 max-[640px]:text-[0.54rem] ${
-                      active
-                        ? "bg-[#1f1f1f] text-white"
-                        : "bg-white text-[#8c8c8c]"
+                    className={`font-vcr rounded-[6px] px-1.5 py-0.5 text-[9.5px] tracking-[0.06em] ${
+                      active ? "bg-(--text) text-(--bg)" : "bg-(--chip) text-(--faint)"
                     }`}
                   >
-                    {tab.count}
+                    {String(tab.count).padStart(2, "0")}
                   </span>
-                  {active ? (
-                    <span className="absolute -bottom-[13px] left-0 right-0 h-[2px] bg-[#e04420]" />
-                  ) : null}
                 </button>
               );
             })}
           </div>
 
-          <label className="flex w-[360px] max-w-[42vw] items-center gap-3 text-[#8a8a8a] max-[900px]:h-10 max-[900px]:w-full max-[900px]:max-w-none max-[900px]:rounded-lg max-[900px]:border max-[900px]:border-[#dedede] max-[900px]:bg-white max-[900px]:px-3">
-            <span className="sr-only">Search events</span>
-            <svg
-              viewBox="0 0 24 24"
-              className="h-4 w-4 shrink-0"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden
-            >
-              <circle cx="11" cy="11" r="7" />
-              <path d="m20 20-3.5-3.5" />
+          <label className="mb-3 flex h-[38px] min-w-[210px] items-center gap-2 rounded-[11px] border border-(--line) bg-(--surface) px-3 text-(--muted) focus-within:border-(--orange)">
+            <svg viewBox="0 0 16 16" className="h-3.5 w-3.5 shrink-0 opacity-50" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" aria-hidden>
+              <circle cx="7" cy="7" r="4.6" />
+              <path d="M10.5 10.5 14 14" />
             </svg>
             <input
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              className="h-8 min-w-0 flex-1 bg-transparent text-sm font-medium text-[#2f3544] outline-none placeholder:text-[#9b9b9b] max-[900px]:text-[0.82rem] max-[640px]:text-[0.7rem]"
+              className="h-full min-w-0 flex-1 bg-transparent text-[12.5px] text-(--text) outline-none placeholder:text-(--faint)"
               placeholder={searchPlaceholder || SEARCH_PLACEHOLDERS[0]}
             />
           </label>
         </div>
       </div>
 
-      <div className={`${contentShellClass} mt-5 max-[640px]:mt-3`}>
+      <div className={`${shellClass} pt-[clamp(18px,2.5vw,26px)]`}>
         {loading ? (
-          <div className="rounded-xl bg-white py-12 shadow-[0_12px_30px_rgba(15,23,42,0.08)]">
+          <div className="rounded-[15px] border border-(--line) bg-(--surface) py-12 shadow-(--shadow)">
             <AtomXLoader label="Loading events..." size={56} />
           </div>
         ) : null}
 
         {error ? (
-          <div className="mb-4 rounded-lg border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-500">
+          <div className="mb-4 rounded-[10px] border border-[rgba(224,68,32,0.25)] bg-[rgba(224,68,32,0.06)] px-4 py-3 text-sm font-medium text-(--orange)">
             {error}
           </div>
         ) : null}
 
         {!loading && visibleEvents.length === 0 ? (
-          <div className="rounded-xl bg-white px-6 py-12 text-center text-sm font-semibold text-[#777777] shadow-[0_12px_30px_rgba(15,23,42,0.08)]">
-            No events found.
+          <div className="rounded-[16px] border border-dashed border-(--line) px-6 py-14 text-center">
+            <div className="font-chillax text-[19px] font-medium text-(--text)">No events match</div>
+            <div className="mt-1.5 text-[12.5px] text-(--faint)">Try a different tab or clear the search.</div>
           </div>
         ) : null}
 
         {!loading && visibleEvents.length > 0 ? (
-          <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 max-[900px]:grid-cols-2 max-[900px]:gap-2.5">
-            {visibleEvents.map((eventItem) => {
+          <section
+            className="grid gap-[clamp(12px,1.1vw,16px)]"
+            style={{ gridTemplateColumns: "repeat(auto-fill,minmax(min(100%,250px),1fr))" }}
+          >
+            {visibleEvents.map((eventItem, index) => {
               const eventId = String(getEventId(eventItem));
+              const bucket = classifyEvent(eventItem);
               const isOpening = openingEventId === eventId;
-              const details = [
-                { label: "City", value: getEventCity(eventItem) },
-                { label: "Venue", value: getEventVenue(eventItem) },
-                { label: "Country", value: getEventCountry(eventItem) },
-                { label: "Date", value: getEventDate(eventItem) }
+              const meta = [
+                { label: "CITY", value: getEventCity(eventItem) },
+                { label: "VENUE", value: getEventVenue(eventItem) },
+                { label: "COUNTRY", value: getEventCountry(eventItem) },
+                { label: "DATE", value: getEventDate(eventItem) }
               ];
+              const theme = STATUS_STYLES[bucket] ?? STATUS_STYLES.present;
 
               return (
                 <article
                   key={eventId || getEventName(eventItem)}
-                  className="w-full rounded-lg bg-white p-2.5 shadow-[0_16px_34px_rgba(18,22,33,0.10)] max-[900px]:p-1.5 max-[640px]:rounded-md"
+                  className="flex flex-col overflow-hidden rounded-[15px] border border-transparent shadow-(--shadow) transition-shadow duration-200 hover:shadow-(--shadowUp)"
+                  style={{
+                    background: `linear-gradient(var(--surface),var(--surface)) padding-box, ${theme.border} border-box`,
+                    animation: "atxCardIn 0.35s both",
+                    animationDelay: `${index * 0.035}s`
+                  }}
                 >
-                  <div
-                    className="relative overflow-hidden rounded-md bg-slate-200"
-                    style={{ aspectRatio: "2.25 / 1" }}
-                  >
-                    <img
-                      src={DEFAULT_EVENT_IMAGE}
-                      alt=""
-                      className="h-full w-full object-cover"
-                      loading="lazy"
-                      decoding="async"
-                      onError={(event) => {
-                        event.currentTarget.src = FALLBACK_EVENT_IMAGE;
-                      }}
-                    />
-                    <span className="absolute left-3 top-3 rounded-full bg-white px-3.5 py-1.5 text-[0.78rem] font-semibold text-[#262626] shadow-[0_8px_16px_rgba(0,0,0,0.08)] max-[900px]:left-2 max-[900px]:top-2 max-[900px]:px-2.5 max-[900px]:py-1 max-[900px]:text-[0.64rem] max-[640px]:px-2 max-[640px]:text-[0.56rem]">
-                      {getEventStatusLabel(eventItem)}
-                    </span>
+                  <EventPoster eventItem={eventItem} status={bucket} />
+
+                  <div className="px-[14px] pt-[14px]">
+                    <div className="font-chillax truncate text-[15.5px] font-medium tracking-[-0.01em]">
+                      {getEventName(eventItem)}
+                    </div>
                   </div>
 
-                  <h2 className="mt-3 truncate text-[1rem] font-medium leading-tight text-[#242424] max-[900px]:mt-2 max-[900px]:text-[0.78rem] max-[640px]:text-[0.68rem]">
-                    {getEventName(eventItem)}
-                  </h2>
-
-                  <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3 max-[900px]:mt-2 max-[900px]:gap-x-2 max-[900px]:gap-y-1.5">
-                    {details.map((item) => (
-                      <div key={`${eventId}-${item.label}`} className="min-w-0">
-                        <div className="text-[0.72rem] font-semibold text-[#9a9a9a] max-[900px]:text-[0.58rem] max-[640px]:text-[0.52rem]">
-                          {item.label}
-                        </div>
-                        <div className="mt-1 min-h-[1.25rem] text-[0.82rem] font-semibold leading-snug text-[#555555] max-[900px]:mt-0.5 max-[900px]:min-h-[1rem] max-[900px]:truncate max-[900px]:text-[0.64rem] max-[640px]:text-[0.56rem]">
-                          {item.value}
-                        </div>
+                  <div className="mx-[14px] mt-2.5 grid grid-cols-2 gap-px overflow-hidden rounded-[9px] border border-(--line2) bg-(--line2)">
+                    {meta.map((item) => (
+                      <div key={item.label} className="min-w-0 bg-(--surface2) px-[9px] py-[7px]">
+                        <div className="font-vcr text-[7.5px] tracking-[0.15em] text-(--faint)">{item.label}</div>
+                        <div className="mt-0.5 truncate text-[12.5px] font-medium">{item.value}</div>
                       </div>
                     ))}
                   </div>
 
-                  <div className="mt-4 grid grid-cols-4 gap-2 max-[900px]:mt-2.5 max-[900px]:gap-1">
+                  <div className="mt-auto grid grid-cols-4 gap-1.5 px-[14px] pb-[14px] pt-[11px]">
                     {EVENT_ACTIONS.map((action) => (
                       <button
                         key={action.id}
@@ -515,15 +585,11 @@ export default function AdminClient() {
                         aria-label={action.label}
                         title={action.label}
                         onClick={() => handleOpenEvent(eventId)}
-                        disabled={submitting || !eventId}
-                        className="flex h-9 items-center justify-center rounded-md border border-transparent text-[#202020] transition hover:translate-y-[-1px] hover:text-[#e04420] hover:shadow-[0_10px_18px_rgba(224,68,32,0.12)] disabled:cursor-not-allowed disabled:opacity-55 max-[900px]:h-7 max-[640px]:h-6"
-                        style={{
-                          background:
-                            "linear-gradient(#fff, #fff) padding-box, linear-gradient(135deg, #f04a35, #5c42f4) border-box"
-                        }}
+                        disabled={submitting || !eventId || action.id === "analytics"}
+                        className="flex h-8 items-center justify-center rounded-[9px] border border-(--line) bg-(--surface) text-(--muted) transition hover:border-(--orange) hover:bg-(--chip) hover:text-(--orange) disabled:cursor-not-allowed disabled:opacity-55"
                       >
                         {isOpening && action.id === "open" ? (
-                          <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#e04420] border-t-transparent" />
+                          <span className="h-4 w-4 animate-spin rounded-full border-2 border-(--orange) border-t-transparent" />
                         ) : (
                           <EventActionIcon type={action.id} />
                         )}
@@ -536,25 +602,24 @@ export default function AdminClient() {
           </section>
         ) : null}
       </div>
+
       {showExitConfirm ? (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_24px_50px_rgba(15,23,42,0.22)]">
-            <h3 className="text-lg font-semibold text-slate-900">Take Exit?</h3>
-            <p className="mt-2 text-sm text-slate-600">
-              Do you really want to take exit?
-            </p>
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[rgba(12,12,12,0.5)] p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-(--line) bg-(--surface) p-5 text-(--text) shadow-(--shadowUp)">
+            <h3 className="font-chillax text-lg font-semibold">Take Exit?</h3>
+            <p className="mt-2 text-sm text-(--muted)">Do you really want to take exit?</p>
             <div className="mt-5 flex justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setShowExitConfirm(false)}
-                className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                className="rounded-[10px] border border-(--line) px-4 py-2 text-sm font-semibold text-(--muted) transition hover:border-(--orange) hover:text-(--orange)"
               >
                 No
               </button>
               <button
                 type="button"
                 onClick={handleBackConfirm}
-                className="rounded-lg bg-[color:rgb(var(--color-orange))] px-4 py-2 text-sm font-semibold text-white shadow-[0_8px_18px_rgb(var(--color-orange)/0.25)] hover:brightness-105"
+                className="rounded-[10px] bg-(--text) px-4 py-2 text-sm font-semibold text-(--bg) transition hover:bg-(--orange)"
               >
                 Yes
               </button>

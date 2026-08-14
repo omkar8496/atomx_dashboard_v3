@@ -2,9 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AtomXLoader } from "@atomx/global-components";
+import { useRouter } from "next/navigation";
 import {
   addDevicesToStall,
   createAccessXCategory,
+  createAccessXGateMaster,
   createStall,
   createVendor,
   fetchAccessXCategories,
@@ -13,6 +15,7 @@ import {
   fetchStalls,
   fetchVendors,
   updateAccessXCategory,
+  updateAccessXGateMaster,
   updateVendor
 } from "../../../lib/dashboardApi";
 import { useDashboardStore } from "../../../store/dashboardStore";
@@ -31,6 +34,10 @@ import CreateVendorModal from "./CreateVendorModal";
 import EditStallModal from "./EditStallModal";
 import EditAccessXCategoryModal from "./EditAccessXCategoryModal";
 import Access_Gate_Master from "./Access_Gate_Master";
+import Access_Gate_Config from "./Access_Gate_Config";
+import CreateAccessGateMasterModal from "./CreateAccessGateMasterModal";
+import EditAccessGateMasterModal from "./EditAccessGateMasterModal";
+import EditAccessGateConfigModal from "./EditAccessGateConfigModal";
 import AddDevice from "./Add_Device";
 import { buildCreateStallPayload } from "./stallPayload";
 
@@ -76,6 +83,10 @@ function getVendorLink(vendor) {
 
 function getStallId(stall, index) {
   return stall?.id ?? stall?.stallId ?? index + 1;
+}
+
+function getStallApiId(stall) {
+  return stall?.id ?? stall?.stallId ?? stall?.stall_id ?? null;
 }
 
 function getStallVendor(stall) {
@@ -146,6 +157,16 @@ function normalizeAccessXGateMasters(response) {
   return Array.isArray(gateMasters) ? gateMasters : [];
 }
 
+function normalizeAccessXGates(response) {
+  const gates =
+    response?.gates ??
+    response?.data?.gates ??
+    response?.data ??
+    response?.list ??
+    [];
+  return Array.isArray(gates) ? gates : [];
+}
+
 function getGateMasterName(gate) {
   return gate?.name ?? gate?.gateName ?? gate?.gate_name ?? gate?.title ?? "-";
 }
@@ -198,7 +219,7 @@ function getDeviceCount(stall) {
 
 function EmptyState({ children }) {
   return (
-    <div className="rounded-lg border border-dashed border-[#dfdfdf] px-4 py-8 text-center text-sm font-semibold text-[#8a8a8a]">
+    <div className="rounded-[11px] border border-dashed border-(--line) px-4 py-8 text-center text-[13px] font-medium text-(--muted)">
       {children}
     </div>
   );
@@ -218,10 +239,10 @@ function ActionButton({ children, label, active = false, as: Component = "button
       type={Component === "button" ? "button" : undefined}
       aria-label={label}
       title={label}
-      className={`inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[0.78rem] font-semibold transition max-[640px]:h-[26px] max-[640px]:w-[26px] ${
+      className={`inline-flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[8px] transition ${
         active
-          ? "bg-[#202020] text-white shadow-[0_8px_14px_rgba(0,0,0,0.16)] hover:bg-[#111111]"
-          : "border border-[#e5e5e5] bg-white text-[#686868] hover:border-[#d3c7ff] hover:text-[#202020] hover:shadow-[0_6px_12px_rgba(15,23,42,0.08)]"
+          ? "bg-(--text) text-(--bg) hover:bg-(--orange)"
+          : "border border-(--line) bg-(--surface) text-(--muted) hover:border-(--orange) hover:text-(--orange)"
       }`}
       {...props}
     >
@@ -232,14 +253,14 @@ function ActionButton({ children, label, active = false, as: Component = "button
 
 function ConfigSearchField({ value, onChange, placeholder }) {
   return (
-    <label className="flex min-w-[190px] flex-1 items-center gap-2.5 border-b border-[#cfcfcf] pb-1.5 text-[#9a8df0] max-[640px]:min-w-0">
+    <label className="flex min-w-[160px] flex-1 items-center gap-2 border-b border-(--line) pb-1.5 text-(--muted) transition focus-within:border-(--orange) max-[640px]:min-w-0">
       <span className="sr-only">{placeholder}</span>
-      <SearchIcon className="h-4 w-4 shrink-0" />
+      <SearchIcon className="h-4 w-4 shrink-0 opacity-60" />
       <input
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="min-w-0 flex-1 bg-transparent text-[0.88rem] font-medium text-[#2f3544] outline-none placeholder:text-[#9aa3b8] max-[640px]:text-[0.78rem]"
+        className="min-w-0 flex-1 bg-transparent text-[13px] font-medium text-(--text) outline-none placeholder:text-(--faint)"
       />
     </label>
   );
@@ -256,48 +277,27 @@ function ConfigPanel({
   theme = "default"
 }) {
   const themes = {
-    default: {
-      accent: "#E04420",
-      border: "#ded4ff",
-      badge: "linear-gradient(135deg,#f24a2b,#4b2ee4)"
-    },
-    stockroom: {
-      accent: "#0f8797",
-      border: "#9be3ea",
-      badge: "linear-gradient(135deg,#0f8797,#341CD6)"
-    },
-    tables: {
-      accent: "#D28A00",
-      border: "#f7d28d",
-      badge: "linear-gradient(135deg,#E04420,#D28A00)"
-    },
-    accessx: {
-      accent: "#341CD6",
-      border: "#c9bbff",
-      badge: "linear-gradient(135deg,#A9379E,#341CD6)"
-    }
+    default: { accent: "#e04420", tile: "linear-gradient(140deg,#e04420,#8b5cf6)" },
+    stockroom: { accent: "#00a9f2", tile: "linear-gradient(140deg,#00a9f2,#341cd6)" },
+    tables: { accent: "#e08a20", tile: "linear-gradient(140deg,#e04420,#e08a20)" },
+    accessx: { accent: "#341cd6", tile: "linear-gradient(140deg,#8b5cf6,#341cd6)" }
   };
   const palette = themes[theme] || themes.default;
 
   return (
     <section
-      className="rounded-lg border border-l-[3px] bg-white px-4 py-4 shadow-[0_18px_36px_rgba(15,23,42,0.08)] max-[640px]:px-3 max-[640px]:py-3"
-      style={{
-        borderColor: palette.border,
-        borderLeftColor: palette.accent,
-        "--config-row-accent-start": palette.accent,
-        "--config-row-accent-end": palette.border
-      }}
+      className="rounded-[15px] border border-(--line) border-l-[3px] bg-(--surface) px-4 py-4 shadow-(--shadow) max-[640px]:px-3 max-[640px]:py-3"
+      style={{ borderLeftColor: palette.accent }}
     >
-      <div className="flex flex-wrap items-center gap-4 border-b border-[#dfdfdf] pb-3 max-[640px]:gap-3">
-        <div className="flex min-w-fit items-center gap-2.5 max-[640px]:gap-2">
+      <div className="flex flex-wrap items-center gap-3 border-b border-(--line2) pb-3">
+        <div className="flex min-w-fit items-center gap-2.5">
           <span
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-[0.92rem] font-bold text-white shadow-[0_8px_16px_rgba(85,46,228,0.2)] max-[640px]:h-7 max-[640px]:w-7 max-[640px]:text-[0.78rem]"
-            style={{ background: palette.badge }}
+            className="font-vcr flex h-9 w-9 items-center justify-center rounded-[10px] text-[12px] text-white"
+            style={{ background: palette.tile }}
           >
-            {count}
+            {String(count).padStart(2, "0")}
           </span>
-          <h2 className="text-[1.12rem] font-bold leading-none text-[#232323] max-[640px]:text-[1rem]">
+          <h2 className="font-chillax text-[18px] font-semibold tracking-[-0.01em] text-(--text)">
             {title}
           </h2>
         </div>
@@ -326,50 +326,35 @@ function VendorRow({ vendor, index, onAddStall, onEditVendor }) {
 
   return (
     <div
-      className="rounded-lg border border-transparent p-px"
+      className="rounded-[11px] border border-transparent p-px transition duration-200 hover:shadow-(--shadow)"
       style={{
         background:
-          "linear-gradient(#fff, #fff) padding-box, linear-gradient(110deg, #ffb7ac, #d5c9ff) border-box"
+          "linear-gradient(var(--surface),var(--surface)) padding-box, linear-gradient(135deg,rgba(224,68,32,.34),rgba(139,92,246,.26) 52%,rgba(0,169,242,.22)) border-box"
       }}
     >
-      <div className="grid min-h-[54px] grid-cols-[48px_minmax(140px,1.35fr)_minmax(78px,0.55fr)_minmax(78px,0.55fr)_auto] items-center gap-3 rounded-[7px] bg-white px-3 py-2 max-[640px]:grid-cols-[40px_minmax(0,1fr)_auto] max-[640px]:gap-x-2.5 max-[640px]:gap-y-2 max-[640px]:px-2.5 max-[640px]:py-2.5">
-        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#f7f7f7] text-[0.8rem] font-bold text-[#ef4424] max-[640px]:row-span-2 max-[640px]:h-8 max-[640px]:w-8 max-[640px]:self-start max-[640px]:text-[0.72rem]">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-[10px] bg-(--surface) px-3 py-2.5">
+        <span className="font-vcr grid h-9 w-9 shrink-0 place-items-center rounded-[9px] bg-(--surface2) text-[12px] text-(--orange)">
           #{index + 1}
         </span>
-        <div className="min-w-0 max-[640px]:col-start-2 max-[640px]:col-end-3">
-          <div className="text-[0.58rem] font-bold uppercase tracking-[0.15em] text-[#9d9d9d] max-[640px]:text-[0.52rem]">
-            Name
-          </div>
-          <div className="mt-0.5 truncate text-[0.9rem] font-bold text-[#272727] max-[640px]:text-[0.78rem]">
+        <div className="min-w-0 flex-[1_1_140px]">
+          <div className="font-vcr text-[7.5px] tracking-[0.15em] text-(--faint)">NAME</div>
+          <div className="mt-0.5 truncate text-[13.5px] font-semibold text-(--text)">
             {getVendorName(vendor)}
           </div>
         </div>
-        <div className="min-w-0 max-[640px]:col-start-3 max-[640px]:row-start-1 max-[640px]:rounded-md max-[640px]:bg-[#fafafa] max-[640px]:px-2 max-[640px]:py-1 max-[640px]:text-right">
-          <div className="text-[0.58rem] font-bold uppercase tracking-[0.15em] text-[#9d9d9d] max-[640px]:text-[0.5rem]">
-            Type
-          </div>
-          <div className="mt-0.5 truncate text-[0.84rem] font-bold text-[#272727] max-[640px]:text-[0.72rem]">
+        <div className="min-w-0 flex-[1_1_80px]">
+          <div className="font-vcr text-[7.5px] tracking-[0.15em] text-(--faint)">TYPE</div>
+          <div className="mt-0.5 truncate text-[13px] font-semibold text-(--text)">
             {getVendorType(vendor)}
           </div>
         </div>
-        <div className="min-w-0 max-[640px]:hidden">
-          <div className="text-[0.58rem] font-bold uppercase tracking-[0.15em] text-[#9d9d9d] max-[640px]:text-[0.5rem]">
-            Login
-          </div>
-          <div className="mt-0.5 truncate text-[0.84rem] font-bold text-[#272727] max-[640px]:text-[0.72rem]">
+        <div className="min-w-0 flex-[1_1_80px] max-[640px]:hidden">
+          <div className="font-vcr text-[7.5px] tracking-[0.15em] text-(--faint)">LOGIN</div>
+          <div className="font-vcr mt-0.5 truncate text-[12.5px] text-(--muted)">
             {getVendorLogin(vendor)}
           </div>
         </div>
-        <div className="flex items-center gap-1.5 border-l border-[#e4e4e4] pl-3 max-[640px]:col-span-3 max-[640px]:justify-between max-[640px]:border-l-0 max-[640px]:border-t max-[640px]:pl-0 max-[640px]:pt-2">
-          <div className="hidden min-w-0 max-[640px]:block">
-            <span className="mr-1 text-[0.5rem] font-bold uppercase tracking-[0.14em] text-[#9d9d9d]">
-              Login
-            </span>
-            <span className="text-[0.7rem] font-bold text-[#272727]">
-              {getVendorLogin(vendor)}
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5">
+        <div className="ml-auto flex shrink-0 items-center gap-1.5">
           <ActionButton label="Open items">
             <GridIcon />
           </ActionButton>
@@ -388,50 +373,49 @@ function VendorRow({ vendor, index, onAddStall, onEditVendor }) {
           <ActionButton label="Edit vendor" onClick={onEditVendor}>
             <EditIcon />
           </ActionButton>
-          </div>
         </div>
       </div>
     </div>
   );
 }
 
-function StallRow({ stall, index, onEditStall, onAddDevice }) {
+function StallRow({ stall, index, onEditStall, onAddDevice, onOpenMenu }) {
   return (
     <div
-      className="rounded-lg border border-transparent p-px"
+      className="rounded-[11px] border border-transparent p-px transition duration-200 hover:shadow-(--shadow)"
       style={{
         background:
-          "linear-gradient(#fff, #fff) padding-box, linear-gradient(110deg, var(--config-row-accent-start, #ffb7ac), var(--config-row-accent-end, #d5c9ff)) border-box"
+          "linear-gradient(var(--surface),var(--surface)) padding-box, linear-gradient(135deg,rgba(224,68,32,.34),rgba(139,92,246,.26) 52%,rgba(0,169,242,.22)) border-box"
       }}
     >
-      <div className="grid min-h-[54px] grid-cols-[76px_minmax(110px,1fr)_minmax(110px,1fr)_auto] items-center gap-3 rounded-[7px] bg-white px-3 py-2 max-[640px]:grid-cols-[52px_minmax(0,0.9fr)_minmax(0,1.1fr)] max-[640px]:gap-2 max-[640px]:px-2 max-[640px]:py-2.5">
-        <span className="text-[0.9rem] font-bold text-[#ef4424] max-[640px]:text-[0.76rem]">#{getStallId(stall, index)}</span>
-        <div className="min-w-0">
-          <div className="text-[0.66rem] font-bold text-[#8e8e8e]">Vendor</div>
-          <div className="mt-0.5 truncate text-[0.9rem] font-bold text-[#272727] max-[640px]:text-[0.76rem]">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-[10px] bg-(--surface) px-3 py-2.5">
+        <span className="font-vcr shrink-0 text-[13px] text-(--orange)">#{getStallId(stall, index)}</span>
+        <div className="min-w-0 flex-[1_1_100px]">
+          <div className="font-vcr text-[7.5px] tracking-[0.15em] text-(--faint)">VENDOR</div>
+          <div className="mt-0.5 truncate text-[13px] font-semibold text-(--text)">
             {getStallVendor(stall)}
           </div>
         </div>
-        <div className="min-w-0">
-          <div className="text-[0.66rem] font-bold text-[#8e8e8e]">Stall</div>
-          <div className="mt-0.5 truncate text-[0.9rem] font-bold text-[#272727] max-[640px]:text-[0.76rem]">
+        <div className="min-w-0 flex-[1_1_100px]">
+          <div className="font-vcr text-[7.5px] tracking-[0.15em] text-(--faint)">STALL</div>
+          <div className="mt-0.5 truncate text-[13px] font-semibold text-(--text)">
             {getStallName(stall)}
           </div>
         </div>
-        <div className="flex min-w-fit items-center gap-1.5 border-l border-[#e4e4e4] pl-3 max-[640px]:col-span-3 max-[640px]:border-l-0 max-[640px]:border-t max-[640px]:pl-0 max-[640px]:pt-2">
+        <div className="ml-auto flex shrink-0 items-center gap-1.5">
           <button
             type="button"
             onClick={onAddDevice}
-            className="inline-flex h-7 items-center gap-1.5 rounded-md bg-[#202020] px-2.5 text-[0.78rem] font-bold text-white transition hover:bg-[#E04420]"
+            className="inline-flex h-[30px] items-center gap-1.5 rounded-[8px] bg-(--text) px-2.5 text-[12px] font-semibold text-(--bg) transition hover:bg-(--orange)"
             aria-label={`Add device to ${getStallName(stall)}`}
             title="Add device"
           >
-            <span>{getDeviceCount(stall)}</span>
+            <span className="font-vcr">{getDeviceCount(stall)}</span>
             <DeviceIcon />
             <span className="h-4 w-px bg-white/25" />
             <PlusIcon />
           </button>
-          <ActionButton label="Open menu">
+          <ActionButton label="Open menu" onClick={onOpenMenu}>
             <ListIcon />
           </ActionButton>
           <ActionButton label="Edit stall" onClick={onEditStall}>
@@ -445,41 +429,41 @@ function StallRow({ stall, index, onEditStall, onAddDevice }) {
 
 function AccessXCategoryTable({ categories, onEdit }) {
   return (
-    <div className="max-h-[333px] overflow-auto rounded-lg border border-[#e8e3f7]">
+    <div className="max-h-[333px] overflow-auto rounded-[11px] border border-(--line)">
       <table className="w-full min-w-[430px] border-collapse">
-        <thead className="sticky top-0 z-[1] bg-[#f8f6ff]">
+        <thead className="font-vcr sticky top-0 z-[1] bg-(--surface2)">
           <tr>
-            <th className="w-[64px] border-b border-[#e5def8] px-3 py-2 text-left text-[0.58rem] font-bold uppercase tracking-[0.13em] text-[#8d859b]">
-              No.
+            <th className="w-[64px] border-b border-(--line) px-3 py-2.5 text-left text-[9.5px] tracking-[0.15em] text-(--orange)">
+              NO.
             </th>
-            <th className="border-b border-[#e5def8] px-3 py-2 text-left text-[0.58rem] font-bold uppercase tracking-[0.13em] text-[#8d859b]">
-              Category
+            <th className="border-b border-(--line) px-3 py-2.5 text-left text-[9.5px] tracking-[0.15em] text-(--orange)">
+              CATEGORY
             </th>
-            <th className="w-[90px] border-b border-[#e5def8] px-3 py-2 text-left text-[0.58rem] font-bold uppercase tracking-[0.13em] text-[#8d859b]">
-              Allow
+            <th className="w-[90px] border-b border-(--line) px-3 py-2.5 text-left text-[9.5px] tracking-[0.15em] text-(--orange)">
+              ALLOW
             </th>
-            <th className="w-[64px] border-b border-[#e5def8] px-3 py-2 text-center text-[0.58rem] font-bold uppercase tracking-[0.13em] text-[#8d859b]">
-              Edit
+            <th className="w-[64px] border-b border-(--line) px-3 py-2.5 text-center text-[9.5px] tracking-[0.15em] text-(--orange)">
+              EDIT
             </th>
           </tr>
         </thead>
         <tbody>
           {categories.map((category, index) => (
-            <tr key={category?.id ?? `${category?.name}-${index}`} className="group bg-white transition hover:bg-[#fffaf8]">
-              <td className="border-b border-[#eeeeee] px-3 py-2.5 text-[0.76rem] font-bold text-[#E04420] last:border-b-0">
+            <tr key={category?.id ?? `${category?.name}-${index}`} className="transition hover:bg-(--surface2)">
+              <td className="font-vcr border-b border-(--line2) px-3 py-2.5 text-[12px] text-(--orange)">
                 {index + 1}
               </td>
-              <td className="border-b border-[#eeeeee] px-3 py-2.5 last:border-b-0">
-                <span className="block truncate text-[0.82rem] font-bold text-[#252525]">
+              <td className="border-b border-(--line2) px-3 py-2.5">
+                <span className="block truncate text-[13px] font-semibold text-(--text)">
                   {category?.name || "-"}
                 </span>
               </td>
-              <td className="border-b border-[#eeeeee] px-3 py-2.5 last:border-b-0">
-                <span className="inline-flex min-w-8 items-center justify-center rounded-md bg-[#f4f1ff] px-2 py-1 text-[0.66rem] font-bold text-[#341CD6]">
+              <td className="border-b border-(--line2) px-3 py-2.5">
+                <span className="font-vcr inline-flex min-w-8 items-center justify-center rounded-[6px] bg-(--chip) px-2 py-1 text-[10px] text-(--blue)">
                   {getCategoryAllowLabel(category)}
                 </span>
               </td>
-              <td className="border-b border-[#eeeeee] px-3 py-2.5 text-center last:border-b-0">
+              <td className="border-b border-(--line2) px-3 py-2.5 text-center">
                 <ActionButton label={`Edit ${category?.name || "category"}`} onClick={() => onEdit(category)}>
                   <EditIcon />
                 </ActionButton>
@@ -493,6 +477,7 @@ function AccessXCategoryTable({ categories, onEdit }) {
 }
 
 export default function VendorConfigurationContent() {
+  const router = useRouter();
   const token = useDashboardStore((state) => state.token);
   const eventMeta = useDashboardStore((state) => state.eventMeta);
   const eventDetails = useDashboardStore((state) => state.eventDetails);
@@ -516,8 +501,10 @@ export default function VendorConfigurationContent() {
   const [stallQuery, setStallQuery] = useState("");
   const [categoryQuery, setCategoryQuery] = useState("");
   const [gateMasterQuery, setGateMasterQuery] = useState("");
+  const [gateConfigQuery, setGateConfigQuery] = useState("");
   const [accessXCategories, setAccessXCategories] = useState([]);
   const [accessXGateMasters, setAccessXGateMasters] = useState([]);
+  const [accessXGates, setAccessXGates] = useState([]);
   const [createStallFor, setCreateStallFor] = useState(null);
   const [editVendor, setEditVendor] = useState(null);
   const [showCreateVendor, setShowCreateVendor] = useState(false);
@@ -525,14 +512,19 @@ export default function VendorConfigurationContent() {
   const [addDeviceStall, setAddDeviceStall] = useState(null);
   const [editAccessXCategory, setEditAccessXCategory] = useState(null);
   const [showCreateAccessXCategory, setShowCreateAccessXCategory] = useState(false);
+  const [showCreateAccessGateMaster, setShowCreateAccessGateMaster] = useState(false);
+  const [editAccessGateMaster, setEditAccessGateMaster] = useState(null);
+  const [editAccessGateConfig, setEditAccessGateConfig] = useState(null);
   const [vendorsLoading, setVendorsLoading] = useState(false);
   const [stallsLoading, setStallsLoading] = useState(false);
   const [accessXCategoriesLoading, setAccessXCategoriesLoading] = useState(false);
   const [accessXGateMastersLoading, setAccessXGateMastersLoading] = useState(false);
+  const [accessXGatesLoading, setAccessXGatesLoading] = useState(false);
   const [vendorsError, setVendorsError] = useState("");
   const [stallsError, setStallsError] = useState("");
   const [accessXCategoriesError, setAccessXCategoriesError] = useState("");
   const [accessXGateMastersError, setAccessXGateMastersError] = useState("");
+  const [accessXGatesError, setAccessXGatesError] = useState("");
   const requestedAccessXEventIds = useRef(new Set());
   const activeAccessXEventId = useRef("");
 
@@ -577,6 +569,23 @@ export default function VendorConfigurationContent() {
     [eventId, token, setStallsForEvent]
   );
 
+  const handleOpenStallMenu = useCallback(
+    (stall) => {
+      const stallId = getStallApiId(stall);
+      if (!stallId) {
+        console.error("Unable to load stall menu: missing stall ID", stall);
+        return;
+      }
+
+      const params = new URLSearchParams({
+        stallId: String(stallId),
+        stallName: getStallName(stall)
+      });
+      router.push(`/Config/menu?${params.toString()}`);
+    },
+    [router]
+  );
+
   useEffect(() => {
     loadVendors();
     loadStalls();
@@ -591,10 +600,13 @@ export default function VendorConfigurationContent() {
     activeAccessXEventId.current = requestKey;
     setAccessXCategories([]);
     setAccessXGateMasters([]);
+    setAccessXGates([]);
     setAccessXCategoriesError("");
     setAccessXGateMastersError("");
+    setAccessXGatesError("");
     setAccessXCategoriesLoading(true);
     setAccessXGateMastersLoading(true);
+    setAccessXGatesLoading(true);
 
     Promise.allSettled([
       fetchAccessXCategories({ eventId, token }),
@@ -618,6 +630,14 @@ export default function VendorConfigurationContent() {
         setAccessXGateMastersError("Unable to load Access Gate Masterlist.");
       }
       setAccessXGateMastersLoading(false);
+
+      const gatesResult = results[2];
+      if (gatesResult.status === "fulfilled") {
+        setAccessXGates(normalizeAccessXGates(gatesResult.value));
+      } else {
+        setAccessXGatesError("Unable to load Access Gate Config.");
+      }
+      setAccessXGatesLoading(false);
 
       results.forEach((result, index) => {
         if (result.status === "rejected") {
@@ -690,11 +710,28 @@ export default function VendorConfigurationContent() {
     );
   }, [accessXGateMasters, gateMasterQuery]);
 
+  const filteredAccessXGates = useMemo(() => {
+    const query = gateConfigQuery.trim().toLowerCase();
+    if (!query) return accessXGates;
+    return accessXGates.filter((gate) =>
+      [
+        gate?.id,
+        gate?.gatesmaster_name,
+        gate?.category_name,
+        gate?.gateId,
+        gate?.categoryId
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(query)
+    );
+  }, [accessXGates, gateConfigQuery]);
+
   const addVendorButton = (
     <button
       type="button"
       onClick={() => setShowCreateVendor(true)}
-      className="inline-flex h-9 items-center gap-2 rounded-lg bg-[#202020] px-4 text-[0.88rem] font-bold text-white shadow-[0_10px_18px_rgba(0,0,0,0.15)] transition hover:bg-[#111111] max-[640px]:w-full max-[640px]:justify-center"
+      className="inline-flex h-10 items-center gap-2 rounded-[10px] bg-(--text) px-4 text-[13.5px] font-semibold text-(--bg) transition hover:bg-(--orange) max-[640px]:w-full max-[640px]:justify-center"
     >
       <PlusIcon className="h-4 w-4" />
       Add Vendor
@@ -705,7 +742,7 @@ export default function VendorConfigurationContent() {
     <button
       type="button"
       onClick={() => setShowCreateAccessXCategory(true)}
-      className="inline-flex h-8 items-center gap-1.5 rounded-md bg-[#202020] px-3 text-[0.72rem] font-bold text-white shadow-[0_8px_16px_rgba(0,0,0,0.13)] transition hover:bg-[#E04420] max-[640px]:w-full max-[640px]:justify-center"
+      className="inline-flex h-8 items-center gap-1.5 rounded-[8px] bg-(--text) px-3 text-[12px] font-semibold text-(--bg) transition hover:bg-(--orange) max-[640px]:w-full max-[640px]:justify-center"
     >
       <PlusIcon className="h-3.5 w-3.5" />
       Add
@@ -715,8 +752,19 @@ export default function VendorConfigurationContent() {
   const addGateMasterButton = (
     <button
       type="button"
-      title="Gate Master create API pending"
-      className="inline-flex h-8 items-center gap-1.5 rounded-md bg-[#202020] px-3 text-[0.72rem] font-bold text-white shadow-[0_8px_16px_rgba(0,0,0,0.13)] transition hover:bg-[#E04420] max-[640px]:w-full max-[640px]:justify-center"
+      onClick={() => setShowCreateAccessGateMaster(true)}
+      className="inline-flex h-8 items-center gap-1.5 rounded-[8px] bg-(--text) px-3 text-[12px] font-semibold text-(--bg) transition hover:bg-(--orange) max-[640px]:w-full max-[640px]:justify-center"
+    >
+      <PlusIcon className="h-3.5 w-3.5" />
+      Add
+    </button>
+  );
+
+  const addGateConfigButton = (
+    <button
+      type="button"
+      title="Access Gate Config create API pending"
+      className="inline-flex h-8 items-center gap-1.5 rounded-[8px] bg-(--text) px-3 text-[12px] font-semibold text-(--bg) transition hover:bg-(--orange) max-[640px]:w-full max-[640px]:justify-center"
     >
       <PlusIcon className="h-3.5 w-3.5" />
       Add
@@ -798,6 +846,7 @@ export default function VendorConfigurationContent() {
                   stall={stall}
                   index={index}
                   onAddDevice={() => setAddDeviceStall(stall)}
+                  onOpenMenu={() => handleOpenStallMenu(stall)}
                   onEditStall={() => setEditStall(stall)}
                 />
               ))
@@ -830,6 +879,7 @@ export default function VendorConfigurationContent() {
                     stall={stall}
                     index={index}
                     onAddDevice={() => setAddDeviceStall(stall)}
+                    onOpenMenu={() => handleOpenStallMenu(stall)}
                     onEditStall={() => setEditStall(stall)}
                   />
                 ))
@@ -859,6 +909,7 @@ export default function VendorConfigurationContent() {
                     stall={stall}
                     index={index}
                     onAddDevice={() => setAddDeviceStall(stall)}
+                    onOpenMenu={() => handleOpenStallMenu(stall)}
                     onEditStall={() => setEditStall(stall)}
                   />
                 ))
@@ -890,6 +941,7 @@ export default function VendorConfigurationContent() {
                     stall={stall}
                     index={index}
                     onAddDevice={() => setAddDeviceStall(stall)}
+                    onOpenMenu={() => handleOpenStallMenu(stall)}
                     onEditStall={() => setEditStall(stall)}
                   />
                 ))
@@ -936,7 +988,33 @@ export default function VendorConfigurationContent() {
             ) : filteredAccessXGateMasters.length === 0 ? (
               <EmptyState>No gate masters found.</EmptyState>
             ) : (
-              <Access_Gate_Master gates={filteredAccessXGateMasters} />
+              <Access_Gate_Master
+                gates={filteredAccessXGateMasters}
+                onEdit={setEditAccessGateMaster}
+              />
+            )}
+          </ConfigPanel>
+
+          <ConfigPanel
+            title="Access Gate Config"
+            count={accessXGates.length}
+            searchValue={gateConfigQuery}
+            onSearchChange={setGateConfigQuery}
+            searchPlaceholder="Search gate or category"
+            action={addGateConfigButton}
+            theme="accessx"
+          >
+            {accessXGatesLoading ? (
+              <LoadingState label="Loading gate configuration..." />
+            ) : accessXGatesError ? (
+              <EmptyState>{accessXGatesError}</EmptyState>
+            ) : filteredAccessXGates.length === 0 ? (
+              <EmptyState>No gate configuration found.</EmptyState>
+            ) : (
+              <Access_Gate_Config
+                gates={filteredAccessXGates}
+                onEdit={setEditAccessGateConfig}
+              />
             )}
           </ConfigPanel>
         </div>
@@ -1043,6 +1121,195 @@ export default function VendorConfigurationContent() {
             setShowCreateAccessXCategory(false);
           } catch (error) {
             console.error("Create AccessX category failed", error);
+            throw error;
+          }
+        }}
+      />
+    )}
+
+    {showCreateAccessGateMaster && (
+      <CreateAccessGateMasterModal
+        onClose={() => setShowCreateAccessGateMaster(false)}
+        onConfirm={async ({ name }) => {
+          const numericEventId = Number(eventId);
+          const payload = {
+            name,
+            eventId: Number.isNaN(numericEventId) ? eventId : numericEventId,
+            gateDay: 1,
+            useCatgCounts: 1,
+            position: 1,
+            hide: 0
+          };
+
+          try {
+            const response = await createAccessXGateMaster({
+              token,
+              gateMaster: payload
+            });
+            try {
+              const refreshed = await fetchAccessXGateMasters({
+                eventId,
+                token,
+                dedupe: false
+              });
+              setAccessXGateMasters(normalizeAccessXGateMasters(refreshed));
+            } catch (refreshError) {
+              console.error("Reload Access Gate Masterlist failed", refreshError);
+              const createdGateMaster =
+                response?.gatesmaster ??
+                response?.gateMaster ??
+                response?.data?.gatesmaster ??
+                response?.data?.gateMaster ??
+                response?.data ??
+                payload;
+              setAccessXGateMasters((current) => [
+                ...current,
+                { ...payload, ...createdGateMaster }
+              ]);
+            }
+            setShowCreateAccessGateMaster(false);
+          } catch (error) {
+            console.error("Create Access Gate Master failed", error);
+            throw error;
+          }
+        }}
+      />
+    )}
+
+    {editAccessGateMaster && (
+      <EditAccessGateMasterModal
+        gateMaster={editAccessGateMaster}
+        onClose={() => setEditAccessGateMaster(null)}
+        onConfirm={async ({ name, useCatgCounts }) => {
+          const numericEventId = Number(eventId);
+          const numericPosition = Number(editAccessGateMaster.position);
+          const payload = {
+            id: editAccessGateMaster.id,
+            name,
+            eventId: Number.isNaN(numericEventId) ? eventId : numericEventId,
+            useCatgCounts,
+            position: Number.isNaN(numericPosition)
+              ? editAccessGateMaster.position
+              : numericPosition
+          };
+
+          try {
+            const response = await updateAccessXGateMaster({
+              token,
+              gateMaster: payload
+            });
+            const updatedGateMaster =
+              response?.gatesmaster ??
+              response?.gateMaster ??
+              response?.data?.gatesmaster ??
+              response?.data?.gateMaster ??
+              response?.data ??
+              payload;
+            setAccessXGateMasters((current) =>
+              current.map((gateMaster) =>
+                gateMaster?.id === editAccessGateMaster?.id
+                  ? { ...gateMaster, ...payload, ...updatedGateMaster }
+                  : gateMaster
+              )
+            );
+            setEditAccessGateMaster(null);
+          } catch (error) {
+            console.error("Edit Access Gate Master failed", error);
+            throw error;
+          }
+        }}
+      />
+    )}
+
+    {editAccessGateConfig && (
+      <EditAccessGateConfigModal
+        gateConfig={editAccessGateConfig}
+        onClose={() => setEditAccessGateConfig(null)}
+        onConfirm={async ({ name, useCatgCounts }) => {
+          const numericEventId = Number(eventId);
+          const numericGateMasterId = Number(editAccessGateConfig.gateId);
+          const numericPosition = Number(editAccessGateConfig.gatesmaster_position);
+          const gateMasterId = Number.isNaN(numericGateMasterId)
+            ? editAccessGateConfig.gateId
+            : numericGateMasterId;
+          const position = Number.isNaN(numericPosition)
+            ? editAccessGateConfig.gatesmaster_position
+            : numericPosition;
+          const payload = {
+            id: gateMasterId,
+            name,
+            eventId: Number.isNaN(numericEventId) ? eventId : numericEventId,
+            useCatgCounts,
+            position
+          };
+
+          try {
+            await updateAccessXGateMaster({
+              token,
+              gateMaster: payload
+            });
+
+            setAccessXGates((current) =>
+              current.map((gate) =>
+                String(gate?.gateId) === String(gateMasterId)
+                  ? {
+                      ...gate,
+                      gatesmaster_name: name,
+                      gatesmaster_useCatgCounts: useCatgCounts,
+                      gatesmaster_position: position
+                    }
+                  : gate
+              )
+            );
+            setAccessXGateMasters((current) =>
+              current.map((gateMaster) =>
+                String(gateMaster?.id) === String(gateMasterId)
+                  ? {
+                      ...gateMaster,
+                      name,
+                      useCatgCounts,
+                      position
+                    }
+                  : gateMaster
+              )
+            );
+
+            const [gateMastersResult, gatesResult] = await Promise.allSettled([
+              fetchAccessXGateMasters({
+                eventId,
+                token,
+                dedupe: false
+              }),
+              fetchAccessXGates({
+                eventId,
+                token,
+                dedupe: false
+              })
+            ]);
+
+            if (gateMastersResult.status === "fulfilled") {
+              setAccessXGateMasters(
+                normalizeAccessXGateMasters(gateMastersResult.value)
+              );
+            } else {
+              console.error(
+                "Reload Access Gate Masterlist failed",
+                gateMastersResult.reason
+              );
+            }
+
+            if (gatesResult.status === "fulfilled") {
+              setAccessXGates(normalizeAccessXGates(gatesResult.value));
+            } else {
+              console.error(
+                "Reload Access Gate Config failed",
+                gatesResult.reason
+              );
+            }
+
+            setEditAccessGateConfig(null);
+          } catch (error) {
+            console.error("Edit Access Gate Config failed", error);
             throw error;
           }
         }}

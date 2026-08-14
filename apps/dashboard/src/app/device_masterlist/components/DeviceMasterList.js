@@ -5,6 +5,10 @@ import { searchDeviceMasterlist } from "../../../lib/dashboardApi";
 import { useDashboardStore } from "../../../store/dashboardStore";
 import { ClockIcon, EditIcon, PlusIcon, SearchIcon } from "./DeviceMasterIcons";
 import EditDeviceModal from "./EditDeviceModal";
+import AddDeviceModal from "./AddDeviceModal";
+
+const GRID_COLS =
+  "md:grid-cols-[minmax(0,1.5fr)_minmax(0,1.05fr)_minmax(0,1.5fr)_auto]";
 
 function formatDateTime(value) {
   if (!value) return "-";
@@ -38,71 +42,90 @@ function getNfcLabel(device) {
   return "-";
 }
 
-function DeviceMeta({ label, value }) {
+function getInitial(device) {
+  const title = String(getDeviceTitle(device)).trim();
+  return title && title !== "-" ? title.charAt(0).toUpperCase() : "?";
+}
+
+function SpecRow({ label, value }) {
   return (
-    <span className="inline-flex items-center gap-1 border-r border-[#d9dde8] pr-3 last:border-r-0 last:pr-0 max-[640px]:pr-2">
-      <span className="font-bold text-[#252525]">{label}:</span>
-      <span className="text-[#7b7f89]">{value || "-"}</span>
-    </span>
+    <div className="flex min-w-0 items-baseline gap-2">
+      <span className="font-vcr w-[46px] shrink-0 text-[7.5px] tracking-[0.14em] text-(--faint)">
+        {label}
+      </span>
+      <span className="min-w-0 break-words text-[12.5px] font-medium text-(--text)">
+        {value || "-"}
+      </span>
+    </div>
   );
 }
 
 function DeviceRow({ device, index, onEdit }) {
   return (
-    <article className="group grid gap-4 border-b border-[#e1e4ec] px-4 py-5 last:border-b-0 md:grid-cols-[1fr_160px] md:px-6 max-[640px]:gap-3 max-[640px]:px-3 max-[640px]:py-3">
-      <div className="min-w-0">
-        <div className="flex flex-wrap items-center gap-3 max-[640px]:gap-2">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[9px] bg-[linear-gradient(135deg,#E04420_0%,#A9379E_48%,#341CD6_100%)] text-[1.4rem] font-bold leading-none text-white shadow-[0_12px_28px_rgba(52,28,214,0.24)] max-[640px]:h-8 max-[640px]:w-8 max-[640px]:rounded-md max-[640px]:text-[1rem]">
-            {device.status === "active" ? "A" : "0"}
-          </span>
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-3 text-[1.22rem] font-medium text-[#282828] max-[640px]:gap-2 max-[640px]:text-[0.9rem]">
-              <span className="break-all">{device.hardwareId || "-"}</span>
-              <span className="hidden h-8 w-px bg-[#d9dde8] sm:inline-block" aria-hidden />
-              <span>{getDeviceTitle(device)}</span>
-            </div>
+    <div
+      className={`grid grid-cols-1 items-start gap-4 border-b border-(--line2) px-4 py-4 transition-colors duration-150 last:border-b-0 hover:bg-(--surface2) md:gap-[18px] md:px-[16px] ${GRID_COLS}`}
+      style={{ animation: `atxRowIn 0.3s both`, animationDelay: `${index * 0.04}s` }}
+    >
+      {/* DEVICE */}
+      <div className="flex min-w-0 items-start gap-3">
+        <span className="font-chillax flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[11px] bg-[linear-gradient(140deg,#e04420,#8b5cf6)] text-[16px] font-semibold leading-none text-white">
+          {getInitial(device)}
+        </span>
+        <div className="min-w-0">
+          <div className="font-chillax text-[15.5px] font-semibold leading-[1.3] tracking-[-0.01em] [overflow-wrap:anywhere]">
+            {getDeviceTitle(device)}
           </div>
-        </div>
-
-        <div className="mt-3 text-[0.98rem] text-[#8a8a8a] max-[640px]:mt-2 max-[640px]:text-[0.74rem]">
-          <span className="font-bold text-[#1f1f1f]">S/N:</span>{" "}
-          <span>{getDeviceSerial(device)}</span>
-        </div>
-
-        <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-[0.86rem] max-[640px]:mt-2.5 max-[640px]:gap-x-2 max-[640px]:gap-y-1.5 max-[640px]:text-[0.68rem]">
-          <span className="rounded-full bg-[#34363b] px-3 py-1 text-[0.68rem] font-bold tracking-wide text-white max-[640px]:px-2 max-[640px]:py-0.5 max-[640px]:text-[0.56rem]">
-            {device.type || "-"}
-          </span>
-          <DeviceMeta label="ID" value={device.printId ?? device.id} />
-          <DeviceMeta label="NFC" value={getNfcLabel(device)} />
-          <DeviceMeta label="MODEL" value={device.model} />
-          <DeviceMeta label="BANK" value={device.bank} />
-        </div>
-
-        <div className="mt-4 flex flex-wrap items-center gap-3 text-[0.92rem] text-[#8a8f9b] max-[640px]:mt-2.5 max-[640px]:gap-2 max-[640px]:text-[0.68rem]">
-          <span className="inline-flex items-center gap-1.5">
-            <ClockIcon />
-            <span>{formatDateTime(device.updatedAt ?? device.createdAt)}</span>
-          </span>
-          <span className="h-5 w-px bg-[#d9dde8]" aria-hidden />
-          <span>{device.androidId || "-"}</span>
+          <div className="font-vcr mt-1 text-[11.5px] text-(--blue) [overflow-wrap:anywhere]">
+            {device.hardwareId || "-"}
+          </div>
         </div>
       </div>
 
-      <div className="flex items-start justify-between gap-3 md:justify-end">
-        <span className="text-[0.78rem] font-semibold uppercase tracking-[0.24em] text-[#a8adba] md:hidden max-[640px]:text-[0.64rem]">
-          #{index + 1}
-        </span>
+      {/* IDENTITY */}
+      <div className="min-w-0">
+        <div className="font-vcr text-[7.5px] tracking-[0.15em] text-(--faint)">S/N</div>
+        <div className="mt-1 text-[12.5px] font-semibold [overflow-wrap:anywhere]">
+          {getDeviceSerial(device)}
+        </div>
+        <div className="mt-2.5 flex flex-wrap items-center gap-2">
+          <span className="rounded-full bg-(--text) px-2.5 py-1 text-[11px] font-semibold text-(--bg)">
+            {device.type || "-"}
+          </span>
+          <span className="font-vcr text-[10.5px] text-(--muted)">
+            ID {device.printId ?? device.id ?? "-"}
+          </span>
+        </div>
+      </div>
+
+      {/* SPECS */}
+      <div className="flex min-w-0 flex-col gap-[7px]">
+        <SpecRow label="NFC" value={getNfcLabel(device)} />
+        <SpecRow label="MODEL" value={device.model} />
+        <SpecRow label="BANK" value={device.bank} />
+        <div className="mt-0.5 flex flex-wrap items-center gap-2.5 text-(--muted)">
+          <ClockIcon className="h-3 w-3 shrink-0 opacity-60" />
+          <span className="text-[11.5px] font-light">
+            {formatDateTime(device.updatedAt ?? device.createdAt)}
+          </span>
+          <span className="text-(--line)">|</span>
+          <span className="font-vcr text-[10.5px] [overflow-wrap:anywhere]">
+            {device.androidId || "-"}
+          </span>
+        </div>
+      </div>
+
+      {/* EDIT */}
+      <div className="flex items-start justify-start md:justify-end">
         <button
           type="button"
           onClick={() => onEdit(device)}
-          className="grid h-10 w-10 place-items-center rounded-lg border border-[#ded4ff] bg-white text-[#E04420] shadow-[0_10px_24px_rgba(15,23,42,0.08)] transition duration-200 hover:-translate-y-0.5 hover:border-[#E04420] hover:text-[#341CD6] hover:shadow-[0_14px_32px_rgba(52,28,214,0.18)] max-[640px]:h-8 max-[640px]:w-8 max-[640px]:rounded-md"
+          className="grid h-[34px] w-[34px] place-items-center rounded-[9px] border border-(--line) bg-(--surface) text-(--orange) transition duration-150 hover:border-(--orange) hover:bg-[rgba(224,68,32,0.08)]"
           aria-label={`Edit device ${device.hardwareId || getDeviceKey(device, index)}`}
         >
-          <EditIcon className="h-4.5 w-4.5" />
+          <EditIcon className="h-[15px] w-[15px]" />
         </button>
       </div>
-    </article>
+    </div>
   );
 }
 
@@ -113,6 +136,7 @@ export default function DeviceMasterList() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [editingDevice, setEditingDevice] = useState(null);
+  const [isAddOpen, setIsAddOpen] = useState(false);
   const requestIdRef = useRef(0);
 
   useEffect(() => {
@@ -164,53 +188,88 @@ export default function DeviceMasterList() {
     setEditingDevice(null);
   };
 
-  return (
-    <section className="rounded-xl border border-[#ded4ff] border-l-[4px] border-l-[#E04420] bg-white shadow-[0_24px_70px_rgba(15,23,42,0.12)] max-[640px]:rounded-lg">
-      <div className="flex flex-col gap-4 border-b border-[#e4e6ee] px-5 py-5 lg:px-6 max-[640px]:gap-3 max-[640px]:px-3 max-[640px]:py-3">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-[0.78rem] font-medium uppercase tracking-[0.18em] text-[#8b8f99] max-[640px]:text-[0.58rem] max-[640px]:tracking-[0.14em]">
-              Devices <span className="tracking-normal">( {devices.length} )</span>
-            </p>
-            <h1 className="mt-1 text-[1.9rem] font-bold leading-tight text-[#111827] max-[640px]:text-[1.25rem]">
-              Device Master List
-            </h1>
-          </div>
-          <button
-            type="button"
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#1c1c1c] px-5 text-[0.9rem] font-semibold text-white shadow-[0_16px_30px_rgba(28,28,28,0.18)] transition duration-200 hover:-translate-y-0.5 hover:bg-[#E04420] max-[640px]:h-9 max-[640px]:px-3 max-[640px]:text-[0.72rem]"
-          >
-            <PlusIcon className="h-4 w-4" />
-            Add Device
-          </button>
-        </div>
+  const handleDeviceCreated = (createdDevice) => {
+    if (createdDevice) {
+      setDevices((current) => [createdDevice, ...current]);
+    }
+    setIsAddOpen(false);
+  };
 
-        <label className="flex h-11 items-center gap-3 rounded-md border border-[#d6dbe7] bg-white px-4 text-[#8c96a8] focus-within:border-[#E04420] focus-within:ring-4 focus-within:ring-[#E04420]/10 max-[640px]:h-9 max-[640px]:gap-2 max-[640px]:px-3">
-          <SearchIcon className="h-4.5 w-4.5 shrink-0 max-[640px]:h-3.5 max-[640px]:w-3.5" />
+  const hasResults = devices.length > 0;
+
+  return (
+    <div className="mx-auto w-full max-w-[1560px] pb-24">
+      <style>{`@keyframes atxRowIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}`}</style>
+
+      {/* Title + primary action */}
+      <div className="flex flex-wrap items-end justify-between gap-4 pt-6">
+        <div>
+          <div className="font-vcr text-[9.5px] tracking-[0.2em] text-(--muted)">
+            DEVICES ( {devices.length} )
+          </div>
+          <h1 className="font-chillax mt-1.5 text-[clamp(26px,3.2vw,38px)] font-semibold leading-[1.05] tracking-[-0.02em] text-(--text)">
+            Device Master List
+          </h1>
+        </div>
+        <button
+          type="button"
+          onClick={() => setIsAddOpen(true)}
+          className="inline-flex h-11 shrink-0 items-center gap-2 rounded-[11px] bg-(--text) px-5 text-[13.5px] font-semibold text-(--bg) transition duration-150 hover:bg-(--orange)"
+        >
+          <PlusIcon className="h-3.5 w-3.5" />
+          Add Device
+        </button>
+      </div>
+
+      {/* Search */}
+      <div className="mt-[clamp(16px,2vw,22px)]">
+        <label className="flex h-12 items-center gap-3 rounded-[12px] border border-(--line) bg-(--surface) px-[15px] shadow-(--shadow) transition focus-within:border-(--orange)">
+          <SearchIcon className="h-4 w-4 shrink-0 text-(--faint)" />
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search by print ID, bank, description, or type"
-            className="h-full min-w-0 flex-1 bg-transparent text-[0.95rem] font-medium text-[#1f2937] outline-none placeholder:text-[#a4acbb] max-[640px]:text-[0.72rem]"
+            placeholder="Search MAC, serial, model, bank"
+            className="h-full min-w-0 flex-1 bg-transparent text-[14px] text-(--text) outline-none placeholder:text-(--faint)"
           />
+          {query ? (
+            <button
+              type="button"
+              onClick={() => setQuery("")}
+              aria-label="Clear search"
+              className="grid h-[22px] w-[22px] shrink-0 place-items-center rounded-md text-(--faint) transition hover:bg-(--chip) hover:text-(--text)"
+            >
+              <svg viewBox="0 0 12 12" className="h-3 w-3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" fill="none">
+                <path d="M3 3l6 6M9 3l-6 6" />
+              </svg>
+            </button>
+          ) : null}
         </label>
       </div>
 
-      <div className="grid grid-cols-[1fr_160px] border-b border-[#dfe3ed] px-4 py-4 text-[1.05rem] font-medium uppercase tracking-[0.12em] text-[#E04420] md:px-6 max-[640px]:grid-cols-1 max-[640px]:px-3 max-[640px]:py-2.5 max-[640px]:text-[0.82rem] max-[640px]:tracking-[0.1em]">
-        <span>Device</span>
-        <span className="hidden text-right md:block">Edit</span>
-      </div>
+      {/* Table */}
+      <section className="mt-[clamp(14px,1.8vw,20px)] overflow-hidden rounded-[15px] border border-(--line) bg-(--surface) shadow-(--shadow)">
+        <div
+          className={`hidden border-b border-(--line) bg-(--surface2) px-[16px] py-[13px] md:grid md:items-center md:gap-[18px] ${GRID_COLS}`}
+        >
+          {["DEVICE", "IDENTITY", "SPECS"].map((label) => (
+            <span key={label} className="font-vcr text-[9.5px] tracking-[0.16em] text-(--orange)">
+              {label}
+            </span>
+          ))}
+          <span className="font-vcr text-right text-[9.5px] tracking-[0.16em] text-(--orange)">
+            EDIT
+          </span>
+        </div>
 
-      <div className="max-h-[calc(100vh-285px)] overflow-y-auto">
         {loading ? (
-          <div className="px-6 py-14 text-center text-[0.95rem] font-medium text-[#7b8495] max-[640px]:px-3 max-[640px]:py-8 max-[640px]:text-[0.72rem]">
-            Searching devices...
+          <div className="px-6 py-14 text-center text-[13px] font-medium text-(--muted)">
+            Searching devices…
           </div>
         ) : error ? (
-          <div className="px-6 py-14 text-center text-[0.95rem] font-medium text-[#E04420] max-[640px]:px-3 max-[640px]:py-8 max-[640px]:text-[0.72rem]">
+          <div className="px-6 py-14 text-center text-[13px] font-medium text-(--orange)">
             {error}
           </div>
-        ) : devices.length ? (
+        ) : hasResults ? (
           devices.map((device, index) => (
             <DeviceRow
               key={getDeviceKey(device, index)}
@@ -219,16 +278,17 @@ export default function DeviceMasterList() {
               onEdit={setEditingDevice}
             />
           ))
-        ) : query.trim() ? (
-          <div className="px-6 py-14 text-center text-[0.95rem] font-medium text-[#7b8495] max-[640px]:px-3 max-[640px]:py-8 max-[640px]:text-[0.72rem]">
-            No devices found.
-          </div>
         ) : (
-          <div className="px-6 py-14 text-center text-[0.95rem] font-medium text-[#7b8495] max-[640px]:px-3 max-[640px]:py-8 max-[640px]:text-[0.72rem]">
-            Search by print ID, bank, description, or type to load master devices.
+          <div className="px-6 py-14 text-center">
+            <div className="font-chillax text-[17px] font-medium text-(--text)">
+              {query.trim() ? "No device matches" : "Search the device master"}
+            </div>
+            <div className="mt-1.5 text-[12.5px] text-(--faint)">
+              Try a MAC address, serial number or bank code.
+            </div>
           </div>
         )}
-      </div>
+      </section>
 
       {editingDevice ? (
         <EditDeviceModal
@@ -238,6 +298,14 @@ export default function DeviceMasterList() {
           onSaved={handleDeviceSaved}
         />
       ) : null}
-    </section>
+
+      {isAddOpen ? (
+        <AddDeviceModal
+          token={token}
+          onClose={() => setIsAddOpen(false)}
+          onCreated={handleDeviceCreated}
+        />
+      ) : null}
+    </div>
   );
 }

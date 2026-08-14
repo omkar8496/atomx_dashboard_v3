@@ -1,144 +1,153 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import * as XLSX from "xlsx";
+import { useSearchParams } from "next/navigation";
+import { fetchStallItems } from "../../../../lib/dashboardApi";
+import { useDashboardStore } from "../../../../store/dashboardStore";
 import MenuActionBar from "./MenuActionBar";
 import CategoryTabs from "./CategoryTabs";
 import CategoryDetailPanel from "./CategoryDetailPanel";
 import MenuItemsTable from "./MenuItemsTable";
 
-const INITIAL_CATEGORIES = [
-  {
-    id: 1,
-    name: "Cat",
-    count: 4,
-    active: true,
-    vat: 0,
-    gst: 0,
-    gstInclusive: true,
-    items: [
-      {
-        id: 1,
-        name: "item1",
-        price: 1,
-        happy: 0,
-        hsn: "",
-        barcode: "",
-        epc: "",
-        type: "FOOD",
-        tags: [],
-        active: true,
-        image: null,
-        supplierCode: "",
-        groupId: "",
-        variant: "",
-        colour: ""
-      },
-      {
-        id: 2,
-        name: "item2",
-        price: 120,
-        happy: 0,
-        hsn: "",
-        barcode: "",
-        epc: "",
-        type: "BEVERAGE",
-        tags: ["VEG"],
-        active: true,
-        image: null,
-        supplierCode: "",
-        groupId: "",
-        variant: "",
-        colour: ""
-      },
-      {
-        id: 3,
-        name: "item3",
-        price: 80,
-        happy: 60,
-        hsn: "",
-        barcode: "",
-        epc: "",
-        type: "FOOD",
-        tags: [],
-        active: false,
-        image: null,
-        supplierCode: "",
-        groupId: "",
-        variant: "",
-        colour: ""
-      },
-      {
-        id: 4,
-        name: "item4",
-        price: 250,
-        happy: 0,
-        hsn: "1234",
-        barcode: "",
-        epc: "",
-        type: "COMBO",
-        tags: ["SPICY"],
-        active: true,
-        image: null,
-        supplierCode: "",
-        groupId: "",
-        variant: "",
-        colour: ""
-      }
-    ]
-  },
-  {
-    id: 2,
-    name: "cat",
-    count: 2,
-    active: true,
-    vat: 0,
-    gst: 5,
-    gstInclusive: false,
-    items: [
-      {
-        id: 5,
-        name: "water bottle",
-        price: 20,
-        happy: 0,
-        hsn: "",
-        barcode: "",
-        epc: "",
-        type: "BEVERAGE",
-        tags: ["VEG"],
-        active: true,
-        image: null,
-        supplierCode: "",
-        groupId: "",
-        variant: "",
-        colour: ""
-      },
-      {
-        id: 6,
-        name: "energy drink",
-        price: 150,
-        happy: 100,
-        hsn: "",
-        barcode: "",
-        epc: "",
-        type: "BEVERAGE",
-        tags: [],
-        active: true,
-        image: null,
-        supplierCode: "",
-        groupId: "",
-        variant: "",
-        colour: ""
-      }
-    ]
-  }
-];
+function asNumber(value, fallback = 0) {
+  const numberValue = Number(value);
+  return Number.isFinite(numberValue) ? numberValue : fallback;
+}
 
-export default function MenuContent({ stallName = "Stall1" }) {
-  const [categories, setCategories] = useState(INITIAL_CATEGORIES);
-  const [activeCategoryId, setActiveCategoryId] = useState(INITIAL_CATEGORIES[0]?.id);
+function asText(value) {
+  return value == null ? "" : String(value).trim();
+}
+
+function normalizeTags(value) {
+  if (Array.isArray(value)) {
+    return value.map((tag) => asText(tag).toUpperCase()).filter(Boolean);
+  }
+
+  return asText(value)
+    .split(/[;,]/)
+    .map((tag) => tag.trim().toUpperCase())
+    .filter(Boolean);
+}
+
+function normalizeMenuItem(item, index) {
+  return {
+    id: item?.id ?? `item-${index}`,
+    name: asText(item?.name),
+    price: asNumber(item?.price),
+    happy: asNumber(item?.happyPrice),
+    hsn: asText(item?.hsn),
+    barcode: asText(item?.barcode),
+    epc: asText(item?.epc),
+    type: asText(item?.type).toUpperCase() || "OTHER",
+    tags: normalizeTags(item?.tags),
+    active: asText(item?.status).toLowerCase() === "active",
+    image: item?.imagePath ?? null,
+    supplierCode: asText(item?.supplierCode),
+    groupId: asText(item?.groupId),
+    variant: asText(item?.variant),
+    colour: asText(item?.colour),
+    position: asNumber(item?.position, index)
+  };
+}
+
+function getResponseArray(response, key) {
+  const candidates = [
+    response?.[key],
+    response?.data?.[key],
+    response?.result?.[key],
+    response?.data?.data?.[key]
+  ];
+
+  return candidates.find(Array.isArray) ?? [];
+}
+
+function normalizeMenuResponse(response) {
+  const categories = getResponseArray(response, "categories");
+  const allItems = getResponseArray(response, "items");
+  const nestedMenu = getResponseArray(response, "menu");
+  const menu = categories.length > 0 ? categories : nestedMenu;
+
+  if (menu.length === 0) return [];
+
+  const itemsByCategory = allItems.reduce((groupedItems, item) => {
+    if (item?.categoryId == null) return groupedItems;
+
+    const categoryKey = String(item.categoryId);
+    const categoryItems = groupedItems.get(categoryKey) ?? [];
+    categoryItems.push(item);
+    groupedItems.set(categoryKey, categoryItems);
+    return groupedItems;
+  }, new Map());
+
+  return menu.map((category, index) => {
+    const categoryItems = Array.isArray(category?.items)
+      ? category.items
+      : itemsByCategory.get(String(category?.id)) ?? [];
+    const items = categoryItems.map(normalizeMenuItem);
+
+    return {
+      id: category?.id ?? `category-${index}`,
+      name: asText(category?.name) || `Category ${index + 1}`,
+      count: items.length,
+      active: asText(category?.status).toLowerCase() === "active",
+      vat: asNumber(category?.vat),
+      gst: asNumber(category?.gstSlab),
+      gstInclusive: asText(category?.gstType).toLowerCase() === "inclusive",
+      items
+    };
+  });
+}
+
+export default function MenuContent() {
+  const searchParams = useSearchParams();
+  const stallId = searchParams.get("stallId");
+  const stallName = searchParams.get("stallName") || "Stall";
+  const token = useDashboardStore((state) => state.token);
+  const [categories, setCategories] = useState([]);
+  const [activeCategoryId, setActiveCategoryId] = useState(null);
   const [inactiveCategories, setInactiveCategories] = useState(true);
   const [inactiveItems, setInactiveItems] = useState(true);
+  const [loading, setLoading] = useState(Boolean(stallId));
+  const [loadError, setLoadError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+
+    if (!stallId) {
+      setCategories([]);
+      setActiveCategoryId(null);
+      setLoading(false);
+      setLoadError("Stall ID is unavailable.");
+      return () => {
+        active = false;
+      };
+    }
+
+    setLoading(true);
+    setLoadError("");
+    fetchStallItems({ stallId, token, dedupe: false })
+      .then((response) => {
+        if (!active) return;
+        const nextCategories = normalizeMenuResponse(response);
+        setCategories(nextCategories);
+        setActiveCategoryId(nextCategories[0]?.id ?? null);
+      })
+      .catch((error) => {
+        if (!active) return;
+        console.error(`Unable to load menu for stall ${stallId}`, error);
+        setCategories([]);
+        setActiveCategoryId(null);
+        setLoadError("Unable to load this stall menu.");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [stallId, token]);
 
   const activeCategory = categories.find((c) => c.id === activeCategoryId) ?? null;
 
@@ -160,6 +169,34 @@ export default function MenuContent({ stallName = "Stall1" }) {
             }
           : c
       )
+    );
+  };
+
+  const reorderItems = (sourceId, targetId, placement = "before") => {
+    if (sourceId === targetId) return;
+
+    setCategories((prev) =>
+      prev.map((category) => {
+        if (category.id !== activeCategoryId) return category;
+
+        const sourceIndex = category.items.findIndex((item) => item.id === sourceId);
+        const targetIndex = category.items.findIndex((item) => item.id === targetId);
+        if (sourceIndex < 0 || targetIndex < 0) return category;
+
+        const reorderedItems = [...category.items];
+        const [movedItem] = reorderedItems.splice(sourceIndex, 1);
+        let insertIndex = targetIndex + (placement === "after" ? 1 : 0);
+        if (sourceIndex < insertIndex) insertIndex -= 1;
+        reorderedItems.splice(insertIndex, 0, movedItem);
+
+        return {
+          ...category,
+          items: reorderedItems.map((item, index) => ({
+            ...item,
+            position: index + 1
+          }))
+        };
+      })
     );
   };
 
@@ -283,7 +320,17 @@ export default function MenuContent({ stallName = "Stall1" }) {
         onAddCategory={addCategory}
       />
 
-      <div className="overflow-hidden rounded-lg border border-[#ded4ff] border-l-[3px] border-l-[#E04420] bg-white shadow-[0_18px_36px_rgba(15,23,42,0.08)]">
+      <div className="overflow-hidden rounded-[15px] border border-(--line) border-l-[3px] border-l-(--orange) bg-(--surface) shadow-(--shadow)">
+        {loading ? (
+          <div className="flex min-h-[220px] items-center justify-center text-[13px] font-medium text-(--muted)">
+            Loading menu…
+          </div>
+        ) : loadError ? (
+          <div className="flex min-h-[220px] items-center justify-center px-5 text-center text-[13px] font-semibold text-(--orange)">
+            {loadError}
+          </div>
+        ) : (
+          <>
         <CategoryTabs
           categories={categories}
           activeId={activeCategoryId}
@@ -298,10 +345,13 @@ export default function MenuContent({ stallName = "Stall1" }) {
         <MenuItemsTable
           items={visibleItems}
           onItemUpdate={updateItem}
+          onReorderItems={reorderItems}
           onAddItem={addItem}
           inactiveItems={inactiveItems}
           onToggleInactiveItems={() => setInactiveItems((p) => !p)}
         />
+          </>
+        )}
       </div>
     </div>
   );

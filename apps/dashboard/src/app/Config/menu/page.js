@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Header from "../../components/Header";
 import ConfigTransition from "../components/ConfigTransition";
 import MenuContent from "./components/MenuContent";
@@ -5,43 +6,21 @@ import MenuContent from "./components/MenuContent";
 export default function MenuPage() {
   return (
     <main
-      className="config-menu-font min-h-screen bg-[color:rgb(var(--color-bg))] pb-10"
-      style={{ fontFamily: '"AtomX Menu Poppins", Poppins, sans-serif' }}
+      className="min-h-screen bg-(--bg) pb-10"
+      style={{ fontFamily: '"Poppins", system-ui, sans-serif' }}
     >
-      <style>{`
-        @font-face {
-          font-family: "AtomX Menu Poppins";
-          src: url("/shared/fonts/Poppins/Poppins-Regular.ttf") format("truetype");
-          font-weight: 400;
-          font-style: normal;
-          font-display: swap;
-        }
-
-        @font-face {
-          font-family: "AtomX Menu Poppins";
-          src: url("/shared/fonts/Poppins/Poppins-SemiBold.ttf") format("truetype");
-          font-weight: 600;
-          font-style: normal;
-          font-display: swap;
-        }
-
-        @font-face {
-          font-family: "AtomX Menu Poppins";
-          src: url("/shared/fonts/Poppins/Poppins-Bold.ttf") format("truetype");
-          font-weight: 700;
-          font-style: normal;
-          font-display: swap;
-        }
-
-        .config-menu-font,
-        .config-menu-font * {
-          font-family: "AtomX Menu Poppins", Poppins, sans-serif;
-        }
-      `}</style>
       <Header areaLabel="Menu" variant="portal" />
       <ConfigTransition>
-        <div className="w-full pr-4 pl-[72px] pt-5 md:pr-7 md:pl-[88px] max-[900px]:px-3">
-          <MenuContent stallName="Stall1" />
+        <div className="mx-auto w-full max-w-[1780px] pr-4 pl-[72px] pt-6 md:pr-7 md:pl-[88px] max-[900px]:px-3">
+          <Suspense
+            fallback={(
+              <div className="flex min-h-[220px] items-center justify-center rounded-[15px] border border-(--line) bg-(--surface) text-[13px] font-medium text-(--muted)">
+                Loading menu…
+              </div>
+            )}
+          >
+            <MenuContent />
+          </Suspense>
         </div>
       </ConfigTransition>
     </main>

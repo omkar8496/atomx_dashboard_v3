@@ -9,7 +9,7 @@ import ProfileMenu from "./ProfileMenu";
 import { useDashboardStore } from "../../store/dashboardStore";
 
 export default function Header({
-  eventId = "4004",
+  eventId = null,
   eventName = "SunBurun",
   venue = "Mahalaxmi Race Cours",
   city = "Mumbai, India",
@@ -20,15 +20,45 @@ export default function Header({
   profileEmail = "design@atomx.in",
   breadcrumb = "Profile / Operations",
   variant = "portal",
-  showEditEventButton = false
+  showEditEventButton = false,
+  hideNav = false
 }) {
   const router = useRouter();
   const profile = useDashboardStore((state) => state.profile);
   const storedEventMeta = useDashboardStore((state) => state.eventMeta);
+  const storedEventDetails = useDashboardStore((state) => state.eventDetails);
   const selectedService = useDashboardStore((state) => state.selectedService);
   const setEventMeta = useDashboardStore((state) => state.setEventMeta);
   const setSelectedService = useDashboardStore((state) => state.setSelectedService);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+  const [theme, setTheme] = useState("light");
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    setTheme(
+      document.documentElement.getAttribute("data-atx") === "dark" ? "dark" : "light"
+    );
+  }, []);
+
+  const toggleTheme = () => {
+    setTheme((prev) => {
+      const next = prev === "dark" ? "light" : "dark";
+      if (typeof document !== "undefined") {
+        if (next === "dark") {
+          document.documentElement.setAttribute("data-atx", "dark");
+        } else {
+          document.documentElement.removeAttribute("data-atx");
+        }
+      }
+      try {
+        window.localStorage.setItem("atomx.theme", next);
+      } catch (err) {
+        /* ignore storage failures */
+      }
+      return next;
+    });
+  };
+  const isDark = theme === "dark";
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -73,12 +103,16 @@ export default function Header({
     profile?.picture ?? profile?.image ?? profile?.avatar ?? profile?.photoURL ?? null;
   const resolvedEventMeta = useMemo(() => {
     return {
-      eventId: storedEventMeta?.eventId ?? eventId,
+      eventId:
+        storedEventMeta?.eventId ??
+        storedEventDetails?.id ??
+        profile?.ctx?.eventId ??
+        eventId,
       eventName: storedEventMeta?.eventName ?? eventName,
       venue: storedEventMeta?.venue ?? venue,
       city: storedEventMeta?.city ?? city
     };
-  }, [storedEventMeta, eventId, eventName, venue, city]);
+  }, [storedEventMeta, storedEventDetails, profile, eventId, eventName, venue, city]);
 
   const headerHeight = "58px";
   const crumbHeight = "0px";
@@ -92,15 +126,16 @@ export default function Header({
     >
       <div className="fixed left-0 right-0 top-0 z-40">
         <header
-          className="w-full border-b border-[#ececec] bg-white text-[#171717] shadow-[0_6px_24px_rgba(15,23,42,0.08)]"
+          className="w-full border-b border-(--line) bg-(--surface) text-(--text) shadow-(--shadow)"
           style={{ height: "var(--header-h)" }}
         >
           <div className="flex h-full items-center gap-3 px-4 md:px-5 max-[900px]:gap-2 max-[900px]:px-3">
             <div className="flex min-w-0 items-center gap-3 max-[900px]:gap-2">
+              {!hideNav ? (
               <button
                 type="button"
                 onClick={() => setIsMobileDrawerOpen(true)}
-                className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-[#e6e6e6] bg-white text-[#202020] shadow-[0_8px_18px_rgba(15,23,42,0.06)] transition hover:border-[#d5b7ff] hover:text-[#e04420] min-[901px]:hidden"
+                className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-(--line) bg-(--surface) text-(--text) shadow-(--shadow) transition hover:border-(--orange) hover:text-(--orange) min-[901px]:hidden"
                 aria-label="Open navigation"
               >
                 <svg
@@ -118,6 +153,7 @@ export default function Header({
                   <path d="M4 17h16" />
                 </svg>
               </button>
+              ) : null}
               <span className="relative block h-[40px] w-[100px] shrink-0 overflow-hidden max-[900px]:w-[88px]">
                 <Image
                   src="/shared/logos/AtomX_Logo.svg"
@@ -128,19 +164,48 @@ export default function Header({
                   className="absolute -left-[27px] -top-[52px] h-[132px] w-[150px] max-w-none"
                 />
               </span>
-              <div className="hidden h-9 w-px bg-[#dddddd] sm:block" aria-hidden />
-              <div className="flex min-w-0 items-center gap-2 text-[1.35rem] font-semibold leading-none sm:text-[1.48rem] max-[900px]:gap-1.5 max-[900px]:text-[1.08rem]">
-                <span className="truncate text-[#202020]">Portal</span>
-                <span className="text-[#969696]">-</span>
-                <span className="truncate text-[#e04420]">{areaLabel}</span>
+              <div className="hidden h-9 w-px bg-(--line) sm:block" aria-hidden />
+              <div className="font-chillax flex min-w-0 items-center gap-2 text-[1.3rem] font-semibold leading-none tracking-[-0.01em] sm:text-[1.4rem] max-[900px]:gap-1.5 max-[900px]:text-[1.05rem]">
+                <span className="truncate text-(--muted)">Portal</span>
+                <span className="text-(--faint)">/</span>
+                <span className="truncate text-(--orange)">{areaLabel}</span>
               </div>
             </div>
             <div className="flex-1" />
+            <span
+              className="font-vcr inline-flex shrink-0 items-center gap-2 text-[11px] font-semibold tracking-[0.1em] text-(--muted)"
+              aria-label={`Event ID ${resolvedEventMeta.eventId ?? "not selected"}`}
+              title="Selected event ID"
+            >
+              <span className="hidden uppercase sm:inline">Event</span>
+              <span className="font-chillax text-[14px] font-bold tracking-[0.01em] text-(--text)">
+                #{resolvedEventMeta.eventId ?? "-"}
+              </span>
+            </span>
+            <button
+              type="button"
+              onClick={toggleTheme}
+              title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+              aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+              aria-pressed={isDark}
+              className="mr-1 grid h-8 w-8 shrink-0 place-items-center rounded-[10px] border border-(--line) bg-(--surface) text-(--muted) transition hover:border-(--orange) hover:text-(--orange)"
+            >
+              {isDark ? (
+                <svg viewBox="0 0 24 24" className="h-[17px] w-[17px]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <circle cx="12" cy="12" r="4" />
+                  <path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" className="h-[17px] w-[17px]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M20.5 14.2A8.4 8.4 0 0 1 9.8 3.5 8.5 8.5 0 1 0 20.5 14.2Z" />
+                </svg>
+              )}
+            </button>
             {showEditEventButton ? (
               <button
                 type="button"
                 onClick={() => router.push("/event-edit")}
-                className="mr-1 inline-flex h-9 items-center gap-2 rounded-lg border border-[#e5e5e5] bg-white px-3 text-[0.82rem] font-bold text-[#1c1c1c] shadow-[0_8px_18px_rgba(15,23,42,0.06)] transition hover:border-[#d5b7ff] hover:text-[#e04420] hover:shadow-[0_10px_22px_rgba(224,68,32,0.09)]"
+                className="mr-1 inline-flex h-9 items-center gap-2 rounded-lg border border-(--line) bg-(--surface) px-3 text-[0.82rem] font-bold text-(--text) shadow-(--shadow) transition hover:border-(--orange) hover:text-(--orange)"
                 aria-label="Edit event"
               >
                 <svg
@@ -171,10 +236,12 @@ export default function Header({
         </header>
       </div>
       <div style={{ height: "var(--header-total-h)" }} />
-      <SideDrawer
-        mobileOpen={isMobileDrawerOpen}
-        onMobileClose={() => setIsMobileDrawerOpen(false)}
-      />
+      {!hideNav ? (
+        <SideDrawer
+          mobileOpen={isMobileDrawerOpen}
+          onMobileClose={() => setIsMobileDrawerOpen(false)}
+        />
+      ) : null}
     </div>
   );
 }

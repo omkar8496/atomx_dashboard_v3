@@ -9,9 +9,7 @@ function Toggle({ active, onToggle }) {
       onClick={onToggle}
       aria-pressed={active}
       className={`flex h-6 w-11 shrink-0 items-center rounded-full p-0.5 transition-all duration-200 ${
-        active
-          ? "bg-[linear-gradient(135deg,#E04420,#341CD6)] shadow-[0_8px_16px_rgba(52,28,214,0.14)]"
-          : "bg-[#dce3ed]"
+        active ? "bg-[linear-gradient(135deg,#E04420,#341CD6)]" : "bg-(--line)"
       }`}
     >
       <span
@@ -31,15 +29,14 @@ export default function MenuActionBar({
   onAddCategory
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-lg border border-[#ded4ff] border-l-[3px] border-l-[#E04420] bg-white px-4 py-3 shadow-[0_18px_36px_rgba(15,23,42,0.08)]">
-      <span className="shrink-0 text-[0.9rem] font-bold text-[#232323]">
-        {stallName}{" "}
-        <span className="text-[#E04420]">MENU</span>
+    <div className="flex flex-wrap items-center gap-3 rounded-[15px] border border-(--line) border-l-[3px] border-l-(--orange) bg-(--surface) px-4 py-3 shadow-(--shadow)">
+      <span className="font-chillax shrink-0 text-[15px] font-semibold text-(--text)">
+        {stallName} <span className="text-(--orange)">MENU</span>
       </span>
 
-      <div className="h-5 w-px shrink-0 bg-[#e5e5e5]" />
+      <div className="h-5 w-px shrink-0 bg-(--line)" />
 
-      <div className="flex items-center gap-2 text-[0.82rem] font-semibold text-[#555555]">
+      <div className="flex items-center gap-2 text-[12.5px] font-semibold text-(--muted)">
         <span className="shrink-0">Inactive Categories:</span>
         <Toggle active={inactiveCategories} onToggle={onToggleInactiveCategories} />
       </div>
@@ -50,7 +47,7 @@ export default function MenuActionBar({
         <button
           type="button"
           onClick={onDownload}
-          className="flex h-8 items-center gap-1.5 rounded-md border border-[#e5e5e5] bg-white px-3 text-[0.78rem] font-semibold text-[#555555] transition hover:border-[#D5B7FF] hover:text-[#202020] hover:shadow-[0_6px_12px_rgba(15,23,42,0.08)]"
+          className="flex h-9 items-center gap-1.5 rounded-[8px] border border-(--line) bg-(--surface) px-3 text-[12.5px] font-semibold text-(--muted) transition hover:border-(--orange) hover:text-(--orange)"
         >
           <DownloadIcon className="h-3.5 w-3.5" />
           Download
@@ -58,7 +55,7 @@ export default function MenuActionBar({
 
         <button
           type="button"
-          className="flex h-8 items-center gap-1.5 rounded-md bg-[linear-gradient(135deg,#E04420,#341CD6)] px-3 text-[0.78rem] font-semibold text-white shadow-[0_8px_16px_rgba(52,28,214,0.18)] transition hover:brightness-105"
+          className="flex h-9 items-center gap-1.5 rounded-[8px] bg-[linear-gradient(135deg,#E04420,#341CD6)] px-3 text-[12.5px] font-semibold text-white transition hover:brightness-105"
         >
           <CloudUploadIcon className="h-3.5 w-3.5" />
           Menu
@@ -67,7 +64,7 @@ export default function MenuActionBar({
         <button
           type="button"
           onClick={onAddCategory}
-          className="flex h-8 items-center gap-1.5 rounded-md border border-[#e5e5e5] bg-white px-3 text-[0.78rem] font-semibold text-[#555555] transition hover:border-[#E04420] hover:text-[#E04420] hover:shadow-[0_6px_12px_rgba(15,23,42,0.08)]"
+          className="flex h-9 items-center gap-1.5 rounded-[8px] border border-(--line) bg-(--surface) px-3 text-[12.5px] font-semibold text-(--muted) transition hover:border-(--orange) hover:text-(--orange)"
         >
           <PlusIcon className="h-3.5 w-3.5" />
           Category
@@ -75,7 +72,7 @@ export default function MenuActionBar({
 
         <button
           type="button"
-          className="flex h-8 items-center gap-1.5 rounded-md bg-[#202020] px-3 text-[0.78rem] font-semibold text-white transition hover:bg-[#111111]"
+          className="flex h-9 items-center gap-1.5 rounded-[8px] bg-(--text) px-3 text-[12.5px] font-semibold text-(--bg) transition hover:bg-(--orange)"
         >
           <SaveIcon className="h-3.5 w-3.5" />
           Save

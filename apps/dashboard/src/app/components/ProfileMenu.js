@@ -247,7 +247,7 @@ export default function ProfileMenu({
         onClick={() => setOpen((prev) => !prev)}
         className={
           isPortalVariant
-            ? "flex h-[42px] items-center gap-2 rounded-lg border border-[#e8e8e8] bg-white px-2.5 text-left text-[#202020] shadow-[0_5px_14px_rgba(15,23,42,0.08)] transition hover:-translate-y-[1px] hover:shadow-[0_8px_18px_rgba(15,23,42,0.12)]"
+            ? "flex h-[42px] items-center gap-2 rounded-[11px] border border-(--line) bg-(--surface2) px-2.5 text-left text-(--text) transition hover:border-(--orange)"
             : "flex h-9 items-center gap-2 rounded-full bg-white/18 px-3 text-xs font-semibold text-white ring-1 ring-white/25"
         }
         aria-haspopup="menu"
@@ -255,10 +255,10 @@ export default function ProfileMenu({
       >
         {isPortalVariant ? (
           <div className="hidden min-w-0 flex-col leading-tight sm:flex">
-            <span className="max-w-[6.5rem] truncate text-[0.72rem] font-medium text-[#6c6c6c]">
+            <span className="font-vcr max-w-[6.5rem] truncate text-[0.6rem] uppercase tracking-[0.14em] text-(--muted)">
               {formatRole(role)}
             </span>
-            <span className="max-w-[7rem] truncate text-[0.86rem] font-semibold text-[#202020]">
+            <span className="max-w-[7rem] truncate text-[0.82rem] font-semibold text-(--text)">
               {name}
             </span>
           </div>
@@ -266,7 +266,7 @@ export default function ProfileMenu({
         <span
           className={
             isPortalVariant
-              ? "flex h-8 w-8 items-center justify-center overflow-hidden rounded-lg bg-[linear-gradient(135deg,#e04420,#2f1ec7)] text-[0.85rem] font-semibold text-white"
+              ? "font-chillax flex h-8 w-8 items-center justify-center overflow-hidden rounded-[9px] bg-[linear-gradient(140deg,#341cd6,#e04420)] text-[0.85rem] font-semibold text-white"
               : "flex h-7 w-7 items-center justify-center rounded-full bg-white text-[11px] font-bold text-[#258d9c]"
           }
         >
@@ -281,7 +281,7 @@ export default function ProfileMenu({
           viewBox="0 0 24 24"
           className={`h-4 w-4 transition-transform ${
             open ? "rotate-180" : ""
-          } ${isPortalVariant ? "text-[#8a8a8a]" : ""}`}
+          } ${isPortalVariant ? "text-(--muted)" : ""}`}
           fill="none"
           stroke="currentColor"
           strokeWidth="2.2"
@@ -291,9 +291,9 @@ export default function ProfileMenu({
       </button>
 
       {open && isPortalVariant && (
-        <div className="absolute right-0 top-full z-50 mt-2 w-[236px] rounded-lg border border-[#eeeeee] bg-white p-2.5 shadow-[0_20px_44px_rgba(15,23,42,0.14)]">
+        <div className="absolute right-0 top-full z-50 mt-2 w-[236px] rounded-[11px] border border-(--line) bg-(--surface) p-2.5 shadow-(--shadowUp)">
           <div className="flex items-center gap-2.5 px-1 py-1">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[linear-gradient(135deg,#e04420,#2f1ec7)] text-sm font-semibold text-white">
+            <div className="font-chillax flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[linear-gradient(140deg,#341cd6,#e04420)] text-sm font-semibold text-white">
               {picture ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={picture} alt={name} className="h-full w-full object-cover" />
@@ -302,17 +302,17 @@ export default function ProfileMenu({
               )}
             </div>
             <div className="min-w-0 leading-tight">
-              <p className="m-0 truncate text-[0.9rem] font-semibold text-[#202020]">
+              <p className="m-0 truncate text-[0.9rem] font-semibold text-(--text)">
                 {name}
               </p>
-              <small className="text-[0.74rem] font-medium text-[#8d8d8d]">
+              <small className="text-[0.74rem] font-medium text-(--muted)">
                 {formatRole(role, true)}
               </small>
             </div>
           </div>
           <button
             type="button"
-            className="mt-2 w-full rounded-md bg-[#1f1f1f] px-3 py-2.5 text-left text-[0.84rem] font-semibold text-white transition hover:bg-black"
+            className="mt-2 w-full rounded-md bg-(--text) px-3 py-2.5 text-left text-[0.84rem] font-semibold text-(--bg) transition hover:opacity-90"
             onClick={handleLogout}
           >
             Logout

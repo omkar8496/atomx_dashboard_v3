@@ -1,5 +1,5 @@
 import { getBaseUrl } from "@atomx/lib";
-import { DASHBOARD_API_KEY } from "./apiConfig";
+import { apiRequest } from "./apiClient";
 
 const inFlightGetRequests = new Map();
 
@@ -7,35 +7,13 @@ function buildGetRequestKey(url, token) {
   return `${url}::${token || "cookie-session"}`;
 }
 
-function buildAuthHeaders(token) {
-  return {
-    ...(DASHBOARD_API_KEY ? { "x-api-key": DASHBOARD_API_KEY } : {}),
-    ...(token ? { Authorization: `Bearer ${token}` } : {})
-  };
-}
-
-async function requestGetJson({ url, token }) {
-  return fetch(url, {
-    method: "GET",
-    headers: buildAuthHeaders(token),
-    credentials: "include",
-    cache: "no-store"
-  });
-}
-
 async function fetchGetJson({ url, token }) {
-  let res = await requestGetJson({ url, token });
-
-  if (!res.ok && token) {
-    res = await requestGetJson({ url, token: null });
-  }
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => res.statusText);
-    throw new Error(text || `Request failed (${res.status})`);
-  }
-
-  return res.json();
+  return apiRequest({
+    url,
+    method: "GET",
+    token,
+    retryWithoutToken: true
+  });
 }
 
 async function fetchGetJsonDeduped({ url, token, dedupe = true }) {
@@ -59,33 +37,71 @@ async function fetchGetJsonDeduped({ url, token, dedupe = true }) {
 
 export async function linkRole({ token, payload }) {
   const baseUrl = getBaseUrl();
-  const res = await fetch(`${baseUrl}/v1/Operators/Link`, {
+  return apiRequest({
+    url: `${baseUrl}/v1/Operators/Link`,
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...buildAuthHeaders(token)
-    },
-    credentials: "include",
-    body: JSON.stringify(payload)
+    token,
+    body: payload
   });
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => res.statusText);
-    throw new Error(text || `Request failed (${res.status})`);
-  }
-
-  return res.json();
 }
 
-export async function linkOperator({ email, adminId, eventId, type = "operator", token }) {
+export async function linkAdmin({ email, adminId, token }) {
   return linkRole({
     token,
     payload: {
       email,
       adminId,
-      ...(eventId ? { eventId } : {}),
+      type: "admin"
+    }
+  });
+}
+
+export async function linkOperator({ email, eventId, type, token }) {
+  return linkRole({
+    token,
+    payload: {
+      email,
+      eventId,
       type
     }
+  });
+}
+
+export async function fetchOperatorsList({ token, dedupe = true }) {
+  const baseUrl = getBaseUrl();
+  const data = await fetchGetJsonDeduped({
+    url: `${baseUrl}/v1/Operators/List`,
+    token,
+    dedupe
+  });
+
+  const candidates = [
+    data?.operatorLinks,
+    data?.operators,
+    data?.data?.operatorLinks,
+    data?.data?.operators,
+    data?.data?.rows,
+    data?.result?.operatorLinks,
+    data?.result?.operators,
+    data?.result,
+    data?.rows,
+    data?.list,
+    data?.data
+  ];
+
+  return candidates.find(Array.isArray) ?? [];
+}
+
+export async function fetchReportsList({ eventId, token, dedupe = true }) {
+  if (eventId === "" || eventId == null) {
+    throw new Error("Missing eventId");
+  }
+
+  const baseUrl = getBaseUrl();
+  return fetchGetJsonDeduped({
+    url: `${baseUrl}/v1/Reports/List?eventId=${encodeURIComponent(eventId)}`,
+    token,
+    dedupe
   });
 }
 
@@ -117,42 +133,22 @@ export async function updateEventDetails({ eventId, token, payload }) {
     throw new Error("Missing eventId");
   }
   const baseUrl = getBaseUrl();
-  const res = await fetch(`${baseUrl}/v1/Events/Edit/${encodeURIComponent(eventId)}`, {
+  return apiRequest({
+    url: `${baseUrl}/v1/Events/Edit/${encodeURIComponent(eventId)}`,
     method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      ...buildAuthHeaders(token)
-    },
-    credentials: "include",
-    body: JSON.stringify(payload)
+    token,
+    body: payload
   });
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => res.statusText);
-    throw new Error(text || `Request failed (${res.status})`);
-  }
-
-  return res.json();
 }
 
 export async function createVendor({ token, vendor }) {
   const baseUrl = getBaseUrl();
-  const res = await fetch(`${baseUrl}/v1/Vendors/Create`, {
+  return apiRequest({
+    url: `${baseUrl}/v1/Vendors/Create`,
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...buildAuthHeaders(token)
-    },
-    credentials: "include",
-    body: JSON.stringify({ vendor })
+    token,
+    body: { vendor }
   });
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => res.statusText);
-    throw new Error(text || `Request failed (${res.status})`);
-  }
-
-  return res.json();
 }
 
 export async function fetchVendors({ eventId, token, dedupe = true }) {
@@ -173,42 +169,22 @@ export async function updateVendor({ vendorId, token, payload }) {
     throw new Error("Missing vendorId");
   }
   const baseUrl = getBaseUrl();
-  const res = await fetch(`${baseUrl}/v1/Vendors/Edit/${encodeURIComponent(vendorId)}`, {
+  return apiRequest({
+    url: `${baseUrl}/v1/Vendors/Edit/${encodeURIComponent(vendorId)}`,
     method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      ...buildAuthHeaders(token)
-    },
-    credentials: "include",
-    body: JSON.stringify(payload)
+    token,
+    body: payload
   });
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => res.statusText);
-    throw new Error(text || `Request failed (${res.status})`);
-  }
-
-  return res.json();
 }
 
 export async function createStall({ token, stall }) {
   const baseUrl = getBaseUrl();
-  const res = await fetch(`${baseUrl}/v1/Stalls/Create`, {
+  return apiRequest({
+    url: `${baseUrl}/v1/Stalls/Create`,
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...buildAuthHeaders(token)
-    },
-    credentials: "include",
-    body: JSON.stringify({ stall })
+    token,
+    body: { stall }
   });
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => res.statusText);
-    throw new Error(text || `Request failed (${res.status})`);
-  }
-
-  return res.json();
 }
 
 export async function fetchStalls({ eventId, token, dedupe = true }) {
@@ -222,6 +198,19 @@ export async function fetchStalls({ eventId, token, dedupe = true }) {
     dedupe
   });
   return data?.stalls ?? data?.data?.stalls ?? data?.data ?? data?.list ?? [];
+}
+
+export async function fetchStallItems({ stallId, token, dedupe = true }) {
+  if (!stallId) {
+    throw new Error("Missing stallId");
+  }
+
+  const baseUrl = getBaseUrl();
+  return fetchGetJsonDeduped({
+    url: `${baseUrl}/v1/Items/List/${encodeURIComponent(stallId)}`,
+    token,
+    dedupe
+  });
 }
 
 async function fetchAccessXList({ path, eventId, token, dedupe = true }) {
@@ -255,12 +244,80 @@ export function fetchAccessXGateMasters({ eventId, token, dedupe = true }) {
   });
 }
 
+export async function createAccessXGateMaster({ token, gateMaster }) {
+  if (!gateMaster?.eventId) {
+    throw new Error("Missing eventId");
+  }
+  if (!String(gateMaster?.name || "").trim()) {
+    throw new Error("Missing gate master name");
+  }
+
+  const baseUrl = getBaseUrl();
+  return apiRequest({
+    url: `${baseUrl}/v1/AccessX/GatesMaster/Create`,
+    method: "POST",
+    token,
+    body: gateMaster
+  });
+}
+
+export async function updateAccessXGateMaster({ token, gateMaster }) {
+  if (!gateMaster?.id) {
+    throw new Error("Missing gate master id");
+  }
+  if (!gateMaster?.eventId) {
+    throw new Error("Missing eventId");
+  }
+
+  const baseUrl = getBaseUrl();
+  return apiRequest({
+    url: `${baseUrl}/v1/AccessX/GatesMaster/Edit`,
+    method: "POST",
+    token,
+    body: gateMaster
+  });
+}
+
 export function fetchAccessXGates({ eventId, token, dedupe = true }) {
   return fetchAccessXList({
     path: "/v1/AccessX/Gates/List",
     eventId,
     token,
     dedupe
+  });
+}
+
+export async function searchAccessXWhitelist({ eventId, search, token }) {
+  if (eventId === "" || eventId == null) {
+    throw new Error("Missing eventId");
+  }
+
+  const normalizedSearch = String(search || "").trim();
+  if (!normalizedSearch) {
+    throw new Error("Missing whitelist search value");
+  }
+
+  const baseUrl = getBaseUrl();
+  return fetchGetJson({
+    url: `${baseUrl}/v1/Whitelist/Search?code=${encodeURIComponent(eventId)}&search=${encodeURIComponent(normalizedSearch)}`,
+    token
+  });
+}
+
+export async function fetchAccessXWhitelistLogs({ eventId, wid, token }) {
+  if (eventId === "" || eventId == null) {
+    throw new Error("Missing eventId");
+  }
+
+  const normalizedWid = String(wid || "").trim();
+  if (!normalizedWid) {
+    throw new Error("Missing whitelist user id");
+  }
+
+  const baseUrl = getBaseUrl();
+  return fetchGetJson({
+    url: `${baseUrl}/v1/Whitelist/Logs?eventId=${encodeURIComponent(eventId)}&wid=${encodeURIComponent(normalizedWid)}`,
+    token
   });
 }
 
@@ -273,22 +330,12 @@ export async function createAccessXCategory({ token, category }) {
   }
 
   const baseUrl = getBaseUrl();
-  const res = await fetch(`${baseUrl}/v1/AccessX/Category/Create`, {
+  return apiRequest({
+    url: `${baseUrl}/v1/AccessX/Category/Create`,
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...buildAuthHeaders(token)
-    },
-    credentials: "include",
-    body: JSON.stringify(category)
+    token,
+    body: category
   });
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => res.statusText);
-    throw new Error(text || `Request failed (${res.status})`);
-  }
-
-  return res.json().catch(() => null);
 }
 
 export async function updateAccessXCategory({ token, category }) {
@@ -300,22 +347,12 @@ export async function updateAccessXCategory({ token, category }) {
   }
 
   const baseUrl = getBaseUrl();
-  const res = await fetch(`${baseUrl}/v1/AccessX/Category/Edit`, {
+  return apiRequest({
+    url: `${baseUrl}/v1/AccessX/Category/Edit`,
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...buildAuthHeaders(token)
-    },
-    credentials: "include",
-    body: JSON.stringify(category)
+    token,
+    body: category
   });
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => res.statusText);
-    throw new Error(text || `Request failed (${res.status})`);
-  }
-
-  return res.json().catch(() => null);
 }
 
 export async function fetchEventDevices({ eventId, token, type = "event-wise", dedupe = true }) {
@@ -353,48 +390,45 @@ export async function searchDeviceMasterlist({ search, token, dedupe = true }) {
   return data?.devices ?? data?.data?.devices ?? data?.data ?? data?.list ?? [];
 }
 
+export async function addDeviceMasterlist({ token, payload }) {
+  if (!payload?.printId) {
+    throw new Error("Missing device print ID");
+  }
+  if (!payload?.hardwareId) {
+    throw new Error("Missing device hardware ID");
+  }
+
+  const baseUrl = getBaseUrl();
+  return apiRequest({
+    url: `${baseUrl}/v1/Devices/Masterlist/add`,
+    method: "POST",
+    token,
+    body: payload
+  });
+}
+
 export async function updateDeviceMasterlist({ token, payload }) {
   if (!payload?.id) {
     throw new Error("Missing device id");
   }
 
   const baseUrl = getBaseUrl();
-  const res = await fetch(`${baseUrl}/v1/Devices/Masterlist/edit`, {
+  return apiRequest({
+    url: `${baseUrl}/v1/Devices/Masterlist/edit`,
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...buildAuthHeaders(token)
-    },
-    credentials: "include",
-    body: JSON.stringify(payload)
+    token,
+    body: payload
   });
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => res.statusText);
-    throw new Error(text || `Request failed (${res.status})`);
-  }
-
-  return res.json();
 }
 
 export async function addDevicesToStall({ token, payload }) {
   const baseUrl = getBaseUrl();
-  const res = await fetch(`${baseUrl}/v1/Devices/AddToStall`, {
+  return apiRequest({
+    url: `${baseUrl}/v1/Devices/AddToStall`,
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...buildAuthHeaders(token)
-    },
-    credentials: "include",
-    body: JSON.stringify(payload)
+    token,
+    body: payload
   });
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => res.statusText);
-    throw new Error(text || `Request failed (${res.status})`);
-  }
-
-  return res.json();
 }
 
 export async function addPersoDevices({ eventId, token, devices }) {
@@ -403,22 +437,12 @@ export async function addPersoDevices({ eventId, token, devices }) {
   }
 
   const baseUrl = getBaseUrl();
-  const res = await fetch(`${baseUrl}/v1/Devices/Perso/Add?code=${encodeURIComponent(eventId)}`, {
+  return apiRequest({
+    url: `${baseUrl}/v1/Devices/Perso/Add?code=${encodeURIComponent(eventId)}`,
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...buildAuthHeaders(token)
-    },
-    credentials: "include",
-    body: JSON.stringify({ devices })
+    token,
+    body: { devices }
   });
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => res.statusText);
-    throw new Error(text || `Request failed (${res.status})`);
-  }
-
-  return res.json();
 }
 
 export async function removePersoDevice({ eventId, token, id }) {
@@ -431,42 +455,30 @@ export async function removePersoDevice({ eventId, token, id }) {
   }
 
   const baseUrl = getBaseUrl();
-  const res = await fetch(`${baseUrl}/v1/Devices/Perso/Remove?code=${encodeURIComponent(eventId)}`, {
+  return apiRequest({
+    url: `${baseUrl}/v1/Devices/Perso/Remove?code=${encodeURIComponent(eventId)}`,
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...buildAuthHeaders(token)
-    },
-    credentials: "include",
-    body: JSON.stringify({ id })
+    token,
+    body: { id }
   });
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => res.statusText);
-    throw new Error(text || `Request failed (${res.status})`);
-  }
-
-  return res.json();
 }
 
 export async function filterEventTransactions({ token, payload }) {
   const baseUrl = getBaseUrl();
-  const res = await fetch(`${baseUrl}/v1/EventTransactions/Filter`, {
+  return apiRequest({
+    url: `${baseUrl}/v1/EventTransactions/Filter`,
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...buildAuthHeaders(token)
-    },
-    credentials: "include",
-    body: JSON.stringify(payload)
+    token,
+    body: payload
   });
+}
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => res.statusText);
-    throw new Error(text || `Request failed (${res.status})`);
-  }
-
-  return res.json();
+export async function fetchTapXWalletCardList({ token }) {
+  const baseUrl = getBaseUrl();
+  return apiRequest({
+    url: `${baseUrl}/v2/WalletTapX/card-list`,
+    token
+  });
 }
 
 export async function fetchEventTransactionDetails({ token, txId, dedupe = true }) {
@@ -515,22 +527,12 @@ export async function updateEventTransactionStatus({ token, txId, status, reason
     reason: String(reason || `aml ${normalizedStatus}`).trim()
   };
   const baseUrl = getBaseUrl();
-  const res = await fetch(`${baseUrl}/v1/EventTransactions/UpdateStatus`, {
+  return apiRequest({
+    url: `${baseUrl}/v1/EventTransactions/UpdateStatus`,
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...buildAuthHeaders(token)
-    },
-    credentials: "include",
-    body: JSON.stringify(payload)
+    token,
+    body: payload
   });
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => res.statusText);
-    throw new Error(text || `Request failed (${res.status})`);
-  }
-
-  return res.json().catch(() => null);
 }
 
 export async function updateEventBalanceSetting({ token, eventId }) {
@@ -539,22 +541,12 @@ export async function updateEventBalanceSetting({ token, eventId }) {
   }
 
   const baseUrl = getBaseUrl();
-  const res = await fetch(`${baseUrl}/v1/Events/update-balance-setting`, {
+  return apiRequest({
+    url: `${baseUrl}/v1/Events/update-balance-setting`,
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...buildAuthHeaders(token)
-    },
-    credentials: "include",
-    body: JSON.stringify({ eventId: Number(eventId) })
+    token,
+    body: { eventId: Number(eventId) }
   });
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => res.statusText);
-    throw new Error(text || `Request failed (${res.status})`);
-  }
-
-  return res.json();
 }
 
 export async function closeEventDay({
@@ -569,24 +561,14 @@ export async function closeEventDay({
 
   const numericEventId = Number(eventId);
   const baseUrl = getBaseUrl();
-  const res = await fetch(`${baseUrl}/v1/Events/day-close`, {
+  return apiRequest({
+    url: `${baseUrl}/v1/Events/day-close`,
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...buildAuthHeaders(token)
-    },
-    credentials: "include",
-    body: JSON.stringify({
+    token,
+    body: {
       eventId: Number.isNaN(numericEventId) ? eventId : numericEventId,
       day,
       volunteerCount: Number(volunteerCount) || 0
-    })
+    }
   });
-
-  if (!res.ok) {
-    const text = await res.text().catch(() => res.statusText);
-    throw new Error(text || `Request failed (${res.status})`);
-  }
-
-  return res.json().catch(() => null);
 }

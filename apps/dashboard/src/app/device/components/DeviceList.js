@@ -7,61 +7,54 @@ import { useDashboardStore } from "../../../store/dashboardStore";
 
 function SearchIcon() {
   return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="11" cy="11" r="7" />
-      <path d="m20 20-3.5-3.5" />
+    <svg viewBox="0 0 16 16" className="h-3.5 w-3.5 shrink-0 opacity-50" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+      <circle cx="7" cy="7" r="4.6" />
+      <path d="M10.5 10.5 14 14" />
     </svg>
   );
 }
 
-function PhoneIcon({ className = "h-5 w-5" }) {
+function DeviceGlyph({ className = "h-3.5 w-3.5" }) {
   return (
-    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="7" y="2" width="10" height="20" rx="2" />
-      <path d="M11 18h2" />
-      <path d="M10 5h4" />
+    <svg viewBox="0 0 16 16" className={className} fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="4.4" y="1.9" width="7.2" height="12.2" rx="1.4" />
+      <path d="M6.8 11.9h2.4" />
     </svg>
   );
 }
 
 function LockIcon() {
   return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="5" y="11" width="14" height="9" rx="2" />
-      <path d="M8 11V8a4 4 0 0 1 8 0v3" />
-    </svg>
-  );
-}
-
-function GridIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="3" width="7" height="7" rx="1.5" />
-      <rect x="14" y="3" width="7" height="7" rx="1.5" />
-      <rect x="3" y="14" width="7" height="7" rx="1.5" />
-      <rect x="14" y="14" width="7" height="7" rx="1.5" />
-    </svg>
-  );
-}
-
-function ListIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M8 6h13" />
-      <path d="M8 12h13" />
-      <path d="M8 18h13" />
-      <path d="M3 6h.01" />
-      <path d="M3 12h.01" />
-      <path d="M3 18h.01" />
+    <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3.4" y="7" width="9.2" height="6.6" rx="1.4" />
+      <path d="M5.6 7V5.2a2.4 2.4 0 0 1 4.8 0V7" />
     </svg>
   );
 }
 
 function EditIcon() {
   return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 20h9" />
-      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+    <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M11.2 2.4l2.4 2.4-8 8H3.2v-2.4z" />
+    </svg>
+  );
+}
+
+function GridIcon() {
+  return (
+    <svg viewBox="0 0 16 16" className="h-4 w-4" fill="currentColor">
+      <rect x="2.4" y="2.4" width="4.6" height="4.6" rx="1.1" />
+      <rect x="9" y="2.4" width="4.6" height="4.6" rx="1.1" />
+      <rect x="2.4" y="9" width="4.6" height="4.6" rx="1.1" />
+      <rect x="9" y="9" width="4.6" height="4.6" rx="1.1" />
+    </svg>
+  );
+}
+
+function ListIcon() {
+  return (
+    <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+      <path d="M5.4 4.4h8.2M5.4 8h8.2M5.4 11.6h8.2M2.6 4.4h.01M2.6 8h.01M2.6 11.6h.01" />
     </svg>
   );
 }
@@ -135,7 +128,7 @@ function normalizeDevice(device, index) {
 
 function DeviceEmptyState({ message }) {
   return (
-    <div className="grid min-h-[150px] place-items-center pt-3 text-center text-[0.8rem] font-medium text-[#8e98ad]">
+    <div className="grid min-h-[150px] place-items-center px-4 py-8 text-center text-[13px] font-medium text-(--muted)">
       {message}
     </div>
   );
@@ -143,143 +136,130 @@ function DeviceEmptyState({ message }) {
 
 function DeviceLoadingState() {
   return (
-    <div className="grid min-h-[150px] place-items-center pt-3">
+    <div className="grid min-h-[150px] place-items-center py-6">
       <AtomXLoader label="Loading devices..." />
+    </div>
+  );
+}
+
+function ModeTag({ value }) {
+  return (
+    <span className="font-vcr inline-flex items-center whitespace-nowrap rounded-full border border-[rgba(0,169,242,0.4)] bg-[rgba(0,169,242,0.09)] px-2.5 py-1 text-[9px] tracking-[0.1em] text-[#0284c7]">
+      {value}
+    </span>
+  );
+}
+
+function ProviderTag({ value }) {
+  if (!value) return null;
+  return (
+    <span className="inline-flex items-center whitespace-nowrap rounded-full border border-[rgba(224,68,32,0.4)] bg-[rgba(224,68,32,0.08)] px-2.5 py-1 text-[10.5px] font-semibold text-(--orange)">
+      {value}
+    </span>
+  );
+}
+
+function ClosedBadge({ closed }) {
+  return (
+    <span
+      className={`font-vcr flex items-center justify-center rounded-[8px] px-[13px] py-[5px] text-[10px] tracking-[0.1em] ${
+        closed ? "bg-[rgba(0,169,242,0.11)] text-[#0284c7]" : "bg-[rgba(224,68,32,0.09)] text-(--orange)"
+      }`}
+    >
+      {closed ? "YES" : "NO"}
+    </span>
+  );
+}
+
+function MetaField({ label, value }) {
+  return (
+    <div className="min-w-0 flex-1 basis-[88px]">
+      <div className="font-vcr whitespace-nowrap text-[7.5px] tracking-[0.15em] text-(--faint)">{label}</div>
+      <div className="mt-0.5 truncate text-[12.5px] font-semibold">{value || "-"}</div>
     </div>
   );
 }
 
 function DeviceCard({ device }) {
   return (
-    <article className="min-h-[248px] rounded-lg border border-[#efb9d9] bg-white p-3 shadow-[0_10px_24px_rgba(15,23,42,0.035)] transition duration-200 hover:-translate-y-0.5 hover:border-[#ded4ff] hover:shadow-[0_16px_30px_rgba(52,28,214,0.09)]">
-      <div className="flex items-start justify-between">
-        <div className="flex min-w-0 items-start gap-2.5">
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[linear-gradient(135deg,#E04420_0%,#A9379E_48%,#341CD6_100%)] text-white shadow-[0_10px_22px_rgba(52,28,214,0.20)]">
-            <PhoneIcon className="h-4.5 w-4.5" />
-          </span>
-          <div className="min-w-0">
-            <p className="text-[0.68rem] font-semibold text-[#8f80ff]">#{device.id}</p>
-            <p className="truncate text-[1rem] font-normal leading-tight text-[#202020]">
-              {device.code}
-            </p>
-          </div>
+    <div
+      className="flex flex-col gap-[9px] rounded-[12px] border border-transparent p-[11px] shadow-(--shadow) transition-shadow duration-200 hover:shadow-(--shadowUp)"
+      style={{
+        background:
+          "linear-gradient(var(--surface),var(--surface)) padding-box, linear-gradient(135deg,rgba(224,68,32,0.34),rgba(139,92,246,0.26) 52%,rgba(0,169,242,0.22)) border-box"
+      }}
+    >
+      <div className="flex min-w-0 items-center gap-[11px]">
+        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[9px] bg-[linear-gradient(140deg,#e04420,#8b5cf6)] text-white">
+          <DeviceGlyph />
+        </span>
+        <div className="min-w-0">
+          <div className="font-vcr text-[9.5px] tracking-[0.08em] text-(--blue)">#{device.id}</div>
+          <div className="font-chillax mt-0.5 truncate text-[15px] font-semibold tracking-[-0.01em]">{device.code}</div>
         </div>
-        <span className="text-[#7d8aa3]">
+        <span className="ml-auto text-(--faint)">
           <LockIcon />
         </span>
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-1.5">
-        <span className="rounded-full border border-[#9bd9ff] bg-[#f3fbff] px-2.5 py-1 text-[0.62rem] font-bold text-[#0a9cac]">
-          {device.type}
-        </span>
-        {device.vendorTag ? (
-          <span className="rounded-full border border-[#ffc3b7] bg-white px-2.5 py-1 text-[0.62rem] font-bold text-[#E04420]">
-            {device.vendorTag}
-          </span>
-        ) : null}
+      <div className="flex flex-wrap items-center gap-[7px] border-b border-(--line2) pb-[11px]">
+        <ModeTag value={device.type} />
+        <ProviderTag value={device.vendorTag} />
       </div>
 
-      <div className="mt-3 border-t border-[#e5e5e5] pt-3">
-        <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-          <div className="min-w-0">
-            <p className="text-[0.62rem] font-bold uppercase text-[#929292]">Stall</p>
-            <p className="truncate text-[0.74rem] font-bold text-[#657391]">{device.stall}</p>
-          </div>
-          <div className="min-w-0">
-            <p className="text-[0.62rem] font-bold uppercase text-[#929292]">Vendor</p>
-            <p className="truncate text-[0.74rem] font-bold text-[#657391]">{device.vendor}</p>
-          </div>
-          <div className="min-w-0">
-            <p className="text-[0.62rem] font-bold uppercase text-[#929292]">Login At</p>
-            <p className="truncate text-[0.74rem] font-bold text-[#202020]">{device.loginAt}</p>
-          </div>
-          <div className="min-w-0">
-            <p className="text-[0.62rem] font-bold uppercase text-[#929292]">Version</p>
-            <p className="truncate text-[0.74rem] font-bold text-[#202020]">{device.version}</p>
-          </div>
-        </div>
+      <div className="flex flex-wrap gap-3">
+        <MetaField label="STALL" value={device.stall} />
+        <MetaField label="VENDOR" value={device.vendor} />
+        <MetaField label="LOGIN AT" value={device.loginAt} />
+        <MetaField label="VERSION" value={device.version} />
       </div>
 
-      <div className="mt-3 flex items-end justify-between gap-3">
+      <div className="flex items-center justify-between gap-[10px]">
         <div className="min-w-0">
-          <p className="text-[0.62rem] font-bold uppercase text-[#929292]">Closed At</p>
-          <p className="truncate text-[0.74rem] font-bold text-[#202020]">{device.closedAt}</p>
+          <div className="font-vcr text-[7.5px] tracking-[0.15em] text-(--faint)">CLOSED AT</div>
+          <div className="mt-0.5 truncate text-[12.5px] font-semibold">{device.closedAt}</div>
         </div>
-        <span
-          className={`rounded-lg px-3 py-2 text-[0.68rem] font-bold ${
-            device.closed ? "bg-[#e4f6ff] text-[#0285bf]" : "bg-[#ffe9e4] text-[#E04420]"
-          }`}
-        >
-          {device.closed ? "YES" : "NO"}
-        </span>
+        <ClosedBadge closed={device.closed} />
       </div>
-    </article>
+    </div>
   );
 }
 
 function DeviceRow({ device }) {
   return (
-    <article className="grid min-h-[68px] grid-cols-1 items-center gap-3 border-b border-[#e5e5e5] px-1 py-2.5 last:border-b-0 lg:grid-cols-[230px_46px_210px_1fr_0.75fr_1.1fr_0.5fr_1.05fr_66px]">
-      <div className="flex min-w-0 items-center gap-2.5">
-        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-[linear-gradient(135deg,#E04420_0%,#A9379E_48%,#341CD6_100%)] text-white shadow-[0_8px_18px_rgba(52,28,214,0.18)]">
-          <PhoneIcon className="h-4 w-4" />
+    <div className="flex flex-wrap items-center gap-[14px] border-b border-(--line2) px-1.5 py-[11px] last:border-b-0 transition-colors duration-150 hover:bg-(--surface2)">
+      <div className="flex min-w-0 shrink-0 basis-[210px] items-center gap-[11px]">
+        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-[9px] bg-[linear-gradient(140deg,#e04420,#8b5cf6)] text-white">
+          <DeviceGlyph />
         </span>
         <div className="min-w-0">
-          <p className="text-[0.62rem] font-semibold leading-tight text-[#8f80ff]">#{device.id}</p>
-          <p className="truncate text-[0.9rem] font-normal leading-tight text-[#202020]">
-            {device.code}
-          </p>
+          <div className="font-vcr text-[9.5px] tracking-[0.08em] text-(--blue)">#{device.id}</div>
+          <div className="font-chillax mt-0.5 truncate text-[15px] font-semibold tracking-[-0.01em]">{device.code}</div>
         </div>
+        <button
+          type="button"
+          className="ml-auto grid h-[30px] w-[30px] shrink-0 place-items-center rounded-[8px] border border-(--line) text-(--muted) transition hover:border-(--orange) hover:text-(--orange)"
+          aria-label={`Edit device ${device.code}`}
+        >
+          <EditIcon />
+        </button>
       </div>
 
-      <button
-        type="button"
-        className="grid h-7 w-7 place-items-center rounded-lg border border-[#e2e2e2] bg-white text-[#777777] shadow-[0_7px_16px_rgba(15,23,42,0.035)] transition duration-200 hover:border-[#E04420] hover:text-[#E04420]"
-        aria-label={`Edit device ${device.code}`}
-      >
-        <EditIcon />
-      </button>
-
-      <div className="flex flex-wrap gap-1.5">
-        <span className="rounded-full border border-[#9bd9ff] bg-[#f3fbff] px-2 py-0.5 text-[0.58rem] font-bold text-[#0a9cac]">
-          {device.type}
-        </span>
-        {device.vendorTag ? (
-          <span className="rounded-full border border-[#ffc3b7] bg-white px-2 py-0.5 text-[0.58rem] font-bold text-[#E04420]">
-            {device.vendorTag}
-          </span>
-        ) : null}
+      <div className="flex shrink-0 basis-[220px] flex-wrap items-center gap-[7px]">
+        <ModeTag value={device.type} />
+        <ProviderTag value={device.vendorTag} />
       </div>
 
-      <div className="min-w-0">
-        <p className="text-[0.56rem] font-bold uppercase text-[#929292]">Stall</p>
-        <p className="truncate text-[0.72rem] font-bold text-[#202020]">{device.stallFull || device.stall}</p>
+      <div className="flex min-w-0 flex-1 basis-[340px] flex-wrap gap-3">
+        <MetaField label="STALL" value={device.stallFull || device.stall} />
+        <MetaField label="VENDOR" value={device.vendor} />
+        <MetaField label="LOGIN AT" value={device.loginAtFull || device.loginAt} />
+        <MetaField label="VERSION" value={device.version} />
+        <MetaField label="CLOSED AT" value={device.closedAt} />
       </div>
-      <div className="min-w-0">
-        <p className="text-[0.56rem] font-bold uppercase text-[#929292]">Vendor</p>
-        <p className="truncate text-[0.72rem] font-bold text-[#202020]">{device.vendor}</p>
-      </div>
-      <div className="min-w-0">
-        <p className="text-[0.56rem] font-bold uppercase text-[#929292]">Login At</p>
-        <p className="truncate text-[0.72rem] font-bold text-[#202020]">{device.loginAtFull || device.loginAt}</p>
-      </div>
-      <div className="min-w-0">
-        <p className="text-[0.56rem] font-bold uppercase text-[#929292]">Version</p>
-        <p className="truncate text-[0.72rem] font-bold text-[#202020]">{device.version}</p>
-      </div>
-      <div className="min-w-0">
-        <p className="text-[0.56rem] font-bold uppercase text-[#929292]">Closed At</p>
-        <p className="truncate text-[0.72rem] font-bold text-[#657391]">{device.closedAt}</p>
-      </div>
-      <span
-        className={`justify-self-start rounded-lg px-2.5 py-1.5 text-[0.62rem] font-bold lg:justify-self-end ${
-          device.closed ? "bg-[#e4f6ff] text-[#0285bf]" : "bg-[#ffe9e4] text-[#E04420]"
-        }`}
-      >
-        {device.closed ? "YES" : "NO"}
-      </span>
-    </article>
+
+      <ClosedBadge closed={device.closed} />
+    </div>
   );
 }
 
@@ -366,63 +346,59 @@ export default function DeviceList() {
 
     if (viewMode === "grid") {
       return (
-        <div className="max-h-[535px] overflow-y-auto pr-1 pt-3 [scrollbar-width:thin] [scrollbar-color:#d5b7ff_transparent]">
-          <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-            {filteredDevices.map((device) => (
-              <DeviceCard key={device.key} device={device} />
-            ))}
-          </div>
+        <div
+          className="grid gap-3 px-[15px] pb-[15px] pt-1 [grid-template-columns:repeat(auto-fill,minmax(min(100%,198px),1fr))]"
+        >
+          {filteredDevices.map((device) => (
+            <DeviceCard key={device.key} device={device} />
+          ))}
         </div>
       );
     }
 
     return (
-      <div className="max-h-[420px] overflow-y-auto pr-1 pt-3 [scrollbar-width:thin] [scrollbar-color:#d5b7ff_transparent]">
-        <div>
-          {filteredDevices.map((device) => (
-            <DeviceRow key={device.key} device={device} />
-          ))}
-        </div>
+      <div className="max-h-[520px] overflow-y-auto px-[15px] pb-3 [scrollbar-color:var(--line)_transparent] [scrollbar-width:thin]">
+        {filteredDevices.map((device) => (
+          <DeviceRow key={device.key} device={device} />
+        ))}
       </div>
     );
   };
 
   return (
-    <section className="rounded-xl border border-[#ded4ff] border-l-[4px] border-l-[#E04420] bg-white p-3.5 shadow-[0_18px_52px_rgba(15,23,42,0.09)]">
-      <div className="flex flex-col gap-3 border-b border-[#e5e5e5] pb-2.5 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex items-center gap-2.5">
-          <span className="grid h-8 w-8 place-items-center rounded-lg bg-[linear-gradient(135deg,#E04420_0%,#A9379E_48%,#341CD6_100%)] text-[0.8rem] font-bold text-white shadow-[0_10px_22px_rgba(52,28,214,0.20)]">
-            {devices.length}
-          </span>
-          <h2 className="text-[0.98rem] font-semibold text-[#1f1f1f]">Device List</h2>
-        </div>
+    <section className="mt-[clamp(16px,2vw,22px)] overflow-hidden rounded-[14px] border border-(--line) border-l-[3px] border-l-(--orange) bg-(--surface) shadow-(--shadow)">
+      <div className="flex flex-wrap items-center gap-3 px-[15px] py-[14px]">
+        <span className="font-vcr grid h-[38px] w-[38px] shrink-0 place-items-center rounded-[10px] bg-[linear-gradient(140deg,#e04420,#8b5cf6)] text-[13px] text-white">
+          {devices.length}
+        </span>
+        <h2 className="font-chillax whitespace-nowrap text-[18px] font-semibold tracking-[-0.01em]">Device List</h2>
 
-        <label className="flex h-8 w-full items-center gap-3 border-b border-[#cfcfcf] px-1 text-[#8f80ff] focus-within:border-[#E04420] lg:max-w-[70%]">
+        <label className="flex min-w-[150px] flex-1 items-center gap-2.5 border-b border-(--line) px-0.5 pb-[7px] text-(--muted) focus-within:border-(--orange)">
           <SearchIcon />
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search Device"
-            className="h-full min-w-0 flex-1 bg-transparent text-[0.78rem] font-normal text-[#1f2937] outline-none placeholder:text-[#8e98ad]"
+            className="h-full min-w-0 flex-1 bg-transparent text-[13px] text-(--text) outline-none placeholder:text-(--faint)"
           />
         </label>
 
-        <div className="inline-flex h-9 w-fit items-center rounded-lg border border-[#e2e2e2] bg-white p-1 shadow-[0_8px_20px_rgba(15,23,42,0.04)]">
+        <div className="flex shrink-0 gap-[3px] rounded-[11px] border border-(--line) bg-(--surface2) p-[3px]">
           <button
             type="button"
             onClick={() => setViewMode("grid")}
-            className={`grid h-7 w-7 place-items-center rounded-md transition ${
-              viewMode === "grid" ? "bg-[#1c1c1c] text-white" : "text-[#777777] hover:bg-[#f5f5f5]"
+            className={`grid h-[30px] w-[34px] place-items-center rounded-[8px] transition ${
+              viewMode === "grid" ? "bg-(--text) text-(--bg)" : "text-(--muted)"
             }`}
-            aria-label="Grid view"
+            aria-label="Card view"
           >
             <GridIcon />
           </button>
           <button
             type="button"
             onClick={() => setViewMode("list")}
-            className={`grid h-7 w-7 place-items-center rounded-md transition ${
-              viewMode === "list" ? "bg-[#1c1c1c] text-white" : "text-[#777777] hover:bg-[#f5f5f5]"
+            className={`grid h-[30px] w-[34px] place-items-center rounded-[8px] transition ${
+              viewMode === "list" ? "bg-(--text) text-(--bg)" : "text-(--muted)"
             }`}
             aria-label="List view"
           >

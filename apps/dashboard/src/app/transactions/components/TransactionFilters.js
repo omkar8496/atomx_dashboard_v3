@@ -116,9 +116,9 @@ function getNextTxnStatus(value) {
 
 function getTxnStatusClass(value) {
   const status = normalizeTxnStatus(value);
-  if (status === "completed") return "text-[#18a15d]";
-  if (status === "pending" || status.includes("pending")) return "text-[#d28a00]";
-  return "text-[#ff3b30]";
+  if (status === "completed") return "text-[#0e8f62]";
+  if (status === "pending" || status.includes("pending")) return "text-[#e08a20]";
+  return "text-(--orange)";
 }
 
 function getTransactionId(transaction) {
@@ -181,7 +181,7 @@ function SearchIcon({ className = "h-4 w-4" }) {
 
 function SortIcon() {
   return (
-    <span className="inline-grid gap-[2px] text-[#c0c7d2]" aria-hidden>
+    <span className="inline-grid gap-[2px] text-(--faint)" aria-hidden>
       <span className="h-0 w-0 border-x-[4px] border-b-[5px] border-x-transparent border-b-current" />
       <span className="h-0 w-0 border-x-[4px] border-t-[5px] border-x-transparent border-t-current" />
     </span>
@@ -219,7 +219,7 @@ function EventIcon() {
 
 function SelectArrow() {
   return (
-    <svg viewBox="0 0 24 24" className="pointer-events-none h-4 w-4 text-[#1c1c1c]" fill="currentColor" aria-hidden>
+    <svg viewBox="0 0 24 24" className="pointer-events-none h-4 w-4 text-(--text)" fill="currentColor" aria-hidden>
       <path d="M7 9.5h10L12 15z" />
     </svg>
   );
@@ -230,21 +230,21 @@ function Toggle({ checked, onChange, label }) {
     <button
       type="button"
       onClick={() => onChange(!checked)}
-      className="flex h-full items-center gap-3 border-r border-[#e5e5e5] px-3 max-[640px]:gap-2 max-[640px]:px-2"
+      className="flex h-full items-center gap-3 border-r border-(--line) px-3 max-[640px]:gap-2 max-[640px]:px-2"
       aria-pressed={checked}
     >
       <span
         className={`relative h-5 w-9 rounded-full transition max-[640px]:h-4 max-[640px]:w-8 ${
-          checked ? "bg-[#12c96b]" : "bg-[#e5e9f0]"
+          checked ? "bg-[#0e8f62]" : "bg-(--surface2)"
         }`}
       >
         <span
-          className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition max-[640px]:h-3 max-[640px]:w-3 ${
+          className={`absolute top-0.5 h-4 w-4 rounded-full bg-(--surface) shadow transition max-[640px]:h-3 max-[640px]:w-3 ${
             checked ? "left-[18px] max-[640px]:left-[17px]" : "left-0.5"
           }`}
         />
       </span>
-      <span className="text-[0.7rem] font-bold uppercase tracking-[0.02em] text-[#0f8797] max-[640px]:text-[0.58rem]">
+      <span className="text-[0.7rem] font-bold uppercase tracking-[0.02em] text-(--muted) max-[640px]:text-[0.58rem]">
         {label}
       </span>
     </button>
@@ -256,19 +256,19 @@ function FilterCheck({ checked, onChange, label }) {
     <button
       type="button"
       onClick={() => onChange(!checked)}
-      className="flex h-full items-center gap-3 border-r border-[#e5e5e5] px-3 max-[640px]:gap-2 max-[640px]:px-2"
+      className="flex h-full items-center gap-3 border-r border-(--line) px-3 max-[640px]:gap-2 max-[640px]:px-2"
       aria-pressed={checked}
     >
       <span
         className={`grid h-[18px] w-[18px] place-items-center rounded-md border shadow-[0_3px_8px_rgba(15,23,42,0.04)] transition max-[640px]:h-[14px] max-[640px]:w-[14px] ${
-          checked ? "border-[#E04420] bg-[#E04420] text-white" : "border-[#d5d8df] bg-white text-transparent"
+          checked ? "border-(--orange) bg-(--orange) text-white" : "border-(--line) bg-(--surface) text-transparent"
         }`}
       >
         <svg viewBox="0 0 24 24" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
           <path d="m5 12 4 4L19 6" />
         </svg>
       </span>
-      <span className="text-[0.7rem] font-bold uppercase tracking-[0.02em] text-[#0f8797] max-[640px]:text-[0.58rem]">
+      <span className="text-[0.7rem] font-bold uppercase tracking-[0.02em] text-(--muted) max-[640px]:text-[0.58rem]">
         {label}
       </span>
     </button>
@@ -277,8 +277,8 @@ function FilterCheck({ checked, onChange, label }) {
 
 function InputField({ label, value, onChange, placeholder, enabled, onEnabledChange }) {
   return (
-    <label className={`grid h-12 grid-cols-[170px_1fr] items-center overflow-hidden rounded-lg border bg-white shadow-[0_8px_20px_rgba(15,23,42,0.025)] transition max-[640px]:h-9 max-[640px]:grid-cols-[96px_minmax(0,1fr)] ${
-      enabled ? "border-[#e6e6e6]" : "border-[#eceff4] bg-[#fbfbfc]"
+    <label className={`grid h-12 grid-cols-[170px_1fr] items-center overflow-hidden rounded-lg border bg-(--surface) shadow-[0_8px_20px_rgba(15,23,42,0.025)] transition max-[640px]:h-9 max-[640px]:grid-cols-[96px_minmax(0,1fr)] ${
+      enabled ? "border-(--line)" : "border-(--line2) bg-(--surface2)"
     }`}>
       <FilterCheck checked={enabled} onChange={onEnabledChange} label={label} />
       <input
@@ -287,7 +287,7 @@ function InputField({ label, value, onChange, placeholder, enabled, onEnabledCha
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        className="min-w-0 bg-transparent px-4 text-[0.82rem] font-semibold text-[#1f1f1f] outline-none placeholder:text-[#a2aabc] disabled:text-[#9aa3b4] max-[640px]:px-2.5 max-[640px]:text-[0.68rem]"
+        className="min-w-0 bg-transparent px-4 text-[0.82rem] font-semibold text-(--text) outline-none placeholder:text-(--faint) disabled:text-(--faint) max-[640px]:px-2.5 max-[640px]:text-[0.68rem]"
       />
     </label>
   );
@@ -297,8 +297,8 @@ function SelectField({ label, value, onChange, options, enabled, onEnabledChange
   const isDisabled = disabled || !enabled;
 
   return (
-    <label className={`grid h-12 grid-cols-[170px_1fr] items-center overflow-hidden rounded-lg border bg-white shadow-[0_8px_20px_rgba(15,23,42,0.025)] transition max-[640px]:h-9 max-[640px]:grid-cols-[96px_minmax(0,1fr)] ${
-      enabled ? "border-[#e6e6e6]" : "border-[#eceff4] bg-[#fbfbfc]"
+    <label className={`grid h-12 grid-cols-[170px_1fr] items-center overflow-hidden rounded-lg border bg-(--surface) shadow-[0_8px_20px_rgba(15,23,42,0.025)] transition max-[640px]:h-9 max-[640px]:grid-cols-[96px_minmax(0,1fr)] ${
+      enabled ? "border-(--line)" : "border-(--line2) bg-(--surface2)"
     }`}>
       <FilterCheck checked={enabled} onChange={onEnabledChange} label={label} />
       <span className="relative flex min-w-0 items-center px-4 max-[640px]:px-2.5">
@@ -306,7 +306,7 @@ function SelectField({ label, value, onChange, options, enabled, onEnabledChange
           value={value}
           onChange={(event) => onChange(event.target.value)}
           disabled={isDisabled}
-          className="h-full min-w-0 flex-1 appearance-none bg-transparent pr-8 text-[0.82rem] font-semibold text-[#1f1f1f] outline-none disabled:text-[#9aa3b4] max-[640px]:text-[0.68rem]"
+          className="h-full min-w-0 flex-1 appearance-none bg-transparent pr-8 text-[0.82rem] font-semibold text-(--text) outline-none disabled:text-(--faint) max-[640px]:text-[0.68rem]"
         >
           {options.map((option) => (
             <option key={`${label}-${option.value}`} value={option.value}>
@@ -353,8 +353,8 @@ function DateRangeField({ enabled, onEnabledChange, range, onChange }) {
   return (
     <div className="relative" ref={pickerRef}>
       <div
-        className={`grid h-12 grid-cols-[170px_48px_1fr_56px_1fr] items-center overflow-hidden rounded-lg border bg-white shadow-[0_8px_20px_rgba(15,23,42,0.025)] max-[640px]:h-auto max-[640px]:min-h-9 max-[640px]:grid-cols-[96px_28px_minmax(0,1fr)] ${
-          open ? "border-[#2f91ff] ring-2 ring-[#2f91ff]/10" : "border-[#e6e6e6]"
+        className={`grid h-12 grid-cols-[170px_48px_1fr_56px_1fr] items-center overflow-hidden rounded-lg border bg-(--surface) shadow-[0_8px_20px_rgba(15,23,42,0.025)] max-[640px]:h-auto max-[640px]:min-h-9 max-[640px]:grid-cols-[96px_28px_minmax(0,1fr)] ${
+          open ? "border-(--orange) shadow-[0_0_0_3px_rgba(224,68,32,0.12)]" : "border-(--line)"
         }`}
       >
         <Toggle checked={enabled} onChange={onEnabledChange} label="Dates" />
@@ -362,7 +362,7 @@ function DateRangeField({ enabled, onEnabledChange, range, onChange }) {
           type="button"
           onClick={() => setOpen((current) => !current)}
           disabled={!enabled}
-          className="grid h-full place-items-center border-r border-[#e5e5e5] text-[#8f98a8]"
+          className="grid h-full place-items-center border-r border-(--line) text-(--muted)"
           aria-label="Open date range picker"
         >
           <ClockIcon />
@@ -371,7 +371,7 @@ function DateRangeField({ enabled, onEnabledChange, range, onChange }) {
           type="button"
           onClick={() => setOpen((current) => !current)}
           disabled={!enabled}
-          className="min-w-0 bg-transparent px-5 text-left text-[0.92rem] font-normal text-[#686a70] outline-none max-[640px]:px-2 max-[640px]:text-[0.66rem]"
+          className="min-w-0 bg-transparent px-5 text-left text-[0.92rem] font-normal text-(--muted) outline-none max-[640px]:px-2 max-[640px]:text-[0.66rem]"
         >
           <span className="block truncate">{startText || "Start"}</span>
         </button>
@@ -379,7 +379,7 @@ function DateRangeField({ enabled, onEnabledChange, range, onChange }) {
           type="button"
           onClick={() => setOpen((current) => !current)}
           disabled={!enabled}
-          className="text-center text-[1rem] text-[#5f6570] max-[640px]:hidden"
+          className="text-center text-[1rem] text-(--muted) max-[640px]:hidden"
         >
           -
         </button>
@@ -387,57 +387,57 @@ function DateRangeField({ enabled, onEnabledChange, range, onChange }) {
           type="button"
           onClick={() => setOpen((current) => !current)}
           disabled={!enabled}
-          className="min-w-0 bg-transparent px-5 text-left text-[0.92rem] font-normal text-[#686a70] outline-none max-[640px]:col-span-3 max-[640px]:border-t max-[640px]:border-[#e5e5e5] max-[640px]:px-2 max-[640px]:py-2 max-[640px]:text-[0.66rem]"
+          className="min-w-0 bg-transparent px-5 text-left text-[0.92rem] font-normal text-(--muted) outline-none max-[640px]:col-span-3 max-[640px]:border-t max-[640px]:border-(--line) max-[640px]:px-2 max-[640px]:py-2 max-[640px]:text-[0.66rem]"
         >
           <span className="block truncate">{endText || "End"}</span>
         </button>
       </div>
 
       {open && enabled ? (
-        <div className="absolute left-0 top-[calc(100%+8px)] z-30 grid w-full min-w-[720px] grid-cols-[150px_1fr] overflow-hidden rounded-lg border border-[#dfe3ea] bg-white shadow-[0_22px_60px_rgba(15,23,42,0.18)] max-[900px]:min-w-0 max-[900px]:grid-cols-1">
-          <div className="border-r border-[#e5e5e5] p-4 text-[0.84rem] font-normal text-[#686a70] max-[900px]:flex max-[900px]:gap-2 max-[900px]:overflow-x-auto max-[900px]:border-b max-[900px]:border-r-0 max-[900px]:p-2">
-            <button type="button" onClick={() => applyQuickRange(7)} className="block rounded-md px-2 py-2 text-left hover:bg-[#f5f7fb] max-[900px]:min-w-fit">
+        <div className="absolute left-0 top-[calc(100%+8px)] z-30 grid w-full min-w-[720px] grid-cols-[150px_1fr] overflow-hidden rounded-lg border border-(--line) bg-(--surface) shadow-[0_22px_60px_rgba(15,23,42,0.18)] max-[900px]:min-w-0 max-[900px]:grid-cols-1">
+          <div className="border-r border-(--line) p-4 text-[0.84rem] font-normal text-(--muted) max-[900px]:flex max-[900px]:gap-2 max-[900px]:overflow-x-auto max-[900px]:border-b max-[900px]:border-r-0 max-[900px]:p-2">
+            <button type="button" onClick={() => applyQuickRange(7)} className="block rounded-md px-2 py-2 text-left hover:bg-(--surface2) max-[900px]:min-w-fit">
               Last week
             </button>
-            <button type="button" onClick={() => applyQuickRange(30)} className="block rounded-md px-2 py-2 text-left hover:bg-[#f5f7fb] max-[900px]:min-w-fit">
+            <button type="button" onClick={() => applyQuickRange(30)} className="block rounded-md px-2 py-2 text-left hover:bg-(--surface2) max-[900px]:min-w-fit">
               Last month
             </button>
-            <button type="button" onClick={() => applyQuickRange(90)} className="block rounded-md px-2 py-2 text-left hover:bg-[#f5f7fb] max-[900px]:min-w-fit">
+            <button type="button" onClick={() => applyQuickRange(90)} className="block rounded-md px-2 py-2 text-left hover:bg-(--surface2) max-[900px]:min-w-fit">
               Last 3 months
             </button>
           </div>
 
           <div>
-            <div className="grid grid-cols-[1fr_28px_1fr] gap-3 border-b border-[#e5e5e5] p-3 max-[640px]:grid-cols-1">
+            <div className="grid grid-cols-[1fr_28px_1fr] gap-3 border-b border-(--line) p-3 max-[640px]:grid-cols-1">
               <div className="grid grid-cols-[1fr_120px] gap-2 max-[640px]:grid-cols-1">
                 <input
                   type="date"
                   value={range.startDate}
                   onChange={(event) => updateRange({ startDate: event.target.value })}
-                  className="h-10 rounded-md border border-[#d9dde5] px-3 text-[0.86rem] text-[#5f6570] outline-none focus:border-[#2f91ff]"
+                  className="h-10 rounded-md border border-(--line) px-3 text-[0.86rem] text-(--muted) outline-none focus:border-(--orange)"
                 />
                 <input
                   type="time"
                   step="1"
                   value={range.startTime}
                   onChange={(event) => updateRange({ startTime: event.target.value })}
-                  className="h-10 rounded-md border border-[#d9dde5] px-3 text-[0.86rem] text-[#5f6570] outline-none focus:border-[#2f91ff]"
+                  className="h-10 rounded-md border border-(--line) px-3 text-[0.86rem] text-(--muted) outline-none focus:border-(--orange)"
                 />
               </div>
-              <span className="grid place-items-center text-xl text-[#1c1c1c] max-[640px]:hidden">›</span>
+              <span className="grid place-items-center text-xl text-(--text) max-[640px]:hidden">›</span>
               <div className="grid grid-cols-[1fr_120px] gap-2 max-[640px]:grid-cols-1">
                 <input
                   type="date"
                   value={range.endDate}
                   onChange={(event) => updateRange({ endDate: event.target.value })}
-                  className="h-10 rounded-md border border-[#d9dde5] px-3 text-[0.86rem] text-[#5f6570] outline-none focus:border-[#2f91ff]"
+                  className="h-10 rounded-md border border-(--line) px-3 text-[0.86rem] text-(--muted) outline-none focus:border-(--orange)"
                 />
                 <input
                   type="time"
                   step="1"
                   value={range.endTime}
                   onChange={(event) => updateRange({ endTime: event.target.value })}
-                  className="h-10 rounded-md border border-[#d9dde5] px-3 text-[0.86rem] text-[#5f6570] outline-none focus:border-[#2f91ff]"
+                  className="h-10 rounded-md border border-(--line) px-3 text-[0.86rem] text-(--muted) outline-none focus:border-(--orange)"
                 />
               </div>
             </div>
@@ -453,14 +453,14 @@ function DateRangeField({ enabled, onEnabledChange, range, onChange }) {
                     endTime: "00:00:00"
                   })
                 }
-                className="h-9 px-3 text-[0.82rem] font-semibold text-[#2f91ff]"
+                className="h-9 px-3 text-[0.82rem] font-semibold text-(--orange)"
               >
                 Clear
               </button>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="h-9 rounded-md border border-[#d9dde5] bg-white px-4 text-[0.82rem] font-semibold text-[#686a70] hover:border-[#2f91ff]"
+                className="h-9 rounded-md border border-(--line) bg-(--surface) px-4 text-[0.82rem] font-semibold text-(--muted) hover:border-(--orange)"
               >
                 OK
               </button>
@@ -497,11 +497,11 @@ function TransactionStatusAction({ transaction, onUpdateStatus }) {
   };
 
   return (
-    <div className="mt-4 border-t border-[#eef0f4] pt-3">
+    <div className="mt-4 border-t border-(--line2) pt-3">
       {confirming ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-[#f8fafc] px-3 py-2.5">
-          <p className="text-[0.72rem] font-semibold text-[#505762]">
-            Change this transaction to <span className="capitalize text-[#1c1c1c]">{nextStatus}</span>?
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-(--surface2) px-3 py-2.5">
+          <p className="text-[0.72rem] font-semibold text-(--muted)">
+            Change this transaction to <span className="capitalize text-(--text)">{nextStatus}</span>?
           </p>
           <div className="flex items-center gap-2">
             <button
@@ -511,7 +511,7 @@ function TransactionStatusAction({ transaction, onUpdateStatus }) {
                 setError("");
               }}
               disabled={updating}
-              className="h-8 rounded-md border border-[#dfe3ea] bg-white px-3 text-[0.7rem] font-semibold text-[#656b75] transition hover:border-[#aeb4bf] disabled:opacity-50"
+              className="h-8 rounded-md border border-(--line) bg-(--surface) px-3 text-[0.7rem] font-semibold text-(--muted) transition hover:border-(--muted) disabled:opacity-50"
             >
               Cancel
             </button>
@@ -519,10 +519,10 @@ function TransactionStatusAction({ transaction, onUpdateStatus }) {
               type="button"
               onClick={handleConfirm}
               disabled={updating}
-              className={`h-8 rounded-md px-3 text-[0.7rem] font-bold text-white transition disabled:cursor-not-allowed disabled:opacity-55 ${
+              className={`h-8 rounded-md px-3 text-[0.7rem] font-bold text-(--bg) transition disabled:cursor-not-allowed disabled:opacity-55 ${
                 nextStatus === "completed"
-                  ? "bg-[#1c1c1c] hover:bg-[#18a15d]"
-                  : "bg-[#E04420] hover:bg-[#c73718]"
+                  ? "bg-(--text) hover:bg-[#0e8f62]"
+                  : "bg-(--orange) hover:bg-(--orange)"
               }`}
             >
               {updating ? "Updating..." : `Confirm ${nextStatus === "completed" ? "Completed" : "Void"}`}
@@ -536,15 +536,15 @@ function TransactionStatusAction({ transaction, onUpdateStatus }) {
             onClick={() => setConfirming(true)}
             className={`h-9 rounded-lg px-4 text-[0.74rem] font-bold transition ${
               nextStatus === "completed"
-                ? "bg-[#1c1c1c] text-white hover:bg-[#18a15d]"
-                : "border border-[#E04420] bg-[#fff7f5] text-[#E04420] hover:bg-[#E04420] hover:text-white"
+                ? "bg-(--text) text-(--bg) hover:bg-[#0e8f62]"
+                : "border border-(--orange) bg-[rgba(224,68,32,0.06)] text-(--orange) hover:bg-(--orange) hover:text-white"
             }`}
           >
             {actionLabel}
           </button>
         </div>
       )}
-      {error ? <p className="mt-2 text-right text-[0.68rem] font-semibold text-[#E04420]">{error}</p> : null}
+      {error ? <p className="mt-2 text-right text-[0.68rem] font-semibold text-(--orange)">{error}</p> : null}
     </div>
   );
 }
@@ -558,10 +558,10 @@ function TransactionDetailContent({
 }) {
   if (loading) {
     return (
-      <div className="grid min-h-36 place-items-center rounded-xl border border-[#e2e6ee] bg-white p-4 text-center shadow-[0_14px_35px_rgba(15,23,42,0.05)]">
+      <div className="grid min-h-36 place-items-center rounded-xl border border-(--line2) bg-(--surface) p-4 text-center shadow-[0_14px_35px_rgba(15,23,42,0.05)]">
         <div>
-          <span className="mx-auto block h-7 w-7 animate-spin rounded-full border-2 border-[#eadfff] border-t-[#E04420]" />
-          <p className="mt-3 text-[0.74rem] font-semibold text-[#737984]">Loading transaction details...</p>
+          <span className="mx-auto block h-7 w-7 animate-spin rounded-full border-2 border-(--line) border-t-[#E04420]" />
+          <p className="mt-3 text-[0.74rem] font-semibold text-(--muted)">Loading transaction details...</p>
         </div>
       </div>
     );
@@ -569,13 +569,13 @@ function TransactionDetailContent({
 
   if (error) {
     return (
-      <div className="grid min-h-32 place-items-center rounded-xl border border-[#ffd6ce] bg-[#fff9f7] p-4 text-center">
+      <div className="grid min-h-32 place-items-center rounded-xl border border-[rgba(224,68,32,0.25)] bg-[rgba(224,68,32,0.06)] p-4 text-center">
         <div>
-          <p className="text-[0.74rem] font-semibold text-[#E04420]">{error}</p>
+          <p className="text-[0.74rem] font-semibold text-(--orange)">{error}</p>
           <button
             type="button"
             onClick={onRetry}
-            className="mt-3 h-8 rounded-md bg-[#1c1c1c] px-3 text-[0.7rem] font-bold text-white transition hover:bg-[#E04420]"
+            className="mt-3 h-8 rounded-md bg-(--text) px-3 text-[0.7rem] font-bold text-(--bg) transition hover:bg-(--orange)"
           >
             Retry
           </button>
@@ -600,17 +600,17 @@ function TransactionDetailContent({
   ];
 
   return (
-    <div className="mx-auto max-w-[860px] rounded-xl border border-[#e2e6ee] bg-white p-4 shadow-[0_14px_35px_rgba(15,23,42,0.05)]">
+    <div className="mx-auto max-w-[860px] rounded-xl border border-(--line2) bg-(--surface) p-4 shadow-[0_14px_35px_rgba(15,23,42,0.05)]">
       <div className="mb-3 flex items-center justify-center gap-2">
-        <span className="h-px flex-1 bg-[#e6e9ef]" />
-        <span className="text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-[#8b8f99]">Transaction Info</span>
-        <span className="h-px flex-1 bg-[#e6e9ef]" />
+        <span className="h-px flex-1 bg-(--surface2)" />
+        <span className="text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-(--faint)">Transaction Info</span>
+        <span className="h-px flex-1 bg-(--surface2)" />
       </div>
       <dl className="grid grid-cols-2 gap-x-7 gap-y-3 max-[760px]:grid-cols-1">
         {details.map(([label, value]) => (
-          <div key={label} className="grid grid-cols-[130px_1fr] items-center gap-3 border-b border-[#eef0f4] pb-2 last:border-b-0 max-[520px]:grid-cols-1 max-[520px]:gap-1">
-            <dt className="text-[0.66rem] font-semibold uppercase tracking-[0.05em] text-[#a0a4ad]">{label}</dt>
-            <dd className="min-w-0 break-words text-[0.9rem] font-medium text-[#555b66]">{value}</dd>
+          <div key={label} className="grid grid-cols-[130px_1fr] items-center gap-3 border-b border-(--line2) pb-2 last:border-b-0 max-[520px]:grid-cols-1 max-[520px]:gap-1">
+            <dt className="text-[0.66rem] font-semibold uppercase tracking-[0.05em] text-(--faint)">{label}</dt>
+            <dd className="min-w-0 break-words text-[0.9rem] font-medium text-(--muted)">{value}</dd>
           </div>
         ))}
       </dl>
@@ -621,8 +621,8 @@ function TransactionDetailContent({
 
 function TransactionDetailRow(props) {
   return (
-    <tr className="bg-[#f8fafc]">
-      <td colSpan={10} className="border-b border-[#eef0f4] px-4 py-5">
+    <tr className="bg-(--surface2)">
+      <td colSpan={10} className="border-b border-(--line2) px-4 py-5">
         <TransactionDetailContent {...props} />
       </td>
     </tr>
@@ -762,22 +762,22 @@ function TransactionResults({ transactions, token, onUpdateStatus }) {
   }, [query, transactions]);
 
   return (
-    <section className="mt-3 rounded-xl border border-[#ded4ff] border-l-[4px] border-l-[#E04420] bg-white shadow-[0_16px_45px_rgba(15,23,42,0.08)] max-[640px]:rounded-lg">
-      <div className="flex flex-col gap-3 border-b border-[#e8ebf1] px-4 py-3 md:flex-row md:items-center md:justify-between max-[640px]:px-3 max-[640px]:py-2.5">
+    <section className="mt-3 rounded-xl border border-(--line) border-l-[4px] border-l-[#E04420] bg-(--surface) shadow-[0_16px_45px_rgba(15,23,42,0.08)] max-[640px]:rounded-lg">
+      <div className="flex flex-col gap-3 border-b border-(--line2) px-4 py-3 md:flex-row md:items-center md:justify-between max-[640px]:px-3 max-[640px]:py-2.5">
         <div>
-          <p className="text-[0.68rem] font-bold uppercase tracking-[0.12em] text-[#E04420]">Transaction Results</p>
-          <h3 className="mt-1 text-[1rem] font-semibold text-[#1c1c1c] max-[640px]:text-[0.9rem]">
+          <p className="text-[0.68rem] font-bold uppercase tracking-[0.12em] text-(--orange)">Transaction Results</p>
+          <h3 className="mt-1 text-[1rem] font-semibold text-(--text) max-[640px]:text-[0.9rem]">
             {filteredTransactions.length} listed
           </h3>
         </div>
-        <label className="flex h-10 min-w-[320px] items-center gap-3 rounded-lg border border-[#dfe3ea] bg-white px-3 shadow-[0_8px_18px_rgba(15,23,42,0.035)] focus-within:border-[#E04420] focus-within:ring-2 focus-within:ring-[#E04420]/10 max-[640px]:h-9 max-[640px]:min-w-0 max-[640px]:w-full">
-          <SearchIcon className="h-4 w-4 text-[#8d96a6]" />
+        <label className="flex h-10 min-w-[320px] items-center gap-3 rounded-lg border border-(--line) bg-(--surface) px-3 shadow-[0_8px_18px_rgba(15,23,42,0.035)] focus-within:border-(--orange) focus-within:shadow-[0_0_0_3px_rgba(224,68,32,0.12)] max-[640px]:h-9 max-[640px]:min-w-0 max-[640px]:w-full">
+          <SearchIcon className="h-4 w-4 text-(--faint)" />
           <input
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search transactions"
-            className="min-w-0 flex-1 bg-transparent text-[0.78rem] font-medium text-[#1f1f1f] outline-none placeholder:text-[#a7afbd] max-[640px]:text-[0.68rem]"
+            className="min-w-0 flex-1 bg-transparent text-[0.78rem] font-medium text-(--text) outline-none placeholder:text-(--faint) max-[640px]:text-[0.68rem]"
           />
         </label>
       </div>
@@ -788,9 +788,9 @@ function TransactionResults({ transactions, token, onUpdateStatus }) {
             <table className="min-w-[1180px] w-full border-collapse">
               <thead>
                 <tr className="text-left">
-                  <th className="w-12 border-b border-[#eef0f4] px-4 py-3 text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-[#9b7f76]" />
+                  <th className="w-12 border-b border-(--line2) px-4 py-3 text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-(--orange)" />
                   {["Type", "Txn ID | Ref", "Vendor | Stall", "Device", "Card ID", "Txn Counter", "Mode", "Amount", "Time"].map((heading) => (
-                    <th key={heading} className="border-b border-[#eef0f4] px-4 py-3 text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-[#ff9a86]">
+                    <th key={heading} className="border-b border-(--line2) px-4 py-3 text-[0.68rem] font-semibold uppercase tracking-[0.08em] text-(--orange)">
                       <span className="inline-flex items-center gap-2">
                         {heading}
                         <SortIcon />
@@ -807,56 +807,56 @@ function TransactionResults({ transactions, token, onUpdateStatus }) {
                     <Fragment key={rowKey}>
                       <tr
                         onClick={() => toggleTransactionDetails(transaction, rowKey)}
-                        className="cursor-pointer align-middle transition hover:bg-[#fff8f6]"
+                        className="cursor-pointer align-middle transition hover:bg-[rgba(224,68,32,0.06)]"
                       >
-                        <td className="border-b border-[#eef0f4] px-4 py-3">
+                        <td className="border-b border-(--line2) px-4 py-3">
                           <button
                             type="button"
                             onClick={(event) => {
                               event.stopPropagation();
                               toggleTransactionDetails(transaction, rowKey);
                             }}
-                            className="grid h-8 w-8 place-items-center rounded-md text-[#7b828f] hover:bg-[#f2f4f8] hover:text-[#E04420]"
+                            className="grid h-8 w-8 place-items-center rounded-md text-(--muted) hover:bg-(--surface2) hover:text-(--orange)"
                             aria-label={isOpen ? "Hide transaction details" : "Show transaction details"}
                           >
                             <ChevronIcon open={isOpen} />
                           </button>
                         </td>
-                        <td className="border-b border-[#eef0f4] px-4 py-3">
-                          <span className="text-[0.82rem] font-bold text-[#27b8a8]">{normalizeTxnType(transaction.txn_type)}</span>
+                        <td className="border-b border-(--line2) px-4 py-3">
+                          <span className="text-[0.82rem] font-bold text-(--blue)">{normalizeTxnType(transaction.txn_type)}</span>
                         </td>
-                        <td className="border-b border-[#eef0f4] px-4 py-3">
-                          <div className="text-[0.76rem] font-medium text-[#747b86]">{cleanText(transaction.txn_id)}</div>
-                          <div className="mt-1 text-[0.72rem] font-semibold text-[#E04420]">{cleanText(transaction.txn_receipt)}</div>
+                        <td className="border-b border-(--line2) px-4 py-3">
+                          <div className="text-[0.76rem] font-medium text-(--muted)">{cleanText(transaction.txn_id)}</div>
+                          <div className="mt-1 text-[0.72rem] font-semibold text-(--orange)">{cleanText(transaction.txn_receipt)}</div>
                         </td>
-                        <td className="border-b border-[#eef0f4] px-4 py-3">
-                          <div className="text-[0.76rem] font-semibold text-[#747b86]">{cleanText(transaction.vendor_name)}</div>
-                          <div className="mt-1 text-[0.76rem] font-semibold text-[#747b86]">{cleanText(transaction.stall_name)}</div>
+                        <td className="border-b border-(--line2) px-4 py-3">
+                          <div className="text-[0.76rem] font-semibold text-(--muted)">{cleanText(transaction.vendor_name)}</div>
+                          <div className="mt-1 text-[0.76rem] font-semibold text-(--muted)">{cleanText(transaction.stall_name)}</div>
                         </td>
-                        <td className="border-b border-[#eef0f4] px-4 py-3 text-[0.76rem] font-medium text-[#747b86]">
+                        <td className="border-b border-(--line2) px-4 py-3 text-[0.76rem] font-medium text-(--muted)">
                           {cleanText(transaction.txn_device_print_id)}
-                          {transaction.txn_app_version ? <span className="text-[#a0a7b3]"> | {transaction.txn_app_version}</span> : null}
+                          {transaction.txn_app_version ? <span className="text-(--faint)"> | {transaction.txn_app_version}</span> : null}
                         </td>
-                        <td className="border-b border-[#eef0f4] px-4 py-3">
-                          <div className="text-[0.9rem] font-medium text-[#6b7079]">{cleanText(transaction.txn_card_id)}</div>
-                          <div className="mt-1 text-[0.72rem] font-medium text-[#7b828f] underline">{cleanText(transaction.txn_card_uid)}</div>
+                        <td className="border-b border-(--line2) px-4 py-3">
+                          <div className="text-[0.9rem] font-medium text-(--muted)">{cleanText(transaction.txn_card_id)}</div>
+                          <div className="mt-1 text-[0.72rem] font-medium text-(--muted) underline">{cleanText(transaction.txn_card_uid)}</div>
                         </td>
-                        <td className="border-b border-[#eef0f4] px-4 py-3">
-                          <div className="text-[0.76rem] font-medium text-[#747b86]">{cleanText(transaction.txn_counter)}</div>
-                          <div className="mt-1 text-[0.72rem] font-medium text-[#7b828f] underline">{cleanText(transaction.txn_invoice)}</div>
+                        <td className="border-b border-(--line2) px-4 py-3">
+                          <div className="text-[0.76rem] font-medium text-(--muted)">{cleanText(transaction.txn_counter)}</div>
+                          <div className="mt-1 text-[0.72rem] font-medium text-(--muted) underline">{cleanText(transaction.txn_invoice)}</div>
                         </td>
-                        <td className="border-b border-[#eef0f4] px-4 py-3">
-                          <div className="text-[0.72rem] font-medium uppercase text-[#a7adb8]">{cleanText(transaction.txn_mode)}</div>
-                          <div className="mt-1 text-[0.74rem] font-medium text-[#747b86]">{cleanText(transaction.txn_mode_info)}</div>
+                        <td className="border-b border-(--line2) px-4 py-3">
+                          <div className="text-[0.72rem] font-medium uppercase text-(--faint)">{cleanText(transaction.txn_mode)}</div>
+                          <div className="mt-1 text-[0.74rem] font-medium text-(--muted)">{cleanText(transaction.txn_mode_info)}</div>
                         </td>
-                        <td className="border-b border-[#eef0f4] px-4 py-3 text-[0.8rem] font-semibold text-[#747b86]">
+                        <td className="border-b border-(--line2) px-4 py-3 text-[0.8rem] font-semibold text-(--muted)">
                           {formatMoney(transaction.txn_amount)}
                         </td>
-                        <td className="border-b border-[#eef0f4] px-4 py-3">
+                        <td className="border-b border-(--line2) px-4 py-3">
                           <span className={`text-[0.72rem] font-bold uppercase ${getTxnStatusClass(transaction.txn_status)}`}>
                             {cleanText(transaction.txn_status)}
                           </span>
-                          <div className="mt-1 text-[0.72rem] font-medium text-[#7b828f]">{formatTxnDate(transaction.txn_at ?? transaction.txn_created_at ?? transaction.txn_updated_at)}</div>
+                          <div className="mt-1 text-[0.72rem] font-medium text-(--muted)">{formatTxnDate(transaction.txn_at ?? transaction.txn_created_at ?? transaction.txn_updated_at)}</div>
                         </td>
                       </tr>
                       {isOpen ? <TransactionDetailRow {...getDetailProps(transaction, rowKey)} /> : null}
@@ -879,11 +879,11 @@ function TransactionResults({ transactions, token, onUpdateStatus }) {
                     className="flex w-full items-start justify-between gap-3 text-left"
                   >
                     <div>
-                      <p className="text-[0.78rem] font-bold text-[#27b8a8]">{normalizeTxnType(transaction.txn_type)}</p>
-                      <p className="mt-1 text-[0.72rem] font-semibold text-[#1f1f1f]">#{cleanText(transaction.txn_id)}</p>
+                      <p className="text-[0.78rem] font-bold text-(--blue)">{normalizeTxnType(transaction.txn_type)}</p>
+                      <p className="mt-1 text-[0.72rem] font-semibold text-(--text)">#{cleanText(transaction.txn_id)}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-[0.74rem] font-bold text-[#1f1f1f]">{formatMoney(transaction.txn_amount)}</p>
+                      <p className="text-[0.74rem] font-bold text-(--text)">{formatMoney(transaction.txn_amount)}</p>
                       <p className={`mt-1 text-[0.62rem] font-bold uppercase ${getTxnStatusClass(transaction.txn_status)}`}>
                         {cleanText(transaction.txn_status)}
                       </p>
@@ -891,24 +891,24 @@ function TransactionResults({ transactions, token, onUpdateStatus }) {
                   </button>
                   <div className="mt-3 grid grid-cols-2 gap-2 text-[0.68rem]">
                     <div>
-                      <span className="block font-semibold uppercase tracking-[0.06em] text-[#9ca3af]">Vendor</span>
-                      <span className="font-semibold text-[#505762]">{cleanText(transaction.vendor_name)}</span>
+                      <span className="block font-semibold uppercase tracking-[0.06em] text-(--faint)">Vendor</span>
+                      <span className="font-semibold text-(--muted)">{cleanText(transaction.vendor_name)}</span>
                     </div>
                     <div>
-                      <span className="block font-semibold uppercase tracking-[0.06em] text-[#9ca3af]">Stall</span>
-                      <span className="font-semibold text-[#505762]">{cleanText(transaction.stall_name)}</span>
+                      <span className="block font-semibold uppercase tracking-[0.06em] text-(--faint)">Stall</span>
+                      <span className="font-semibold text-(--muted)">{cleanText(transaction.stall_name)}</span>
                     </div>
                     <div>
-                      <span className="block font-semibold uppercase tracking-[0.06em] text-[#9ca3af]">Device</span>
-                      <span className="font-semibold text-[#505762]">{cleanText(transaction.txn_device_print_id)}</span>
+                      <span className="block font-semibold uppercase tracking-[0.06em] text-(--faint)">Device</span>
+                      <span className="font-semibold text-(--muted)">{cleanText(transaction.txn_device_print_id)}</span>
                     </div>
                     <div>
-                      <span className="block font-semibold uppercase tracking-[0.06em] text-[#9ca3af]">Time</span>
-                      <span className="font-semibold text-[#505762]">{formatTxnDate(transaction.txn_at ?? transaction.txn_created_at ?? transaction.txn_updated_at)}</span>
+                      <span className="block font-semibold uppercase tracking-[0.06em] text-(--faint)">Time</span>
+                      <span className="font-semibold text-(--muted)">{formatTxnDate(transaction.txn_at ?? transaction.txn_created_at ?? transaction.txn_updated_at)}</span>
                     </div>
                   </div>
                   {isOpen ? (
-                    <div className="mt-3 rounded-lg border border-[#e2e6ee] bg-[#f8fafc] p-3 text-[0.68rem]">
+                    <div className="mt-3 rounded-lg border border-(--line2) bg-(--surface2) p-3 text-[0.68rem]">
                       <TransactionDetailContent {...getDetailProps(transaction, rowKey)} />
                     </div>
                   ) : null}
@@ -918,7 +918,7 @@ function TransactionResults({ transactions, token, onUpdateStatus }) {
           </div>
         </>
       ) : (
-        <div className="px-4 py-8 text-center text-[0.82rem] font-medium text-[#8b96aa] max-[640px]:px-3 max-[640px]:py-6 max-[640px]:text-[0.68rem]">
+        <div className="px-4 py-8 text-center text-[0.82rem] font-medium text-(--faint) max-[640px]:px-3 max-[640px]:py-6 max-[640px]:text-[0.68rem]">
           No transactions found for this search.
         </div>
       )}
@@ -933,8 +933,8 @@ export function DownloadDumpButton({ variant = "light" }) {
       type="button"
       className={`inline-flex h-10 items-center justify-center gap-3 rounded-lg px-5 text-[0.86rem] font-semibold shadow-[0_8px_20px_rgba(15,23,42,0.06)] transition duration-200 max-[640px]:h-9 max-[640px]:gap-2 max-[640px]:px-3 max-[640px]:text-[0.72rem] ${
         isDark
-          ? "bg-[#1c1c1c] text-white hover:bg-[#E04420]"
-          : "border border-[#e3e3e3] bg-white text-[#1f1f1f] hover:border-[#E04420] hover:text-[#E04420]"
+          ? "bg-(--text) text-(--bg) hover:bg-(--orange)"
+          : "border border-(--line) bg-(--surface) text-(--text) hover:border-(--orange) hover:text-(--orange)"
       }`}
     >
       <DownloadIcon />
@@ -1128,21 +1128,21 @@ export default function TransactionFilters() {
 
   return (
     <>
-      <section className="rounded-xl border border-[#ded4ff] border-l-[4px] border-l-[#E04420] bg-white p-4 shadow-[0_18px_52px_rgba(15,23,42,0.09)] max-[640px]:rounded-lg max-[640px]:p-3">
-        <div className="flex flex-col gap-3 border-b border-[#e5e5e5] pb-3 lg:flex-row lg:items-center lg:justify-between max-[640px]:gap-2 max-[640px]:pb-2.5">
+      <section className="rounded-xl border border-(--line) border-l-[4px] border-l-[#E04420] bg-(--surface) p-4 shadow-[0_18px_52px_rgba(15,23,42,0.09)] max-[640px]:rounded-lg max-[640px]:p-3">
+        <div className="flex flex-col gap-3 border-b border-(--line) pb-3 lg:flex-row lg:items-center lg:justify-between max-[640px]:gap-2 max-[640px]:pb-2.5">
           <div className="flex items-center gap-2.5">
             <span className="grid h-9 w-9 place-items-center rounded-lg bg-[linear-gradient(135deg,#E04420_0%,#A9379E_48%,#341CD6_100%)] text-[0.8rem] font-bold text-white shadow-[0_10px_22px_rgba(52,28,214,0.20)] max-[640px]:h-7 max-[640px]:w-7 max-[640px]:text-[0.66rem]">
               01
             </span>
-            <h2 className="text-[1.05rem] font-semibold text-[#1f1f1f] max-[640px]:text-[0.95rem]">Filter</h2>
+            <h2 className="text-[1.05rem] font-semibold text-(--text) max-[640px]:text-[0.95rem]">Filter</h2>
           </div>
 
-          <div className="inline-flex h-10 items-center gap-3 rounded-full border border-[#e5e5e5] bg-white px-5 shadow-[0_8px_18px_rgba(15,23,42,0.04)] max-[640px]:h-8 max-[640px]:gap-2 max-[640px]:px-3">
+          <div className="inline-flex h-10 items-center gap-3 rounded-full border border-(--line) bg-(--surface) px-5 shadow-[0_8px_18px_rgba(15,23,42,0.04)] max-[640px]:h-8 max-[640px]:gap-2 max-[640px]:px-3">
             <EventIcon />
-            <span className="text-[0.68rem] font-bold uppercase tracking-[0.08em] text-[#0f8797] max-[640px]:text-[0.56rem]">
+            <span className="text-[0.68rem] font-bold uppercase tracking-[0.08em] text-(--muted) max-[640px]:text-[0.56rem]">
               Event
             </span>
-            <span className="max-w-[220px] truncate text-[0.8rem] font-bold uppercase text-[#1f1f1f] max-[640px]:max-w-[150px] max-[640px]:text-[0.66rem]">
+            <span className="max-w-[220px] truncate text-[0.8rem] font-bold uppercase text-(--text) max-[640px]:max-w-[150px] max-[640px]:text-[0.66rem]">
               {eventName}
             </span>
           </div>
@@ -1199,14 +1199,14 @@ export default function TransactionFilters() {
               type="button"
               onClick={handleApplyFilters}
               disabled={isFiltering}
-              className="flex h-12 items-center justify-center gap-3 rounded-lg border border-[#E04420] bg-[#fff7f5] px-5 text-[0.86rem] font-bold text-[#E04420] shadow-[0_10px_22px_rgba(224,68,32,0.10)] transition duration-200 hover:bg-[#E04420] hover:text-white disabled:cursor-not-allowed disabled:opacity-60 max-[640px]:h-9 max-[640px]:gap-2 max-[640px]:px-3 max-[640px]:text-[0.72rem]"
+              className="flex h-12 items-center justify-center gap-3 rounded-lg border border-(--orange) bg-[rgba(224,68,32,0.06)] px-5 text-[0.86rem] font-bold text-(--orange) shadow-[0_10px_22px_rgba(224,68,32,0.10)] transition duration-200 hover:bg-(--orange) hover:text-white disabled:cursor-not-allowed disabled:opacity-60 max-[640px]:h-9 max-[640px]:gap-2 max-[640px]:px-3 max-[640px]:text-[0.72rem]"
             >
               <SearchIcon />
               {isFiltering ? "Applying..." : "Apply Filters"}
             </button>
           </div>
           {filterError ? (
-            <p className="mt-3 rounded-lg border border-[#ffd4cc] bg-[#fff7f5] px-3 py-2 text-[0.72rem] font-semibold text-[#E04420]">
+            <p className="mt-3 rounded-lg border border-[rgba(224,68,32,0.25)] bg-[rgba(224,68,32,0.06)] px-3 py-2 text-[0.72rem] font-semibold text-(--orange)">
               {filterError}
             </p>
           ) : null}

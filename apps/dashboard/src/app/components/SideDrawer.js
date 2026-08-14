@@ -4,14 +4,17 @@ import { usePathname, useRouter } from "next/navigation";
 
 const ITEMS = [
   { id: "deviceMaster", label: "Device Master", href: "/device_masterlist", match: "/device_masterlist" },
-  { id: "analytics", label: "Analytics", href: "/admin", exact: true },
+  // { id: "analytics", label: "Analytics", disabled: true },
   { id: "configuration", label: "Configuration", href: "/Config", match: "/Config" },
+  { id: "whitelist", label: "Whitelist", href: "/whitelist", match: "/whitelist" },
   { id: "admin", label: "Admin", href: "/admin/Create_event", match: "/admin/Create_event" },
   { id: "reports", label: "Reports", href: "/Reports", match: "/Reports" },
   { id: "transactions", label: "Transactions", href: "/transactions", match: "/transactions" },
   { id: "device", label: "Devices", href: "/device", match: "/device" },
   { id: "blocked", label: "Blocked", href: "/Blocked", match: "/Blocked" },
-  { id: "apk", label: "APK Uploads", href: "/apk_upload", match: "/apk_upload" }
+  // { id: "apk", label: "APK Uploads", href: "/apk_upload", match: "/apk_upload" },
+  // { id: "tapx", label: "TapX-Transactions", href: "/tapx", match: "/tapx" },
+  // { id: "patchaTrack", label: "Patcha-NY-Track", href: "/patcha-ny-track", match: "/patcha-ny-track" }
 ];
 
 const iconClass = "h-4 w-4";
@@ -44,6 +47,28 @@ const ICONS = {
       <path d="M4 17h2" />
       <path d="M12 17h8" />
       <path d="M8 15v4" />
+    </svg>
+  ),
+  whitelist: (
+    <svg viewBox="0 0 24 24" className={iconClass} fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3 20 6.3v5.9c0 4.7-3.2 7.8-8 9.3-4.8-1.5-8-4.6-8-9.3V6.3L12 3Z" />
+      <path d="m8.7 12.2 2.1 2.1 4.5-5" />
+    </svg>
+  ),
+  tapx: (
+    <svg viewBox="0 0 24 24" className={iconClass} fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="7" y="3" width="10" height="18" rx="2" />
+      <path d="M10 7.5a3.5 3.5 0 0 1 3.5 3.5" />
+      <path d="M10 10.5a.5.5 0 0 1 .5.5" />
+      <path d="M11 17h2" />
+    </svg>
+  ),
+  patchaTrack: (
+    <svg viewBox="0 0 24 24" className={iconClass} fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="6" cy="18" r="2" />
+      <circle cx="18" cy="6" r="2" />
+      <path d="M8 18h3a3 3 0 0 0 3-3v-6a3 3 0 0 1 3-3" />
+      <path d="m9 8 2-2-2-2" />
     </svg>
   ),
   admin: (
@@ -108,7 +133,7 @@ export default function SideDrawer({ mobileOpen = false, onMobileClose }) {
       {mobileOpen ? (
         <button
           type="button"
-          className="fixed inset-x-0 bottom-0 z-[49] bg-[#111827]/35 backdrop-blur-[2px] min-[901px]:hidden"
+          className="fixed inset-x-0 bottom-0 z-[49] bg-[#0c0c0c]/45 backdrop-blur-[2px] min-[901px]:hidden"
           style={{ top: "var(--header-h)" }}
           onClick={onMobileClose}
           aria-label="Close navigation overlay"
@@ -121,8 +146,8 @@ export default function SideDrawer({ mobileOpen = false, onMobileClose }) {
         }`}
         style={{ top: "var(--header-h)", height: "calc(100vh - var(--header-h))" }}
       >
-        <div className="h-full w-[60px] overflow-hidden bg-[#34363b] py-3 shadow-[16px_0_42px_rgba(15,23,42,0.16)] transition-[width] duration-300 ease-out group-hover:w-[220px] max-[900px]:w-[220px]">
-          <nav className="flex flex-col gap-2 px-2">
+        <div className="flex h-full w-[60px] flex-col overflow-hidden bg-(--rail) text-(--railText) shadow-[16px_0_42px_rgba(0,0,0,0.28)] transition-[width] duration-300 ease-out group-hover:w-[248px] max-[900px]:w-[248px]">
+          <nav className="flex flex-1 flex-col gap-1 overflow-y-auto overflow-x-hidden px-2.5 py-3.5">
             {ITEMS.map((item) => {
               const matchBase = item.match || item.href;
               const isActive = item.exact
@@ -134,13 +159,18 @@ export default function SideDrawer({ mobileOpen = false, onMobileClose }) {
                   key={item.id}
                   type="button"
                   onClick={() => {
-                    if (item.href) router.push(item.href);
+                    if (!item.href || item.disabled) return;
+                    router.push(item.href);
                     onMobileClose?.();
                   }}
-                  className={`flex h-10 w-full items-center gap-3 rounded-md px-3 text-left text-[0.84rem] font-semibold transition-colors duration-200 ${
+                  disabled={item.disabled}
+                  title={item.label}
+                  className={`flex h-10 w-full items-center gap-3.5 rounded-[10px] px-[9px] text-left text-[0.84rem] transition-colors duration-200 ${
                     isActive
-                      ? "bg-white text-[#25272b]"
-                      : "text-[#d4d4d6] hover:bg-white/10 hover:text-white"
+                      ? "bg-(--surface) font-semibold text-(--text)"
+                      : item.disabled
+                        ? "cursor-default font-normal text-(--railText)"
+                        : "font-normal text-(--railText) hover:bg-white/[0.09]"
                   }`}
                 >
                   <span className="flex h-5 w-5 shrink-0 items-center justify-center">
@@ -153,6 +183,14 @@ export default function SideDrawer({ mobileOpen = false, onMobileClose }) {
               );
             })}
           </nav>
+          <div className="flex items-center gap-3 border-t border-white/10 px-3 py-3">
+            <span className="font-chillax flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-[0.85rem] font-semibold text-(--railText)">
+              N
+            </span>
+            <span className="font-vcr whitespace-nowrap text-[9px] tracking-[0.12em] text-white/50 opacity-0 transition-opacity duration-200 group-hover:opacity-100 max-[900px]:opacity-100">
+              Nexus Build 4.2
+            </span>
+          </div>
         </div>
       </aside>
     </>
