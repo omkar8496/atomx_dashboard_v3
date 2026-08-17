@@ -105,6 +105,40 @@ export async function fetchReportsList({ eventId, token, dedupe = true }) {
   });
 }
 
+export async function startReportBuild({
+  eventId,
+  token,
+  dates,
+  days = [0],
+  idType,
+  type,
+  requestId
+}) {
+  if (eventId === "" || eventId == null) {
+    throw new Error("Missing eventId");
+  }
+
+  if (!Array.isArray(dates) || dates.length !== 2 || dates.some((date) => !date)) {
+    throw new Error("Select a start and end date");
+  }
+
+  const numericEventId = Number(eventId);
+  const baseUrl = getBaseUrl();
+  return apiRequest({
+    url: `${baseUrl}/v1/Reports/Build/Start`,
+    method: "POST",
+    token,
+    body: {
+      dates,
+      days,
+      idType,
+      id: Number.isNaN(numericEventId) ? eventId : numericEventId,
+      type,
+      requestId
+    }
+  });
+}
+
 export async function fetchEventDetails({ eventId, token, dedupe = true }) {
   if (!eventId) {
     throw new Error("Missing eventId");

@@ -855,8 +855,7 @@ export default function VendorConfigurationContent() {
         </ConfigPanel>
       </div>
 
-      <div className="grid items-start gap-4 xl:grid-cols-2">
-        <div className="space-y-4">
+      <div className="gap-4 xl:columns-2 [&>section]:mb-4 [&>section]:break-inside-avoid">
           <ConfigPanel
             title="Stockroom"
             count={stalls.filter(isStockmasterStall).length}
@@ -916,9 +915,7 @@ export default function VendorConfigurationContent() {
               )}
             </ScrollRows>
           </ConfigPanel>
-        </div>
 
-        <div className="space-y-4">
           <ConfigPanel
             title="AccessX"
             count={stalls.filter(isAccessXStall).length}
@@ -1017,7 +1014,6 @@ export default function VendorConfigurationContent() {
               />
             )}
           </ConfigPanel>
-        </div>
       </div>
     </div>
 

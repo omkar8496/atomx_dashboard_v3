@@ -26,6 +26,20 @@ export default function ReportsContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const refreshReports = () => {
+    if (eventId === "" || eventId == null) return;
+
+    setLoading(true);
+    setError("");
+    fetchReportsList({ eventId, token, dedupe: false })
+      .then((response) => setReports(getReports(response)))
+      .catch((requestError) => {
+        console.error("Failed to refresh reports", requestError);
+        setError(requestError?.message || "Unable to refresh reports.");
+      })
+      .finally(() => setLoading(false));
+  };
+
   useEffect(() => {
     if (eventId === "" || eventId == null) {
       setReports([]);
@@ -60,7 +74,11 @@ export default function ReportsContent() {
 
   return (
     <div className="space-y-[clamp(14px,1.8vw,20px)]">
-      <ReportFilters />
+      <ReportFilters
+        eventId={eventId}
+        token={token}
+        onReportStarted={refreshReports}
+      />
       <ReportHistoryTable reports={reports} loading={loading} error={error} />
     </div>
   );

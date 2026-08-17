@@ -188,7 +188,7 @@ export default function SideDrawer({ mobileOpen = false, onMobileClose }) {
               N
             </span>
             <span className="font-vcr whitespace-nowrap text-[9px] tracking-[0.12em] text-white/50 opacity-0 transition-opacity duration-200 group-hover:opacity-100 max-[900px]:opacity-100">
-              Nexus Build 4.2
+              AtomX Dashboard v3.0.0
             </span>
           </div>
         </div>
