@@ -67,6 +67,31 @@ export async function linkOperator({ email, eventId, type, token }) {
   });
 }
 
+// Removes an admin/operator link. `opId` is the LINK row's own id from
+// /v1/Operators/List (the top-level `id`, not the nested `operator.id`), and
+// `adminId` is that row's admin. Both come from the selected record.
+export async function unlinkRole({ token, opId, adminId }) {
+  if (opId === "" || opId == null) {
+    throw new Error("Missing operator id");
+  }
+  if (adminId === "" || adminId == null) {
+    throw new Error("Missing adminId");
+  }
+
+  const numericOpId = Number(opId);
+  const numericAdminId = Number(adminId);
+  const baseUrl = getBaseUrl();
+  return apiRequest({
+    url: `${baseUrl}/v1/Operators/Unlink`,
+    method: "POST",
+    token,
+    body: {
+      opId: Number.isNaN(numericOpId) ? opId : numericOpId,
+      adminId: Number.isNaN(numericAdminId) ? adminId : numericAdminId
+    }
+  });
+}
+
 export async function fetchOperatorsList({ token, dedupe = true }) {
   const baseUrl = getBaseUrl();
   const data = await fetchGetJsonDeduped({
@@ -105,12 +130,16 @@ export async function fetchReportsList({ eventId, token, dedupe = true }) {
   });
 }
 
+// A report is scoped EITHER by a calendar range (`dates`) OR by a single event
+// day (`days`) - never both. Only the provided one is sent; the other key is
+// omitted from the body entirely.
 export async function startReportBuild({
   eventId,
   token,
   dates,
-  days = [0],
+  days,
   idType,
+  id,
   type,
   requestId
 }) {
@@ -118,21 +147,36 @@ export async function startReportBuild({
     throw new Error("Missing eventId");
   }
 
-  if (!Array.isArray(dates) || dates.length !== 2 || dates.some((date) => !date)) {
+  const hasDates = Array.isArray(dates) && dates.length > 0;
+  const hasDays = Array.isArray(days) && days.length > 0;
+
+  if (hasDates && hasDays) {
+    throw new Error("Send either dates or days, not both");
+  }
+  if (!hasDates && !hasDays) {
+    throw new Error("Select a date range or a day");
+  }
+  if (hasDates && (dates.length !== 2 || dates.some((date) => !date))) {
     throw new Error("Select a start and end date");
   }
+  if (hasDays && days.some((day) => day === "" || day == null)) {
+    throw new Error("Select a valid day");
+  }
 
-  const numericEventId = Number(eventId);
+  // `id` is the report target: the event id for an event report, or the
+  // selected vendor's id for a vendor report. Defaults to the event id.
+  const targetId = id === "" || id == null ? eventId : id;
+  const numericTargetId = Number(targetId);
   const baseUrl = getBaseUrl();
   return apiRequest({
     url: `${baseUrl}/v1/Reports/Build/Start`,
     method: "POST",
     token,
     body: {
-      dates,
-      days,
+      ...(hasDates ? { dates } : {}),
+      ...(hasDays ? { days } : {}),
       idType,
-      id: Number.isNaN(numericEventId) ? eventId : numericEventId,
+      id: Number.isNaN(numericTargetId) ? targetId : numericTargetId,
       type,
       requestId
     }

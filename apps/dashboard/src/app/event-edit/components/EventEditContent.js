@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { AtomXLoader } from "@atomx/global-components";
 import {
   closeEventDay,
   fetchEventDetails,
@@ -16,6 +17,7 @@ import {
   SectionCard,
   SelectField,
   SettingRow,
+  SubPanel,
   TopupRow,
   UploadBox
 } from "./EventEditPrimitives";
@@ -251,8 +253,8 @@ function CheckIcon({ className = "h-5 w-5" }) {
 function BalanceSettingToast({ reference, onClose }) {
   return (
     <>
-      <div className="fixed inset-0 z-[70] bg-[#111827]/18 backdrop-blur-[2px]" />
-      <div className="fixed left-1/2 top-20 z-[80] w-[300px] max-w-[calc(100vw-2rem)] -translate-x-1/2 animate-[balanceToastIn_260ms_ease-out] overflow-hidden rounded-lg border border-[#d5b7ff] bg-white shadow-[0_22px_54px_rgba(15,23,42,0.20)] max-[640px]:top-18 max-[640px]:w-[min(300px,calc(100vw-1.5rem))]">
+      <div className="fixed inset-0 z-[70] bg-[rgba(12,12,12,0.5)] backdrop-blur-[2px]" />
+      <div className="fixed left-1/2 top-20 z-[80] w-[320px] max-w-[calc(100vw-2rem)] -translate-x-1/2 animate-[balanceToastIn_260ms_ease-out] overflow-hidden rounded-[16px] border border-(--line) bg-(--surface) shadow-(--shadowUp) max-[640px]:top-[72px] max-[640px]:w-[min(320px,calc(100vw-1.5rem))]">
         <style jsx>{`
           @keyframes balanceToastIn {
             from {
@@ -265,38 +267,41 @@ function BalanceSettingToast({ reference, onClose }) {
             }
           }
         `}</style>
-        <div className="h-1 bg-[linear-gradient(90deg,#E04420,#D5B7FF,#341CD6)]" />
-        <div className="flex items-center justify-between gap-3 bg-[#1c1c1c] px-4 py-3 text-white">
-          <div className="flex items-center gap-3">
-            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[linear-gradient(135deg,#E04420,#341CD6)] text-white shadow-[0_10px_20px_rgba(52,28,214,0.22)]">
-              <CheckIcon className="h-4.5 w-4.5" />
+        <div className="h-1 bg-[linear-gradient(90deg,#E04420,#8B5CF6,#341CD6)]" />
+        <div
+          className="flex items-center justify-between gap-3 px-4 py-3"
+          style={{ background: "linear-gradient(135deg,#1C1C1C 0%,#241C4A 74%,#341CD6 155%)" }}
+        >
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-[11px] bg-[linear-gradient(140deg,#e04420,#8b5cf6)] text-white">
+              <CheckIcon className="h-4 w-4" />
             </span>
-            <div>
-              <p className="text-[0.58rem] font-bold uppercase tracking-[0.16em] text-[#D5B7FF]">
+            <div className="min-w-0">
+              <p className="font-vcr text-[8.5px] uppercase tracking-[0.18em] text-(--purple)">
                 Balance Setting
               </p>
-              <h3 className="text-[1rem] font-bold text-white">Done</h3>
+              <h3 className="font-chillax mt-0.5 text-[17px] font-semibold text-white">Done</h3>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="grid h-7 w-7 shrink-0 place-items-center rounded-md text-white/70 transition hover:bg-white/10 hover:text-white"
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-[9px] border border-white/20 text-white/70 transition hover:border-(--orange) hover:bg-(--orange) hover:text-white"
             aria-label="Close balance setting message"
           >
-            <CloseIcon className="h-4.5 w-4.5" />
+            <CloseIcon className="h-3.5 w-3.5" />
           </button>
         </div>
         <div className="p-4">
-          <div className="rounded-lg border border-[#f1eaff] bg-[#fbf8ff] p-3">
-            <p className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-[#8d859b]">
+          <div className="rounded-[12px] border border-(--line2) bg-(--surface2) p-3">
+            <p className="font-vcr text-[8.5px] uppercase tracking-[0.16em] text-(--muted)">
               Reference
             </p>
-            <p className="mt-1 text-[1.9rem] font-semibold leading-none text-[#E04420]">
+            <p className="font-chillax mt-1.5 text-[30px] font-semibold leading-none text-(--orange)">
               {reference || "-"}
             </p>
           </div>
-          <p className="mt-4 text-[0.74rem] font-medium leading-5 text-[#626774]">
+          <p className="mt-4 text-[12.5px] font-light leading-5 text-(--muted)">
             Please update all devices for the changes to reflect this reference number.
           </p>
         </div>
@@ -508,119 +513,101 @@ export default function EventEditContent() {
 
   return (
     <>
-      <section className="mb-4 border-b border-[#d8d8d8] pb-4 max-[640px]:mb-3 max-[640px]:pb-3">
+      <section className="mb-4 max-[640px]:mb-3">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between max-[640px]:gap-3">
           <div className="min-w-0">
             <button
               type="button"
               onClick={() => router.push("/Config")}
-              className="inline-flex max-w-full items-center gap-1.5 text-[0.74rem] font-medium text-[#7f7f7f] transition hover:text-[#E04420] max-[640px]:text-[0.64rem]"
+              className="font-vcr inline-flex max-w-full items-center gap-1.5 text-[9.5px] uppercase tracking-[0.16em] text-(--muted) transition hover:text-(--orange)"
             >
-              <BackIcon className="h-3.5 w-3.5 shrink-0 max-[640px]:h-3 max-[640px]:w-3" />
+              <BackIcon className="h-3 w-3 shrink-0" />
               <span className="min-w-0 truncate">
-                Events &gt; {eventFields["Event Name"] || "Selected Event"} &gt; Settings
+                Events / {eventFields["Event Name"] || "Selected Event"} / Settings
               </span>
             </button>
-            <div className="mt-2 flex min-w-0 items-center justify-between gap-3 max-[640px]:mt-1.5">
-              <h1 className="min-w-0 text-[2rem] font-normal leading-none text-[#111827] md:text-[2.2rem] max-[640px]:truncate max-[640px]:text-[1.25rem]">
-                Edit Event Information
-              </h1>
-              <div className="hidden shrink-0 items-center gap-2 max-[640px]:flex">
-                <button
-                  type="button"
-                  onClick={saveChanges}
-                  disabled={saving || !eventId}
-                  className="h-8 rounded-md bg-[#1c1c1c] px-4 text-[0.68rem] font-bold text-white shadow-[0_8px_16px_rgba(28,28,28,0.12)] transition hover:bg-[#E04420] disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {saving ? "Saving..." : "Save"}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleDayClose}
-                  disabled={closingDay || !eventId}
-                  className="h-8 rounded-md border border-[#1c1c1c] bg-white px-3 text-[0.62rem] font-bold text-[#1c1c1c] transition hover:bg-[#1c1c1c] hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {closingDay ? "Closing..." : "Day Close"}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleUpdateBalanceSetting}
-                  disabled={updatingBalanceSetting || !eventId}
-                  className="h-8 w-[124px] truncate rounded-md bg-[#E04420] px-3 text-[0.62rem] font-bold text-white shadow-[0_8px_16px_rgba(224,68,32,0.16)] transition hover:bg-[#1c1c1c] disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {updatingBalanceSetting ? "Setting..." : "Set New Balance"}
-                </button>
-              </div>
-            </div>
+            <h1 className="font-chillax mt-2 min-w-0 text-[clamp(24px,3vw,32px)] font-semibold leading-[1.05] tracking-[-0.02em] text-(--text) max-[640px]:mt-1.5 max-[640px]:truncate">
+              Edit Event Information
+            </h1>
+            <p className="mt-2 text-[13.5px] font-light text-(--muted) max-[640px]:mt-1.5 max-[640px]:text-[12px]">
+              Identity, services, POS behavior, card limits, and dashboard settings.
+            </p>
           </div>
 
-          <div className="flex min-w-0 flex-col gap-3 md:flex-row md:items-center max-[640px]:gap-2">
-            <label className="flex h-10 w-full min-w-[420px] items-center gap-3 border-b border-[#bfbfbf] px-1 text-[#8a8a8a] focus-within:border-[#E04420] max-[640px]:h-9 max-[640px]:min-w-0 max-[640px]:rounded-lg max-[640px]:border max-[640px]:border-[#dedede] max-[640px]:bg-white max-[640px]:px-3">
-              <SearchIcon className="h-4 w-4 shrink-0 max-[640px]:h-3.5 max-[640px]:w-3.5" />
+          <div className="flex min-w-0 flex-col gap-2.5 md:flex-row md:items-center">
+            <label className="flex h-11 min-w-[280px] items-center gap-2.5 rounded-[10px] border border-(--line) bg-(--surface) px-3.5 text-(--muted) transition focus-within:border-(--orange) focus-within:shadow-[0_0_0_3px_rgba(224,68,32,0.12)] max-[640px]:h-10 max-[640px]:min-w-0">
+              <SearchIcon className="h-4 w-4 shrink-0 opacity-60" />
               <input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder="Search settings, fields, passwords, services..."
-                className="min-w-0 flex-1 bg-transparent text-[0.78rem] font-semibold outline-none placeholder:text-[#7f7f7f] max-[640px]:text-[0.7rem]"
+                className="min-w-0 flex-1 bg-transparent text-[13px] font-medium text-(--text) outline-none placeholder:text-(--faint) max-[640px]:text-[12px]"
               />
             </label>
-            <button
-              type="button"
-              onClick={saveChanges}
-              disabled={saving || !eventId}
-              className="h-9 rounded-md bg-[#1c1c1c] px-5 text-[0.78rem] font-bold text-white shadow-[0_10px_18px_rgba(28,28,28,0.12)] transition hover:bg-[#E04420] disabled:cursor-not-allowed disabled:opacity-60 max-[640px]:hidden"
-            >
-              {saving ? "Saving..." : "Save"}
-            </button>
-            <button
-              type="button"
-              onClick={handleDayClose}
-              disabled={closingDay || !eventId}
-              className="h-9 shrink-0 rounded-md border border-[#1c1c1c] bg-white px-4 text-[0.74rem] font-bold text-[#1c1c1c] transition hover:bg-[#1c1c1c] hover:text-white disabled:cursor-not-allowed disabled:opacity-60 max-[640px]:hidden"
-            >
-              {closingDay ? "Closing..." : "Day Close"}
-            </button>
-            <button
-              type="button"
-              onClick={handleUpdateBalanceSetting}
-              disabled={updatingBalanceSetting || !eventId}
-              className="h-9 w-[178px] truncate rounded-md bg-[#E04420] px-5 text-[0.78rem] font-bold text-white shadow-[0_10px_18px_rgba(224,68,32,0.16)] transition hover:bg-[#1c1c1c] disabled:cursor-not-allowed disabled:opacity-60 max-[640px]:hidden"
-            >
-              {updatingBalanceSetting ? "Setting..." : "Set New Balance"}
-            </button>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={saveChanges}
+                disabled={saving || !eventId}
+                className="h-11 shrink-0 rounded-[10px] bg-(--text) px-5 text-[13.5px] font-semibold text-(--bg) transition hover:bg-(--orange) disabled:cursor-not-allowed disabled:opacity-55 max-[640px]:h-10 max-[640px]:flex-1 max-[640px]:px-3 max-[640px]:text-[12px]"
+              >
+                {saving ? "Saving..." : "Save"}
+              </button>
+              <button
+                type="button"
+                onClick={handleDayClose}
+                disabled={closingDay || !eventId}
+                className="h-11 shrink-0 rounded-[10px] border border-(--line) bg-(--surface) px-4 text-[13px] font-semibold text-(--muted) transition hover:border-(--orange) hover:text-(--orange) disabled:cursor-not-allowed disabled:opacity-55 max-[640px]:h-10 max-[640px]:flex-1 max-[640px]:px-3 max-[640px]:text-[12px]"
+              >
+                {closingDay ? "Closing..." : "Day Close"}
+              </button>
+              <button
+                type="button"
+                onClick={handleUpdateBalanceSetting}
+                disabled={updatingBalanceSetting || !eventId}
+                className="h-11 shrink-0 truncate rounded-[10px] bg-(--orange) px-5 text-[13.5px] font-semibold text-white transition hover:bg-(--text) hover:text-(--bg) disabled:cursor-not-allowed disabled:opacity-55 max-[640px]:h-10 max-[640px]:flex-1 max-[640px]:px-3 max-[640px]:text-[12px]"
+              >
+                {updatingBalanceSetting ? "Setting..." : "Set New Balance"}
+              </button>
+            </div>
           </div>
         </div>
+        <div className="mt-[clamp(16px,2vw,22px)] h-px w-full bg-(--line)" />
       </section>
 
       {error ? (
-        <div className="mb-4 rounded-lg bg-[#fff4ef] px-4 py-3 text-[0.84rem] font-semibold text-[#E04420]">
+        <div className="mb-4 rounded-[10px] border border-[rgba(224,68,32,0.25)] bg-[rgba(224,68,32,0.06)] px-3.5 py-2.5 text-[12.5px] font-semibold text-(--orange)">
           {error}
         </div>
       ) : null}
 
       {dayCloseMessage ? (
-        <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-[#bfe8d0] bg-[#f2fbf6] px-4 py-3 text-[0.82rem] font-semibold text-[#16794a]">
+        <div className="mb-4 flex items-center justify-between gap-3 rounded-[10px] border border-[rgba(0,169,242,0.28)] bg-[rgba(0,169,242,0.08)] px-3.5 py-2.5 text-[12.5px] font-semibold text-[#0284c7]">
           <span>{dayCloseMessage}</span>
           <button
             type="button"
             onClick={() => setDayCloseMessage("")}
-            className="grid h-7 w-7 shrink-0 place-items-center rounded-md transition hover:bg-[#dff5e8]"
+            className="grid h-7 w-7 shrink-0 place-items-center rounded-[8px] transition hover:bg-[rgba(0,169,242,0.14)]"
             aria-label="Close day close message"
           >
-            <CloseIcon className="h-4 w-4" />
+            <CloseIcon className="h-3.5 w-3.5" />
           </button>
         </div>
       ) : null}
 
       {loading ? (
-        <div className="rounded-lg border border-[#ded4ff] bg-white px-6 py-12 text-center text-[0.9rem] font-semibold text-[#777777]">
-          Loading event details...
+        <div className="flex min-h-[220px] items-center justify-center rounded-[15px] border border-(--line) bg-(--surface) shadow-(--shadow)">
+          <AtomXLoader label="Loading event details..." size={52} />
         </div>
       ) : null}
 
       {!loading && !eventId ? (
-        <div className="rounded-lg border border-dashed border-[#d6d6d6] bg-white px-6 py-12 text-center text-[0.9rem] font-semibold text-[#777777]">
-          Select an event before editing event details.
+        <div className="rounded-[15px] border border-dashed border-(--line) bg-(--surface) px-6 py-14 text-center">
+          <div className="font-chillax text-[17px] font-medium text-(--text)">No event selected</div>
+          <div className="mt-1.5 text-[12.5px] text-(--faint)">
+            Select an event before editing event details.
+          </div>
         </div>
       ) : null}
 
@@ -629,6 +616,7 @@ export default function EventEditContent() {
         <div className="min-w-0 space-y-4 max-[640px]:space-y-3">
           {visible.details && (
             <SectionCard
+              index="01"
               title="Event Details"
               description="Identity, location, schedule, and billing basics."
             >
@@ -649,7 +637,7 @@ export default function EventEditContent() {
           )}
 
           {visible.pos && (
-            <SectionCard title="POS" description="Point-of-sale behavior and topup presets.">
+            <SectionCard index="02" title="POS" description="Point-of-sale behavior and topup presets.">
               <div className="grid gap-4 lg:grid-cols-2 max-[640px]:gap-3">
                 <div>
                   {posLeft.map((label) => (
@@ -670,26 +658,23 @@ export default function EventEditContent() {
                       onToggle={() => toggle(setPosState, label)}
                     />
                   ))}
-                  <div className="mt-2">
+                  <div className="mt-3">
                     <SelectField label="Printer" value={printer} onChange={setPrinter} />
                   </div>
                 </div>
               </div>
 
-              <div className="mt-4 rounded-md border border-[#e6e6e6] p-4 max-[640px]:mt-3 max-[640px]:p-3">
-                <p className="mb-3 text-[0.68rem] font-bold uppercase tracking-[0.16em] text-[#888888] max-[640px]:mb-2 max-[640px]:text-[0.58rem] max-[640px]:tracking-[0.12em]">
-                  Topup Buttons
-                </p>
+              <SubPanel label="Topup Buttons" className="mt-4 max-[640px]:mt-3">
                 <div className="space-y-3 max-[640px]:space-y-2.5">
                   {topups.length === 0 ? (
-                    <div className="rounded-md border border-dashed border-[#dddddd] px-4 py-5 text-center text-[0.78rem] font-semibold text-[#888888] max-[640px]:px-3 max-[640px]:py-4 max-[640px]:text-[0.7rem]">
+                    <div className="rounded-[11px] border border-dashed border-(--line) px-4 py-8 text-center text-[13px] font-medium text-(--muted) max-[640px]:px-3 max-[640px]:py-6 max-[640px]:text-[12px]">
                       No topup buttons configured.
                     </div>
                   ) : (
                     topups.map((topup, index) => (
                       <TopupRow
                         key={index}
-                        index={String(index + 1)}
+                        index={String(index + 1).padStart(2, "0")}
                         cash={topup.cash}
                         token={topup.token}
                         onCashChange={(value) =>
@@ -710,7 +695,7 @@ export default function EventEditContent() {
                     ))
                   )}
                 </div>
-              </div>
+              </SubPanel>
 
               <div className="mt-4 grid gap-4 md:grid-cols-2 max-[640px]:mt-3 max-[640px]:gap-3">
                 {Object.keys(posPasswords).map((label) => (
@@ -730,6 +715,7 @@ export default function EventEditContent() {
         <aside className="min-w-0 space-y-4 max-[640px]:space-y-3">
           {visible.services && (
             <SectionCard
+              index="03"
               title="Active Services"
               description="Enable or disable core event capabilities."
             >
@@ -747,7 +733,7 @@ export default function EventEditContent() {
           )}
 
           {visible.card && (
-            <SectionCard title="Card" description="Card fee, wallet limits, and return rules.">
+            <SectionCard index="04" title="Card" description="Card fee, wallet limits, and return rules.">
               <div className="grid gap-4 md:grid-cols-2 max-[640px]:gap-3">
                 {["Card Fee", "1st Topup", "Max Wallet"].map((label) => (
                   <Field
@@ -759,10 +745,7 @@ export default function EventEditContent() {
                 ))}
               </div>
 
-              <div className="mt-4 rounded-md border border-[#e6e6e6] p-4 max-[640px]:mt-3 max-[640px]:p-3">
-                <p className="mb-3 text-[0.68rem] font-bold uppercase tracking-[0.16em] text-[#888888] max-[640px]:mb-2 max-[640px]:text-[0.58rem] max-[640px]:tracking-[0.12em]">
-                  Returns
-                </p>
+              <SubPanel label="Returns" className="mt-4 max-[640px]:mt-3">
                 <div className="grid gap-x-8 md:grid-cols-2 max-[640px]:gap-x-0">
                   {returns.map((label) => (
                     <SettingRow
@@ -773,7 +756,7 @@ export default function EventEditContent() {
                     />
                   ))}
                 </div>
-              </div>
+              </SubPanel>
 
               <div className="mt-4 grid gap-4 md:grid-cols-2 max-[640px]:mt-3 max-[640px]:gap-3">
                 {["Return Min Amount", "Return Max Amount"].map((label) => (
@@ -790,6 +773,7 @@ export default function EventEditContent() {
 
           {visible.dash && (
             <SectionCard
+              index="05"
               title="Dash Settings"
               description="Dashboard security, visibility, and reset behavior."
             >
@@ -814,6 +798,7 @@ export default function EventEditContent() {
 
           {visible.mswipe && (
             <SectionCard
+              index="06"
               title="MSWIPE Details"
               description="Payment gateway credentials and verification details."
             >
@@ -835,8 +820,11 @@ export default function EventEditContent() {
       ) : null}
 
       {!loading && eventId && query && !Object.values(visible).some(Boolean) ? (
-        <div className="mt-8 rounded-lg border border-dashed border-[#d6d6d6] bg-white px-6 py-10 text-center text-[0.88rem] font-semibold text-[#888888]">
-          No settings found for "{search}".
+        <div className="mt-6 rounded-[15px] border border-dashed border-(--line) bg-(--surface) px-6 py-12 text-center">
+          <div className="font-chillax text-[17px] font-medium text-(--text)">No settings match</div>
+          <div className="mt-1.5 text-[12.5px] text-(--faint)">
+            Nothing found for &quot;{search}&quot;. Try a different field or service name.
+          </div>
         </div>
       ) : null}
 

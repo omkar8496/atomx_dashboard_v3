@@ -22,7 +22,6 @@ import { useDashboardStore } from "../../../store/dashboardStore";
 import {
   DeviceIcon,
   EditIcon,
-  GridIcon,
   LinkIcon,
   ListIcon,
   PlusIcon,
@@ -315,7 +314,7 @@ function ConfigPanel({
 
 function ScrollRows({ children }) {
   return (
-    <div className="max-h-[333px] space-y-2.5 overflow-y-auto pr-1 max-[640px]:max-h-[360px] max-[640px]:space-y-2">
+    <div className="max-h-[min(600px,calc(100dvh-300px))] space-y-2.5 overflow-y-auto pr-1 max-[640px]:max-h-[360px] max-[640px]:space-y-2">
       {children}
     </div>
   );
@@ -355,9 +354,6 @@ function VendorRow({ vendor, index, onAddStall, onEditVendor }) {
           </div>
         </div>
         <div className="ml-auto flex shrink-0 items-center gap-1.5">
-          <ActionButton label="Open items">
-            <GridIcon />
-          </ActionButton>
           {link ? (
             <ActionButton as="a" href={link} target="_blank" rel="noreferrer" label="Open vendor link">
               <LinkIcon />
@@ -472,6 +468,94 @@ function AccessXCategoryTable({ categories, onEdit }) {
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+function SectionRail({ sections, activeId, onSelect }) {
+  return (
+    <nav
+      aria-label="Configuration sections"
+      className="lg:sticky lg:top-[74px] lg:w-[232px] lg:shrink-0"
+    >
+      <div className="font-vcr mb-2 hidden px-1 text-[8.5px] uppercase tracking-[0.18em] text-(--faint) lg:block">
+        Sections
+      </div>
+      <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden lg:flex-col lg:gap-1.5 lg:overflow-visible lg:pb-0">
+        {sections.map((section) => {
+          const isActive = section.id === activeId;
+          return (
+            <button
+              key={section.id}
+              type="button"
+              onClick={() => onSelect(section.id)}
+              aria-current={isActive ? "page" : undefined}
+              className={`flex shrink-0 cursor-pointer items-center gap-3 rounded-[11px] border border-l-[3px] px-3 py-2.5 text-left transition lg:w-full ${
+                isActive
+                  ? "border-(--line) border-l-(--orange) bg-(--surface) shadow-(--shadow)"
+                  : "border-transparent hover:bg-(--chip)"
+              }`}
+            >
+              <span className="min-w-0 flex-1">
+                <span
+                  className={`block truncate text-[13px] font-semibold ${
+                    isActive ? "text-(--text)" : "text-(--muted)"
+                  }`}
+                >
+                  {section.label}
+                </span>
+                <span className="font-vcr mt-0.5 hidden truncate text-[8px] uppercase tracking-[0.14em] text-(--faint) lg:block">
+                  {section.hint}
+                </span>
+              </span>
+              <span
+                className={`font-vcr shrink-0 rounded-[6px] px-1.5 py-1 text-[9.5px] ${
+                  isActive ? "bg-(--text) text-(--bg)" : "bg-(--chip) text-(--faint)"
+                }`}
+              >
+                {String(section.count).padStart(2, "0")}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </nav>
+  );
+}
+
+function AccessTabs({ tabs, activeId, onSelect }) {
+  return (
+    <div
+      role="tablist"
+      aria-label="Access tables"
+      className="flex gap-1 overflow-x-auto border-b border-(--line) [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+    >
+      {tabs.map((tab) => {
+        const isActive = tab.id === activeId;
+        return (
+          <button
+            key={tab.id}
+            type="button"
+            role="tab"
+            aria-selected={isActive}
+            onClick={() => onSelect(tab.id)}
+            className={`flex shrink-0 cursor-pointer items-center gap-2 border-b-2 px-3.5 pb-2.5 pt-2 text-[13px] transition ${
+              isActive
+                ? "border-(--orange) font-semibold text-(--text)"
+                : "border-transparent font-normal text-(--muted) hover:text-(--text)"
+            }`}
+          >
+            <span>{tab.label}</span>
+            <span
+              className={`font-vcr rounded-[6px] px-1.5 py-0.5 text-[9.5px] tracking-[0.06em] ${
+                isActive ? "bg-(--text) text-(--bg)" : "bg-(--chip) text-(--faint)"
+              }`}
+            >
+              {String(tab.count).padStart(2, "0")}
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -727,6 +811,118 @@ export default function VendorConfigurationContent() {
     );
   }, [accessXGates, gateConfigQuery]);
 
+  const stockroomCount = useMemo(() => stalls.filter(isStockmasterStall).length, [stalls]);
+  const tableStallCount = useMemo(() => stalls.filter(isTableStall).length, [stalls]);
+  const accessXStallCount = useMemo(() => stalls.filter(isAccessXStall).length, [stalls]);
+
+  // Optional groups are hidden when the event simply has none of that data, but
+  // stay visible while loading or when the request failed so those states are
+  // never swallowed. Search misses keep the panel (the data exists).
+  const showPanel = (loading, error, count) => loading || Boolean(error) || count > 0;
+
+  const [activeSection, setActiveSection] = useState("vendors");
+  const [activeAccessTab, setActiveAccessTab] = useState("stalls");
+
+  const salesStallCount = useMemo(
+    () => stalls.filter((stall) => !isGroupedStall(stall)).length,
+    [stalls]
+  );
+  const accessTotalCount =
+    accessXStallCount +
+    accessXCategories.length +
+    accessXGateMasters.length +
+    accessXGates.length;
+
+  const showAccessXStalls = showPanel(stallsLoading, stallsError, accessXStallCount);
+  const showCategories = showPanel(
+    accessXCategoriesLoading,
+    accessXCategoriesError,
+    accessXCategories.length
+  );
+  const showGateMasters = showPanel(
+    accessXGateMastersLoading,
+    accessXGateMastersError,
+    accessXGateMasters.length
+  );
+  const showGateConfig = showPanel(
+    accessXGatesLoading,
+    accessXGatesError,
+    accessXGates.length
+  );
+
+  // Vendors and Sales always exist; the rest appear only when the event has
+  // that data (or while it is still loading / errored).
+  const sections = useMemo(() => {
+    return [
+      { id: "vendors", label: "Vendors", hint: "Accounts & logins", count: vendors.length, visible: true },
+      { id: "sales", label: "Sales", hint: "Sale stalls", count: salesStallCount, visible: true },
+      {
+        id: "inventory",
+        label: "Inventory",
+        hint: "Stockrooms",
+        count: stockroomCount,
+        visible: showPanel(stallsLoading, stallsError, stockroomCount)
+      },
+      {
+        id: "tables",
+        label: "Tables",
+        hint: "Table service",
+        count: tableStallCount,
+        visible: showPanel(stallsLoading, stallsError, tableStallCount)
+      },
+      {
+        id: "access",
+        label: "Access",
+        hint: "AccessX & gates",
+        count: accessTotalCount,
+        visible: showAccessXStalls || showCategories || showGateMasters || showGateConfig
+      }
+    ].filter((section) => section.visible);
+  }, [
+    accessTotalCount,
+    salesStallCount,
+    showAccessXStalls,
+    showCategories,
+    showGateConfig,
+    showGateMasters,
+    stallsError,
+    stallsLoading,
+    stockroomCount,
+    tableStallCount,
+    vendors.length
+  ]);
+
+  const accessTabs = useMemo(() => {
+    return [
+      { id: "stalls", label: "AccessX", count: accessXStallCount, visible: showAccessXStalls },
+      { id: "categories", label: "Categories", count: accessXCategories.length, visible: showCategories },
+      { id: "gateMasters", label: "Gate Master", count: accessXGateMasters.length, visible: showGateMasters },
+      { id: "gateConfig", label: "Gate Config", count: accessXGates.length, visible: showGateConfig }
+    ].filter((tab) => tab.visible);
+  }, [
+    accessXCategories.length,
+    accessXGateMasters.length,
+    accessXGates.length,
+    accessXStallCount,
+    showAccessXStalls,
+    showCategories,
+    showGateConfig,
+    showGateMasters
+  ]);
+
+  useEffect(() => {
+    if (!accessTabs.some((tab) => tab.id === activeAccessTab)) {
+      setActiveAccessTab(accessTabs[0]?.id ?? "stalls");
+    }
+  }, [accessTabs, activeAccessTab]);
+
+  // Never leave the user on a section that no longer exists.
+  useEffect(() => {
+    if (!sections.some((section) => section.id === activeSection)) {
+      setActiveSection(sections[0]?.id ?? "vendors");
+    }
+  }, [activeSection, sections]);
+
   const addVendorButton = (
     <button
       type="button"
@@ -788,232 +984,270 @@ export default function VendorConfigurationContent() {
 
   return (
     <>
-    <div className="space-y-4">
-      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.38fr)_minmax(390px,1fr)]">
-        <ConfigPanel
-          title="Vendors"
-          count={vendors.length}
-          searchValue={vendorQuery}
-          onSearchChange={setVendorQuery}
-          searchPlaceholder="Search vendor"
-          action={addVendorButton}
-        >
-          <ScrollRows>
-            {vendorsLoading ? (
-              <LoadingState label="Loading vendors..." />
-            ) : vendorsError ? (
-              <EmptyState>{vendorsError}</EmptyState>
-            ) : filteredVendors.length === 0 ? (
-              <EmptyState>No vendors found.</EmptyState>
-            ) : (
-              filteredVendors.map((vendor, index) => (
-                <VendorRow
-                  key={vendor?.id ?? vendor?.vendorId ?? `${getVendorName(vendor)}-${index}`}
-                  vendor={vendor}
-                  index={index}
-                  onAddStall={() =>
-                    setCreateStallFor({
-                      vendorId: getCreateStallVendorId(vendor, index),
-                      vendorName: getVendorName(vendor),
-                      vendorType: getVendorType(vendor),
-                    })
-                  }
-                  onEditVendor={() => setEditVendor(vendor)}
-                />
-              ))
-            )}
-          </ScrollRows>
-        </ConfigPanel>
-
-        <ConfigPanel
-          title="Stall"
-          count={stalls.filter((stall) => !isGroupedStall(stall)).length}
-          searchValue={stallQuery}
-          onSearchChange={setStallQuery}
-          searchPlaceholder="Search stall"
-        >
-          <ScrollRows>
-            {stallsLoading ? (
-              <LoadingState label="Loading stalls..." />
-            ) : stallsError ? (
-              <EmptyState>{stallsError}</EmptyState>
-            ) : filteredStalls.length === 0 ? (
-              <EmptyState>No stalls found.</EmptyState>
-            ) : (
-              filteredStalls.map((stall, index) => (
-                <StallRow
-                  key={stall?.id ?? stall?.stallId ?? `${getStallName(stall)}-${index}`}
-                  stall={stall}
-                  index={index}
-                  onAddDevice={() => setAddDeviceStall(stall)}
-                  onOpenMenu={() => handleOpenStallMenu(stall)}
-                  onEditStall={() => setEditStall(stall)}
-                />
-              ))
-            )}
-          </ScrollRows>
-        </ConfigPanel>
+    <div className="space-y-[clamp(16px,2vw,22px)]">
+      <div>
+        <h1 className="font-chillax text-[clamp(24px,3vw,32px)] font-semibold leading-[1.05] tracking-[-0.02em] text-(--text)">
+          Configuration
+        </h1>
+        <p className="mt-2 text-[13.5px] font-light text-(--muted)">
+          Vendors, stalls, and AccessX setup for the selected event.
+        </p>
+        <div className="mt-[clamp(16px,2vw,22px)] h-px w-full bg-(--line)" />
       </div>
 
-      <div className="gap-4 xl:columns-2 [&>section]:mb-4 [&>section]:break-inside-avoid">
-          <ConfigPanel
-            title="Stockroom"
-            count={stalls.filter(isStockmasterStall).length}
-            searchValue={stallQuery}
-            onSearchChange={setStallQuery}
-            searchPlaceholder="Search stockroom"
-            theme="stockroom"
-          >
-            <ScrollRows>
-              {stallsLoading ? (
-                <LoadingState label="Loading stockrooms..." />
-              ) : stallsError ? (
-                <EmptyState>{stallsError}</EmptyState>
-              ) : filteredStockrooms.length === 0 ? (
-                <EmptyState>No stockrooms found.</EmptyState>
-              ) : (
-                filteredStockrooms.map((stall, index) => (
-                  <StallRow
-                    key={stall?.id ?? stall?.stallId ?? `${getStallName(stall)}-${index}`}
-                    stall={stall}
-                    index={index}
-                    onAddDevice={() => setAddDeviceStall(stall)}
-                    onOpenMenu={() => handleOpenStallMenu(stall)}
-                    onEditStall={() => setEditStall(stall)}
-                  />
-                ))
-              )}
-            </ScrollRows>
-          </ConfigPanel>
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-5">
+        <SectionRail
+          sections={sections}
+          activeId={activeSection}
+          onSelect={setActiveSection}
+        />
 
-          <ConfigPanel
-            title="Tables"
-            count={stalls.filter(isTableStall).length}
-            searchValue={stallQuery}
-            onSearchChange={setStallQuery}
-            searchPlaceholder="Search tables"
-            theme="tables"
-          >
-            <ScrollRows>
-              {stallsLoading ? (
-                <LoadingState label="Loading tables..." />
-              ) : stallsError ? (
-                <EmptyState>{stallsError}</EmptyState>
-              ) : filteredTableStalls.length === 0 ? (
-                <EmptyState>No table stalls found.</EmptyState>
-              ) : (
-                filteredTableStalls.map((stall, index) => (
-                  <StallRow
-                    key={stall?.id ?? stall?.stallId ?? `${getStallName(stall)}-${index}`}
-                    stall={stall}
-                    index={index}
-                    onAddDevice={() => setAddDeviceStall(stall)}
-                    onOpenMenu={() => handleOpenStallMenu(stall)}
-                    onEditStall={() => setEditStall(stall)}
-                  />
-                ))
-              )}
-            </ScrollRows>
-          </ConfigPanel>
+        <div className="min-w-0 flex-1">
+          {activeSection === "vendors" ? (
+            <ConfigPanel
+              title="Vendors"
+              count={vendors.length}
+              searchValue={vendorQuery}
+              onSearchChange={setVendorQuery}
+              searchPlaceholder="Search vendor"
+              action={addVendorButton}
+            >
+              <ScrollRows>
+                {vendorsLoading ? (
+                  <LoadingState label="Loading vendors..." />
+                ) : vendorsError ? (
+                  <EmptyState>{vendorsError}</EmptyState>
+                ) : filteredVendors.length === 0 ? (
+                  <EmptyState>No vendors found.</EmptyState>
+                ) : (
+                  filteredVendors.map((vendor, index) => (
+                    <VendorRow
+                      key={vendor?.id ?? vendor?.vendorId ?? `${getVendorName(vendor)}-${index}`}
+                      vendor={vendor}
+                      index={index}
+                      onAddStall={() =>
+                        setCreateStallFor({
+                          vendorId: getCreateStallVendorId(vendor, index),
+                          vendorName: getVendorName(vendor),
+                          vendorType: getVendorType(vendor),
+                        })
+                      }
+                      onEditVendor={() => setEditVendor(vendor)}
+                    />
+                  ))
+                )}
+              </ScrollRows>
+            </ConfigPanel>
+          ) : null}
 
-          <ConfigPanel
-            title="AccessX"
-            count={stalls.filter(isAccessXStall).length}
-            searchValue={stallQuery}
-            onSearchChange={setStallQuery}
-            searchPlaceholder="Search AccessX"
-            theme="accessx"
-          >
-            <ScrollRows>
-              {stallsLoading ? (
-                <LoadingState label="Loading AccessX..." />
-              ) : stallsError ? (
-                <EmptyState>{stallsError}</EmptyState>
-              ) : filteredAccessXStalls.length === 0 ? (
-                <EmptyState>No AccessX stalls found.</EmptyState>
-              ) : (
-                filteredAccessXStalls.map((stall, index) => (
-                  <StallRow
-                    key={stall?.id ?? stall?.stallId ?? `${getStallName(stall)}-${index}`}
-                    stall={stall}
-                    index={index}
-                    onAddDevice={() => setAddDeviceStall(stall)}
-                    onOpenMenu={() => handleOpenStallMenu(stall)}
-                    onEditStall={() => setEditStall(stall)}
-                  />
-                ))
-              )}
-            </ScrollRows>
-          </ConfigPanel>
+          {activeSection === "sales" ? (
+            <ConfigPanel
+              title="Stall"
+              count={stalls.filter((stall) => !isGroupedStall(stall)).length}
+              searchValue={stallQuery}
+              onSearchChange={setStallQuery}
+              searchPlaceholder="Search stall"
+            >
+              <ScrollRows>
+                {stallsLoading ? (
+                  <LoadingState label="Loading stalls..." />
+                ) : stallsError ? (
+                  <EmptyState>{stallsError}</EmptyState>
+                ) : filteredStalls.length === 0 ? (
+                  <EmptyState>No stalls found.</EmptyState>
+                ) : (
+                  filteredStalls.map((stall, index) => (
+                    <StallRow
+                      key={stall?.id ?? stall?.stallId ?? `${getStallName(stall)}-${index}`}
+                      stall={stall}
+                      index={index}
+                      onAddDevice={() => setAddDeviceStall(stall)}
+                      onOpenMenu={() => handleOpenStallMenu(stall)}
+                      onEditStall={() => setEditStall(stall)}
+                    />
+                  ))
+                )}
+              </ScrollRows>
+            </ConfigPanel>
+          ) : null}
 
-          <ConfigPanel
-            title="AccessX Categories"
-            count={accessXCategories.length}
-            searchValue={categoryQuery}
-            onSearchChange={setCategoryQuery}
-            searchPlaceholder="Search category"
-            action={addCategoryButton}
-            theme="accessx"
-          >
-            {accessXCategoriesLoading ? (
-              <LoadingState label="Loading categories..." />
-            ) : accessXCategoriesError ? (
-              <EmptyState>{accessXCategoriesError}</EmptyState>
-            ) : filteredAccessXCategories.length === 0 ? (
-              <EmptyState>No AccessX categories found.</EmptyState>
-            ) : (
-              <AccessXCategoryTable
-                categories={filteredAccessXCategories}
-                onEdit={setEditAccessXCategory}
+          {activeSection === "inventory" ? (
+            <ConfigPanel
+              title="Stockroom"
+              count={stockroomCount}
+              searchValue={stallQuery}
+              onSearchChange={setStallQuery}
+              searchPlaceholder="Search stockroom"
+              theme="stockroom"
+            >
+              <ScrollRows>
+                {stallsLoading ? (
+                  <LoadingState label="Loading stockrooms..." />
+                ) : stallsError ? (
+                  <EmptyState>{stallsError}</EmptyState>
+                ) : filteredStockrooms.length === 0 ? (
+                  <EmptyState>No stockrooms found.</EmptyState>
+                ) : (
+                  filteredStockrooms.map((stall, index) => (
+                    <StallRow
+                      key={stall?.id ?? stall?.stallId ?? `${getStallName(stall)}-${index}`}
+                      stall={stall}
+                      index={index}
+                      onAddDevice={() => setAddDeviceStall(stall)}
+                      onOpenMenu={() => handleOpenStallMenu(stall)}
+                      onEditStall={() => setEditStall(stall)}
+                    />
+                  ))
+                )}
+              </ScrollRows>
+            </ConfigPanel>
+          ) : null}
+
+          {activeSection === "tables" ? (
+            <ConfigPanel
+              title="Tables"
+              count={tableStallCount}
+              searchValue={stallQuery}
+              onSearchChange={setStallQuery}
+              searchPlaceholder="Search tables"
+              theme="tables"
+            >
+              <ScrollRows>
+                {stallsLoading ? (
+                  <LoadingState label="Loading tables..." />
+                ) : stallsError ? (
+                  <EmptyState>{stallsError}</EmptyState>
+                ) : filteredTableStalls.length === 0 ? (
+                  <EmptyState>No table stalls found.</EmptyState>
+                ) : (
+                  filteredTableStalls.map((stall, index) => (
+                    <StallRow
+                      key={stall?.id ?? stall?.stallId ?? `${getStallName(stall)}-${index}`}
+                      stall={stall}
+                      index={index}
+                      onAddDevice={() => setAddDeviceStall(stall)}
+                      onOpenMenu={() => handleOpenStallMenu(stall)}
+                      onEditStall={() => setEditStall(stall)}
+                    />
+                  ))
+                )}
+              </ScrollRows>
+            </ConfigPanel>
+          ) : null}
+
+          {activeSection === "access" ? (
+            <div className="space-y-4">
+              <AccessTabs
+                tabs={accessTabs}
+                activeId={activeAccessTab}
+                onSelect={setActiveAccessTab}
               />
-            )}
-          </ConfigPanel>
-
-          <ConfigPanel
-            title="Access_Gate_Master"
-            count={accessXGateMasters.length}
-            searchValue={gateMasterQuery}
-            onSearchChange={setGateMasterQuery}
-            searchPlaceholder="Search gate"
-            action={addGateMasterButton}
-            theme="accessx"
-          >
-            {accessXGateMastersLoading ? (
-              <LoadingState label="Loading gate masterlist..." />
-            ) : accessXGateMastersError ? (
-              <EmptyState>{accessXGateMastersError}</EmptyState>
-            ) : filteredAccessXGateMasters.length === 0 ? (
-              <EmptyState>No gate masters found.</EmptyState>
-            ) : (
-              <Access_Gate_Master
-                gates={filteredAccessXGateMasters}
-                onEdit={setEditAccessGateMaster}
-              />
-            )}
-          </ConfigPanel>
-
-          <ConfigPanel
-            title="Access Gate Config"
-            count={accessXGates.length}
-            searchValue={gateConfigQuery}
-            onSearchChange={setGateConfigQuery}
-            searchPlaceholder="Search gate or category"
-            action={addGateConfigButton}
-            theme="accessx"
-          >
-            {accessXGatesLoading ? (
-              <LoadingState label="Loading gate configuration..." />
-            ) : accessXGatesError ? (
-              <EmptyState>{accessXGatesError}</EmptyState>
-            ) : filteredAccessXGates.length === 0 ? (
-              <EmptyState>No gate configuration found.</EmptyState>
-            ) : (
-              <Access_Gate_Config
-                gates={filteredAccessXGates}
-                onEdit={setEditAccessGateConfig}
-              />
-            )}
-          </ConfigPanel>
+              {activeAccessTab === "stalls" && showAccessXStalls ? (
+                <ConfigPanel
+                  title="AccessX"
+                  count={accessXStallCount}
+                  searchValue={stallQuery}
+                  onSearchChange={setStallQuery}
+                  searchPlaceholder="Search AccessX"
+                  theme="accessx"
+                >
+                  <ScrollRows>
+                    {stallsLoading ? (
+                      <LoadingState label="Loading AccessX..." />
+                    ) : stallsError ? (
+                      <EmptyState>{stallsError}</EmptyState>
+                    ) : filteredAccessXStalls.length === 0 ? (
+                      <EmptyState>No AccessX stalls found.</EmptyState>
+                    ) : (
+                      filteredAccessXStalls.map((stall, index) => (
+                        <StallRow
+                          key={stall?.id ?? stall?.stallId ?? `${getStallName(stall)}-${index}`}
+                          stall={stall}
+                          index={index}
+                          onAddDevice={() => setAddDeviceStall(stall)}
+                          onOpenMenu={() => handleOpenStallMenu(stall)}
+                          onEditStall={() => setEditStall(stall)}
+                        />
+                      ))
+                    )}
+                  </ScrollRows>
+                </ConfigPanel>
+              ) : null}
+              {activeAccessTab === "categories" && showCategories ? (
+                <ConfigPanel
+                  title="AccessX Categories"
+                  count={accessXCategories.length}
+                  searchValue={categoryQuery}
+                  onSearchChange={setCategoryQuery}
+                  searchPlaceholder="Search category"
+                  action={addCategoryButton}
+                  theme="accessx"
+                >
+                  {accessXCategoriesLoading ? (
+                    <LoadingState label="Loading categories..." />
+                  ) : accessXCategoriesError ? (
+                    <EmptyState>{accessXCategoriesError}</EmptyState>
+                  ) : filteredAccessXCategories.length === 0 ? (
+                    <EmptyState>No AccessX categories found.</EmptyState>
+                  ) : (
+                    <AccessXCategoryTable
+                      categories={filteredAccessXCategories}
+                      onEdit={setEditAccessXCategory}
+                    />
+                  )}
+                </ConfigPanel>
+              ) : null}
+              {activeAccessTab === "gateMasters" && showGateMasters ? (
+                <ConfigPanel
+                  title="Access_Gate_Master"
+                  count={accessXGateMasters.length}
+                  searchValue={gateMasterQuery}
+                  onSearchChange={setGateMasterQuery}
+                  searchPlaceholder="Search gate"
+                  action={addGateMasterButton}
+                  theme="accessx"
+                >
+                  {accessXGateMastersLoading ? (
+                    <LoadingState label="Loading gate masterlist..." />
+                  ) : accessXGateMastersError ? (
+                    <EmptyState>{accessXGateMastersError}</EmptyState>
+                  ) : filteredAccessXGateMasters.length === 0 ? (
+                    <EmptyState>No gate masters found.</EmptyState>
+                  ) : (
+                    <Access_Gate_Master
+                      gates={filteredAccessXGateMasters}
+                      onEdit={setEditAccessGateMaster}
+                    />
+                  )}
+                </ConfigPanel>
+              ) : null}
+              {activeAccessTab === "gateConfig" && showGateConfig ? (
+                <ConfigPanel
+                  title="Access Gate Config"
+                  count={accessXGates.length}
+                  searchValue={gateConfigQuery}
+                  onSearchChange={setGateConfigQuery}
+                  searchPlaceholder="Search gate or category"
+                  action={addGateConfigButton}
+                  theme="accessx"
+                >
+                  {accessXGatesLoading ? (
+                    <LoadingState label="Loading gate configuration..." />
+                  ) : accessXGatesError ? (
+                    <EmptyState>{accessXGatesError}</EmptyState>
+                  ) : filteredAccessXGates.length === 0 ? (
+                    <EmptyState>No gate configuration found.</EmptyState>
+                  ) : (
+                    <Access_Gate_Config
+                      gates={filteredAccessXGates}
+                      onEdit={setEditAccessGateConfig}
+                    />
+                  )}
+                </ConfigPanel>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
       </div>
     </div>
 

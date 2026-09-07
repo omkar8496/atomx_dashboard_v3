@@ -18,8 +18,18 @@ const EVENT_ACTIONS = [
   { id: "open", label: "Open dashboard" },
   { id: "reports", label: "Reports" },
   // { id: "analytics", label: "Analytics" },
-  { id: "devices", label: "Devices" }
+  { id: "devices", label: "Devices" },
+  { id: "edit", label: "Edit event" }
 ];
+
+// Each card action opens the selected event on a different dashboard route.
+// Casing matters: these are static-export paths.
+const EVENT_ACTION_ROUTES = {
+  open: "/Config",
+  reports: "/Reports",
+  devices: "/device",
+  edit: "/event-edit"
+};
 
 const STATUS_STYLES = {
   past: {
@@ -186,6 +196,14 @@ function EventActionIcon({ type }) {
       </svg>
     );
   }
+  if (type === "edit") {
+    return (
+      <svg viewBox="0 0 16 16" className="h-[15px] w-[15px]" fill="none" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <path d="M8 13.6h6" />
+        <path d="M11.1 2.6a1.4 1.4 0 0 1 2 2L5.4 12.3l-2.7.7.7-2.7z" />
+      </svg>
+    );
+  }
   if (type === "devices") {
     return (
       <svg viewBox="0 0 16 16" className="h-[15px] w-[15px]" fill="none" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -276,6 +294,7 @@ export default function AdminClient() {
   const setEventDetails = useDashboardStore((state) => state.setEventDetails);
   const [events, setEvents] = useState([]);
   const [openingEventId, setOpeningEventId] = useState("");
+  const [openingAction, setOpeningAction] = useState("");
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -418,14 +437,16 @@ export default function AdminClient() {
     });
   }, [activeTab, events, searchQuery]);
 
-  const handleOpenEvent = async (eventId) => {
+  const handleOpenEvent = async (eventId, actionId = "open") => {
     if (!eventId) {
       setError("Event details are missing.");
       return;
     }
     const selectedEventId = String(eventId);
+    const destination = EVENT_ACTION_ROUTES[actionId] ?? EVENT_ACTION_ROUTES.open;
     setSubmitting(true);
     setOpeningEventId(selectedEventId);
+    setOpeningAction(actionId);
     setError("");
     try {
       const details = await fetchEventDetails({
@@ -446,13 +467,14 @@ export default function AdminClient() {
       if (details?.name) params.set("eventName", details.name);
       if (details?.venue) params.set("venue", details.venue);
       if (details?.locationCity) params.set("city", details.locationCity);
-      router.push(`/Config?${params.toString()}`);
+      router.push(`${destination}?${params.toString()}`);
     } catch (err) {
       console.error("Failed to load event details", err);
       setError("Unable to load event details.");
     } finally {
       setSubmitting(false);
       setOpeningEventId("");
+      setOpeningAction("");
     }
   };
 
@@ -584,11 +606,11 @@ export default function AdminClient() {
                         type="button"
                         aria-label={action.label}
                         title={action.label}
-                        onClick={() => handleOpenEvent(eventId)}
+                        onClick={() => handleOpenEvent(eventId, action.id)}
                         disabled={submitting || !eventId || action.id === "analytics"}
                         className="flex h-8 items-center justify-center rounded-[9px] border border-(--line) bg-(--surface) text-(--muted) transition hover:border-(--orange) hover:bg-(--chip) hover:text-(--orange) disabled:cursor-not-allowed disabled:opacity-55"
                       >
-                        {isOpening && action.id === "open" ? (
+                        {isOpening && openingAction === action.id ? (
                           <span className="h-4 w-4 animate-spin rounded-full border-2 border-(--orange) border-t-transparent" />
                         ) : (
                           <EventActionIcon type={action.id} />

@@ -84,7 +84,7 @@
   --purple: #8b5cf6;
   --egg: #ebebeb;
 
-  --rail: #1c1c1c;
+  --rail: #8f3275;
   --railText: #ebebeb;
 
   --shadow: 0 1px 2px rgba(28, 28, 28, 0.04), 0 10px 30px -18px rgba(28, 28, 28, 0.25);
@@ -109,7 +109,7 @@ html[data-atx="dark"] {
   --chip: rgba(235, 235, 235, 0.06);
 
   --purple: #d5b7ff;
-  --rail: #181818;
+  --rail: #7a2a63;
 
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 10px 30px -18px rgba(0, 0, 0, 0.9);
   --shadowUp: 0 2px 6px rgba(0, 0, 0, 0.6), 0 18px 40px -20px rgba(0, 0, 0, 1);

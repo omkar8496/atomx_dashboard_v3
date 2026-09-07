@@ -1,5 +1,20 @@
 import { DASHBOARD_API_KEY } from "./apiConfig";
 
+// ---------------------------------------------------------------------------
+// TEMPORARY TEST SWITCH - cookie-only session
+//
+// false = the frontend does NOT send Authorization: Bearer at all. Every request
+//         still goes out with `credentials: "include"`, so the ONLY credential
+//         reaching the API is the session cookie the browser stores after
+//         /auth/select on the access page and re-attaches automatically.
+//
+// Set back to true to restore the previous Bearer + cookie behavior.
+// Note: the token is still read from the URL and stored, because the header,
+// profile menu and admin role linking read name/email/role/adminId out of it.
+// This switch only controls whether the token is SENT.
+// ---------------------------------------------------------------------------
+const SEND_BEARER_TOKEN = false;
+
 const STATUS_MESSAGES = {
   400: "The request could not be processed.",
   401: "Your session has expired. Please sign in again.",
@@ -63,7 +78,7 @@ function buildHeaders({ token, headers, jsonBody }) {
   if (DASHBOARD_API_KEY && !requestHeaders.has("x-api-key")) {
     requestHeaders.set("x-api-key", DASHBOARD_API_KEY);
   }
-  if (token && !requestHeaders.has("Authorization")) {
+  if (SEND_BEARER_TOKEN && token && !requestHeaders.has("Authorization")) {
     requestHeaders.set("Authorization", `Bearer ${token}`);
   }
 
@@ -188,7 +203,11 @@ export async function apiRequest({
 
   let response = await request(token);
 
+  // With SEND_BEARER_TOKEN = false no Authorization header was sent in the first
+  // place, so this cookie-only retry never triggers - the first attempt already
+  // was the cookie-only attempt.
   if (
+    SEND_BEARER_TOKEN &&
     retryWithoutToken &&
     token &&
     (response.status === 401 || response.status === 403)

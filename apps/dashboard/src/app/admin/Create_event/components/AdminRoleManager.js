@@ -4,7 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   fetchOperatorsList,
   linkAdmin,
-  linkOperator
+  linkOperator,
+  unlinkRole
 } from "../../../../lib/dashboardApi";
 import { useDashboardStore } from "../../../../store/dashboardStore";
 
@@ -14,10 +15,12 @@ const TABS = [
 ];
 
 const OPERATOR_TYPES = [
+  { value: "event", label: "Event" },
   { value: "cashless", label: "Cashless" },
   { value: "access", label: "Access" },
   { value: "inventory", label: "Inventory" },
-  { value: "vendor", label: "Vendor" }
+  { value: "guest-ops", label: "Guest Ops" },
+  { value: "finance", label: "Finance" }
 ];
 
 function nowParts() {
@@ -53,7 +56,7 @@ function idsMatch(value, expected) {
   return String(value) === String(expected);
 }
 
-function formatOperatorRecord(record, index) {
+function formatOperatorRecord(record, index, fallbackAdminId = null) {
   const timestamp =
     record?.createdAt ??
     record?.created_at ??
@@ -66,6 +69,11 @@ function formatOperatorRecord(record, index) {
 
   return {
     id: record?.id ?? record?.operatorId ?? record?.operator_id ?? index,
+    // Unlink is keyed on the link row's own id (NOT the nested operator.id) + adminId.
+    linkId: record?.id ?? record?.linkId ?? null,
+    // Operator links frequently come back without an adminId; they belong to the
+    // workspace admin currently in context, which is how they were selected above.
+    adminId: record?.adminId ?? record?.admin_id ?? fallbackAdminId ?? null,
     email:
       record?.email ??
       record?.operatorEmail ??
@@ -139,6 +147,58 @@ function getInitialAdminId(profile, eventMeta, eventDetails) {
 
 function getInitialEventId(eventMeta, eventDetails) {
   return eventMeta?.eventId ?? eventDetails?.id ?? "";
+}
+
+function UnlinkIcon({ className = "h-3.5 w-3.5" }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className={className}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M9 17H7A5 5 0 0 1 7 7h2" />
+      <path d="M15 7h2a5 5 0 0 1 3.9 8.1" />
+      <path d="M8 12h4" />
+      <path d="M3 3l18 18" />
+    </svg>
+  );
+}
+
+function UnlinkButton({ record, onUnlink, unlinkingId, compact = false }) {
+  const linkId = record?.linkId;
+  const adminId = record?.adminId;
+  const hasLinkId = linkId !== null && linkId !== undefined && linkId !== "";
+  const hasAdminId = adminId !== null && adminId !== undefined && adminId !== "";
+  const canUnlink = hasLinkId && hasAdminId;
+  const blockedReason = hasLinkId
+    ? "This record has no admin ID to unlink"
+    : "This record has no link ID to unlink";
+  const isUnlinking = canUnlink && String(unlinkingId) === String(linkId);
+
+  return (
+    <button
+      type="button"
+      onClick={() => onUnlink?.(record)}
+      disabled={!canUnlink || Boolean(unlinkingId)}
+      title={canUnlink ? "Unlink this access" : blockedReason}
+      aria-label={canUnlink ? `Unlink ${record?.email ?? "record"}` : "Unlink unavailable"}
+      className={`inline-flex shrink-0 items-center gap-1.5 rounded-[8px] border border-(--line) font-medium text-(--muted) transition hover:border-(--orange) hover:bg-[rgba(224,68,32,0.06)] hover:text-(--orange) disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:border-(--line) disabled:hover:bg-transparent disabled:hover:text-(--muted) ${
+        compact ? "h-7 px-2 text-[10.5px]" : "h-8 px-2.5 text-[11px]"
+      }`}
+    >
+      {isUnlinking ? (
+        <span className="h-3 w-3 animate-spin rounded-full border-2 border-(--orange) border-t-transparent" />
+      ) : (
+        <UnlinkIcon className={compact ? "h-3 w-3" : "h-3.5 w-3.5"} />
+      )}
+      <span>{isUnlinking ? "Unlinking\u2026" : "Unlink"}</span>
+    </button>
+  );
 }
 
 function RoleTabs({ activeTab, onChange }) {
@@ -222,7 +282,10 @@ function AddedList({
   emptyText,
   showType = false,
   loading = false,
-  loadError = ""
+  loadError = "",
+  onUnlink,
+  unlinkingId = "",
+  unlinkError = ""
 }) {
   const [expandedItems, setExpandedItems] = useState({});
 
@@ -238,6 +301,11 @@ function AddedList({
         </span>
         <h2 className="font-chillax m-0 text-[18px] font-semibold text-(--text)">{title}</h2>
       </div>
+      {unlinkError ? (
+        <div className="mb-3 rounded-[10px] border border-[rgba(224,68,32,0.25)] bg-[rgba(224,68,32,0.06)] px-3 py-2 text-[12.5px] font-semibold text-(--orange)">
+          {unlinkError}
+        </div>
+      ) : null}
       <div className="space-y-2">
         {loading ? (
           <div className="rounded-[11px] border border-dashed border-(--line) px-4 py-8 text-center text-[13px] font-medium text-(--muted)">
@@ -316,13 +384,14 @@ function AddedList({
                       </div>
                     </div>
                   </div>
+                  <div className="mr-2 flex items-center justify-end gap-1.5 max-lg:mb-2 max-lg:ml-3 max-lg:mr-0 max-lg:justify-start">
                   {canExpand ? (
                     <button
                       type="button"
                       onClick={() => toggleHistory(item.id)}
                       aria-expanded={isExpanded}
                       title={isExpanded ? "Hide history" : "Show history"}
-                      className="font-vcr mr-2 flex h-8 items-center gap-1.5 rounded-[8px] border border-(--line) px-2.5 text-[11px] font-medium text-(--muted) transition hover:border-(--orange) hover:text-(--orange) max-lg:mb-2 max-lg:ml-3 max-lg:w-fit"
+                      className="font-vcr flex h-8 items-center gap-1.5 rounded-[8px] border border-(--line) px-2.5 text-[11px] font-medium text-(--muted) transition hover:border-(--orange) hover:text-(--orange)"
                     >
                       <span>{item.historyCount}</span>
                       <svg
@@ -338,11 +407,13 @@ function AddedList({
                         <path d="m4 6 4 4 4-4" />
                       </svg>
                     </button>
-                  ) : (
-                    <span className="font-vcr mr-3 text-right text-[9px] uppercase tracking-[0.1em] text-(--faint) max-lg:hidden">
-                      1 record
-                    </span>
-                  )}
+                  ) : null}
+                  <UnlinkButton
+                    record={item}
+                    onUnlink={onUnlink}
+                    unlinkingId={unlinkingId}
+                  />
+                  </div>
                 </div>
 
                 {isExpanded ? (
@@ -370,13 +441,21 @@ function AddedList({
                                 {historyIndex === 0 ? "Latest access link" : "Previous access link"}
                               </div>
                             </div>
-                            <div className="text-right">
-                              <div className="font-vcr text-[12px] text-(--text)">
-                                {historyItem.date}
+                            <div className="flex items-center gap-3">
+                              <div className="text-right">
+                                <div className="font-vcr text-[12px] text-(--text)">
+                                  {historyItem.date}
+                                </div>
+                                <div className="font-vcr mt-0.5 text-[11px] text-(--muted)">
+                                  {historyItem.time}
+                                </div>
                               </div>
-                              <div className="font-vcr mt-0.5 text-[11px] text-(--muted)">
-                                {historyItem.time}
-                              </div>
+                              <UnlinkButton
+                                record={historyItem}
+                                onUnlink={onUnlink}
+                                unlinkingId={unlinkingId}
+                                compact
+                              />
                             </div>
                           </div>
                         ))}
@@ -416,6 +495,8 @@ export default function AdminRoleManager() {
   const [linksError, setLinksError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [unlinkingId, setUnlinkingId] = useState("");
+  const [unlinkError, setUnlinkError] = useState("");
 
   const loadOperators = useCallback(
     async ({ force = false, quiet = false } = {}) => {
@@ -442,10 +523,14 @@ export default function AdminRoleManager() {
           return matchesEvent && matchesAdmin;
         });
         const normalizedAdmins = groupOperatorRecords(
-          adminRecords.map((record, index) => formatOperatorRecord(record, index))
+          adminRecords.map((record, index) =>
+            formatOperatorRecord(record, index, initialAdminId)
+          )
         );
         const normalizedOperators = groupOperatorRecords(
-          operatorRecords.map((record, index) => formatOperatorRecord(record, index))
+          operatorRecords.map((record, index) =>
+            formatOperatorRecord(record, index, initialAdminId)
+          )
         );
 
         setAdmins(normalizedAdmins);
@@ -469,6 +554,44 @@ export default function AdminRoleManager() {
   useEffect(() => {
     loadOperators();
   }, [loadOperators]);
+
+  const handleUnlink = async (record) => {
+    const opId = record?.linkId;
+    const adminId = record?.adminId;
+
+    if (opId === null || opId === undefined || opId === "") {
+      setUnlinkError("This record has no link ID, so it cannot be unlinked.");
+      return;
+    }
+    if (adminId === null || adminId === undefined || adminId === "") {
+      setUnlinkError("This record has no admin ID, so it cannot be unlinked.");
+      return;
+    }
+
+    setUnlinkingId(String(opId));
+    setUnlinkError("");
+
+    try {
+      await unlinkRole({ token, opId, adminId });
+
+      // Drop it immediately, then reconcile against the API.
+      const removeRecord = (groups) =>
+        groupOperatorRecords(
+          groups
+            .flatMap((group) => group.history || [group])
+            .filter((entry) => String(entry?.linkId) !== String(opId))
+        );
+      setAdmins(removeRecord);
+      setOperators(removeRecord);
+
+      await loadOperators({ force: true, quiet: true });
+    } catch (err) {
+      console.error("Unlink role failed", err);
+      setUnlinkError(err?.message || "Unable to unlink this access.");
+    } finally {
+      setUnlinkingId("");
+    }
+  };
 
   const addRole = async () => {
     const isAdmin = activeTab === "admin";
@@ -607,6 +730,9 @@ export default function AdminRoleManager() {
           emptyText="No admins found."
           loading={linksLoading}
           loadError={linksError}
+          onUnlink={handleUnlink}
+          unlinkingId={unlinkingId}
+          unlinkError={unlinkError}
         />
       ) : (
         <AddedList
@@ -616,6 +742,9 @@ export default function AdminRoleManager() {
           showType
           loading={linksLoading}
           loadError={linksError}
+          onUnlink={handleUnlink}
+          unlinkingId={unlinkingId}
+          unlinkError={unlinkError}
         />
       )}
     </div>

@@ -14,7 +14,16 @@ import {
 } from "./MenuIcons";
 
 const ITEM_TYPES = ["FOOD", "BEVERAGE", "NON-FOOD", "COMBO", "OTHER"];
-const ITEM_TAGS = ["VEG", "NON-VEG", "VEGAN", "SPICY", "GLUTEN-FREE"];
+const ITEM_TAGS = ["FOOD", "DRINK", "MERCH", "TICKET", "OTHER"];
+
+// Item names are limited to 16 characters and are not editable from this table.
+const ITEM_NAME_LIMIT = 16;
+
+function formatItemName(value) {
+  const name = String(value ?? "").trim();
+  if (!name) return "-";
+  return name.length > ITEM_NAME_LIMIT ? name.slice(0, ITEM_NAME_LIMIT) : name;
+}
 
 const INPUT_CLASS =
   "rounded-[8px] border border-(--line) bg-(--surface) px-2.5 py-1.5 text-[13px] font-medium text-(--text) outline-none transition placeholder:text-(--faint) focus:border-(--orange) focus:shadow-[0_0_0_3px_rgba(224,68,32,0.12)]";
@@ -169,13 +178,12 @@ function ItemRow({
             >
               <GripVerticalIcon className="h-4 w-4" />
             </button>
-            <input
-              type="text"
-              value={item.name}
-              onChange={(e) => onUpdate({ name: e.target.value })}
-              placeholder="item name"
-              className={`w-[150px] ${INPUT_CLASS}`}
-            />
+            <span
+              title={item.name || "Unnamed item"}
+              className="w-[150px] truncate text-[12.5px] font-semibold text-(--text)"
+            >
+              {formatItemName(item.name)}
+            </span>
           </div>
         </td>
         <td className="py-3 pr-3">

@@ -1,40 +1,27 @@
 # Access Portal Agent Instructions
 
-These rules supplement the repository root `AGENTS.md`.
+These rules supplement the root `AGENTS.md`.
 
 ## Ownership
 
-This app owns:
-
-- login presentation and Google-auth entry
-- bootstrap token capture
-- role/workspace selection
-- selected-service token handoff
-- reauthentication return messaging
-- signout cleanup
-
-It does not own dashboard business data or Tag Series domain state.
+This app owns login presentation, Google-auth entry, bootstrap token capture,
+role/workspace selection, selected-token storage, cross-app handoff,
+reauthentication return, and signout cleanup. It does not own dashboard event
+business state.
 
 ## Change Rules
 
-- Preserve the Pages Router structure.
-- Keep the app compatible with static export.
-- Keep URL tokens short-lived and remove them from the address bar after
-  capture.
-- Never print JWTs or role payloads to the console.
-- Keep localStorage key aliases/migrations compatible across all apps.
-- Keep `credentials: "include"` on auth/session requests.
-- When changing `/auth/select`, verify both Admin and Event payload forms.
-- Test popup/opener `postMessage` and normal full-page redirect paths.
-- Use shared analytics and consent handling instead of direct duplicate setup.
+- Preserve Pages Router and static-export compatibility.
+- Keep URL tokens short-lived and remove them after capture.
+- Preserve canonical and compatibility storage keys across all apps.
+- Keep `credentials: "include"` on session/auth requests.
+- Keep `/auth/select` payloads exact: admin uses `adminId`, event/module uses
+  `eventId` as required by its permission record.
+- Verify both full-page redirect and popup `postMessage` return modes.
+- Never log JWTs, decoded role payloads, cookies, or API-key values.
+- Use shared consent-aware analytics; do not initialize duplicate clients.
 
 ## Verification
 
-Run:
-
-```bash
-npm run build:access
-```
-
-Then manually verify `/`, `/access`, each service redirect, reauth, session
-expiry handling, and signout.
+Run `npm run build:access`, then manually test `/`, `/access`, every destination
+type, token cleanup/storage, reauth, expiry, theme, and logout.

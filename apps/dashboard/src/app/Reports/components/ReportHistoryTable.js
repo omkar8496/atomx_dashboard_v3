@@ -21,6 +21,35 @@ function EmptyIcon() {
   );
 }
 
+const TERMINAL_STATUSES = new Set(["completed", "failed", "error"]);
+
+// A request left in a non-terminal status for longer than this is treated as
+// abandoned: no spinner, and the status poller ignores it.
+export const STALE_REPORT_AFTER_MS = 30 * 60 * 1000;
+
+// A report still being generated: a known status that has not reached a
+// terminal one. An empty status is treated as settled so a malformed row can
+// never keep the poller running forever.
+export function isReportPending(status) {
+  const normalized = String(status || "").trim().toLowerCase();
+  if (!normalized) return false;
+  return !TERMINAL_STATUSES.has(normalized);
+}
+
+// A row is stale when its last update is older than the window above. A row
+// with no usable timestamp counts as stale so it can never pin the poller open.
+export function isReportStale(report, now = Date.now()) {
+  const timestamp = report?.reportUpdatedAt ?? report?.reportCreatedAt;
+  const parsed = timestamp ? new Date(timestamp).getTime() : Number.NaN;
+  if (Number.isNaN(parsed)) return true;
+  return now - parsed > STALE_REPORT_AFTER_MS;
+}
+
+// Actively generating: still in a non-terminal status AND recent enough to wait on.
+export function isReportGenerating(report, now = Date.now()) {
+  return isReportPending(report?.reportStatus) && !isReportStale(report, now);
+}
+
 function formatReportName(value) {
   const normalized = String(value || "Report")
     .replace(/[_-]+/g, " ")
@@ -134,7 +163,19 @@ export default function ReportHistoryTable({ reports, loading, error }) {
                   <td className="whitespace-nowrap px-4 py-3 text-[11.5px] text-(--muted)">{formatDateTime(report?.reportUpdatedAt)}</td>
                   <td className="px-4 py-3"><StatusBadge status={report?.reportStatus} /></td>
                   <td className="px-4 py-3">
-                    {report?.reportLink ? (
+                    {isReportGenerating(report) ? (
+                      <span
+                        role="status"
+                        aria-live="polite"
+                        title={`Generating ${formatReportName(report?.reportName)}...`}
+                        className="inline-flex h-8 items-center gap-2 rounded-[8px] border border-(--line) bg-(--surface2) px-2.5"
+                      >
+                        <span className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-(--orange) border-t-transparent" />
+                        <span className="font-vcr text-[9px] uppercase tracking-[0.12em] text-(--muted)">
+                          Generating
+                        </span>
+                      </span>
+                    ) : report?.reportLink ? (
                       <a
                         href={report.reportLink}
                         target="_blank"
@@ -150,7 +191,13 @@ export default function ReportHistoryTable({ reports, loading, error }) {
                         type="button"
                         disabled
                         aria-label="Report file unavailable"
-                        title="Report file unavailable"
+                        title={
+                          isReportPending(report?.reportStatus)
+                            ? `No update since ${formatDateTime(
+                                report?.reportUpdatedAt ?? report?.reportCreatedAt
+                              )} - this request looks abandoned`
+                            : "Report file unavailable"
+                        }
                         className="grid h-8 w-8 cursor-not-allowed place-items-center rounded-[8px] border border-(--line) text-(--faint) opacity-55"
                       >
                         <DownloadIcon />

@@ -112,6 +112,15 @@ function normalizeRoleType(value) {
     .replace(/[_\s]+/g, "-");
 }
 
+// Role types that are standalone applications rather than admin workspaces or
+// event-scoped modules. They are admin-scoped (no eventId) and render in their
+// own "Apps" section. Add a type here to surface it there.
+const APP_ROLE_TYPES = new Set(["tag-series"]);
+
+function isAppRoleType(type) {
+  return APP_ROLE_TYPES.has(normalizeRoleType(type));
+}
+
 function mapServiceParam(type) {
   const normalized = normalizeRoleType(type);
   if (normalized.includes("tag-series") || normalized.includes("tagseries")) {
@@ -619,6 +628,7 @@ export default function AccessPage() {
     return roleCards.filter(
       (role) =>
         String(role.type || "").toLowerCase() !== "admin" &&
+        !isAppRoleType(role.type) &&
         !role.appId &&
         !role.appName
     );
@@ -628,9 +638,16 @@ export default function AccessPage() {
     return roleCards.filter(
       (role) =>
         String(role.type || "").toLowerCase() !== "admin" &&
+        !isAppRoleType(role.type) &&
         (role.appId || role.appName)
     );
   }, [roleCards]);
+
+  // Standalone applications (tag-series) get their own section.
+  const appSectionRoles = useMemo(
+    () => roleCards.filter((role) => isAppRoleType(role.type)),
+    [roleCards]
+  );
 
   // Everything that is not an admin workspace lives under "Events" in the design.
   const eventSectionRoles = useMemo(
@@ -692,7 +709,14 @@ export default function AccessPage() {
     () => eventSectionRoles.filter(matchesFilters),
     [eventSectionRoles, matchesFilters]
   );
-  const hasVisibleRoles = visibleAdminRoles.length > 0 || visibleEventRoles.length > 0;
+  const visibleAppRoles = useMemo(
+    () => appSectionRoles.filter(matchesFilters),
+    [appSectionRoles, matchesFilters]
+  );
+  const hasVisibleRoles =
+    visibleAdminRoles.length > 0 ||
+    visibleEventRoles.length > 0 ||
+    visibleAppRoles.length > 0;
 
   const highlightActions = useMemo(() => [], []);
 
@@ -992,6 +1016,21 @@ export default function AccessPage() {
     });
   };
 
+  const handleAppRoleClick = (role) => {
+    const service = mapServiceParam(role?.type);
+    handlePermissionClick({
+      type: role.type,
+      label: role.type,
+      destination: ensureTrailingSlashForRoute(
+        moduleLinks[service] ?? moduleLinks["tag-series"]
+      ),
+      service,
+      eventId: role.eventId ?? null,
+      adminId: role.adminId,
+      requireEventDetails: false
+    });
+  };
+
   const handleAdminRoleClick = (role) => {
     handlePermissionClick({
       type: role.type,
@@ -1020,7 +1059,9 @@ export default function AccessPage() {
 
   const renderRoleCards = (roles, emptyLabel, options = {}) => {
     const { onCardClick, showOpenIcon = false } = options;
-    const isAdminSection = options.section === "admin";
+    // Admin workspaces and apps are both admin-scoped, so both show the admin
+    // identity; event cards show the event identity.
+    const isAdminSection = options.section === "admin" || options.section === "app";
 
     if (!roles.length) {
       return (
@@ -1266,6 +1307,21 @@ export default function AccessPage() {
                     onCardClick: handleEventRoleClick,
                     showOpenIcon: true,
                     section: "event"
+                  })}
+                </div>
+              ) : null}
+
+              {visibleAppRoles.length ? (
+                <div className="flex flex-col">
+                  {renderSectionHeader(
+                    visibleAppRoles.length,
+                    "Apps",
+                    "Standalone modules"
+                  )}
+                  {renderRoleCards(visibleAppRoles, "No apps assigned yet.", {
+                    onCardClick: handleAppRoleClick,
+                    showOpenIcon: true,
+                    section: "app"
                   })}
                 </div>
               ) : null}

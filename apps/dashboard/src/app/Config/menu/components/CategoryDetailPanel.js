@@ -24,9 +24,21 @@ function Toggle({ active, onToggle }) {
   );
 }
 
-function GstDropdown({ value, onChange }) {
+function clampGst(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return 0;
+  return Math.min(Math.max(numeric, 0), 100);
+}
+
+// Any percentage can be typed; the standard slabs remain as quick presets.
+function GstField({ value, onChange }) {
   const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState(String(value ?? 0));
   const ref = useRef(null);
+
+  useEffect(() => {
+    setDraft(String(value ?? 0));
+  }, [value]);
 
   useEffect(() => {
     const handler = (e) => {
@@ -36,25 +48,56 @@ function GstDropdown({ value, onChange }) {
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
 
+  const commit = (raw) => {
+    const next = clampGst(raw === "" ? 0 : raw);
+    setDraft(String(next));
+    onChange(next);
+  };
+
   return (
     <div ref={ref} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((prev) => !prev)}
-        className="flex h-10 items-center gap-1.5 rounded-[10px] bg-[linear-gradient(135deg,#E04420,#341CD6)] px-4 text-[13px] font-semibold text-white transition hover:brightness-105"
-      >
-        {value}
-        <ChevronDownIcon />
-      </button>
+      <div className="flex h-10 items-center rounded-[10px] border border-(--line) bg-(--surface2) pl-2.5 transition focus-within:border-(--orange)">
+        <input
+          type="number"
+          inputMode="decimal"
+          min={0}
+          max={100}
+          step="any"
+          value={draft}
+          aria-label="GST percentage"
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={(e) => commit(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              commit(e.currentTarget.value);
+            }
+          }}
+          className="w-[52px] min-w-0 bg-transparent text-[13px] font-semibold text-(--text) outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+        />
+        <span className="pr-1 text-[12.5px] font-semibold text-(--muted)">%</span>
+        <button
+          type="button"
+          onClick={() => setOpen((prev) => !prev)}
+          aria-label="Choose a standard GST slab"
+          aria-expanded={open}
+          className="grid h-full w-8 cursor-pointer place-items-center rounded-r-[9px] border-l border-(--line) text-(--muted) transition hover:text-(--orange)"
+        >
+          <ChevronDownIcon />
+        </button>
+      </div>
       {open && (
-        <div className="absolute left-0 top-full z-30 mt-1.5 w-[90px] overflow-hidden rounded-[10px] border border-(--line) bg-(--surface) shadow-(--shadowUp)">
+        <div className="absolute left-0 top-full z-30 mt-1.5 w-[104px] overflow-hidden rounded-[10px] border border-(--line) bg-(--surface) shadow-(--shadowUp)">
           {GST_OPTIONS.map((opt) => (
             <button
               key={opt}
               type="button"
-              onClick={() => { onChange(opt); setOpen(false); }}
-              className={`block w-full px-3 py-2 text-left text-[13px] font-semibold transition hover:bg-(--surface2) ${
-                value === opt ? "text-(--orange)" : "text-(--text)"
+              onClick={() => {
+                commit(opt);
+                setOpen(false);
+              }}
+              className={`block w-full cursor-pointer px-3 py-2 text-left text-[13px] font-semibold transition hover:bg-(--surface2) ${
+                Number(value) === opt ? "text-(--orange)" : "text-(--text)"
               }`}
             >
               {opt}%
@@ -126,7 +169,7 @@ export default function CategoryDetailPanel({ category, onUpdate }) {
             <span>GST</span>
           </div>
           <div className="flex items-center gap-2">
-            <GstDropdown value={category.gst ?? 0} onChange={(val) => onUpdate?.({ gst: val })} />
+            <GstField value={category.gst ?? 0} onChange={(val) => onUpdate?.({ gst: val })} />
             <button
               type="button"
               onClick={() => onUpdate?.({ gstInclusive: !category.gstInclusive })}

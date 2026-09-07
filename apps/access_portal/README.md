@@ -1,70 +1,51 @@
-# Access Portal
+# AtomX Access Portal
 
-The Access Portal is the authentication and workspace-selection entry point for
-AtomX Portal. It captures the Google-auth token, presents roles/services, asks
-the API for a selected-service token, and redirects into the dashboard or Tag
-Series application.
+The Access Portal is the browser authentication and workspace-selection entry
+point for AtomX. It starts Google sign-in, captures the returned bootstrap
+token, presents decoded role/service choices, calls `/auth/select`, stores the
+selected service token, and redirects or posts it back to the destination app.
 
-Read the repository root documentation first, then
-[CONTEXT.md](./CONTEXT.md) for implementation details.
+Last code/documentation audit: **20 August 2026**.
 
 ## Run
-
-From the repository root:
 
 ```bash
 npm run dev:access
 npm run build:access
 ```
 
-The development server uses port `3003`.
-
-## Stack
-
-- Next.js Pages Router
-- React client-side state
-- Static export
-- `@atomx/global-components`
-- `@atomx/lib`
-- Browser localStorage, sessionStorage, and cookies
-
-There is no Redux or Zustand store in this app.
+Development uses port `3003`. This app uses the Next.js Pages Router and static
+export. It has no Redux/Zustand store; state is React plus browser storage.
 
 ## Routes
 
 | Route | Purpose |
 | --- | --- |
-| `/` | Login screen, Google auth start, returned-token capture |
-| `/access` | Role/workspace selection and redirect |
+| `/` | Login UI, Google auth start, URL-token capture/cleanup |
+| `/access` | Role/workspace selection, service-token request, handoff |
 
 ## Main Flow
 
-1. Start Google sign-in.
-2. Capture and decode the returned URL token.
-3. Store the portal/bootstrap token and remove it from the URL.
-4. Decode available roles on `/access`.
-5. Select an Admin, Event, or application workspace.
-6. Call `POST /auth/select`.
-7. Store the selected token under the destination app's key.
-8. Redirect to `/admin`, `/Config/`, or `/tag_series/`.
+1. Start `GET /auth/google/start` with app/redirect context.
+2. Decode the returned URL token and store it as the portal/app token.
+3. Remove the token from the address bar.
+4. Group decoded roles on `/access`.
+5. Call `POST /auth/select` with `{type, adminId}` or `{type, eventId}`.
+6. Store a returned selected token under destination-compatible keys.
+7. Optionally load selected event details.
+8. Redirect normally or return auth through `window.opener.postMessage`.
 
-All runtime authentication happens in the browser. API requests use
-`credentials: "include"` and may include a bootstrap Bearer token.
+Requests use `credentials: "include"`; selection can also send the short-lived
+bootstrap cookie token as Bearer authorization.
 
 ## Environment
 
-The app loads the root `.env`. The most relevant variables are:
-
-- `NEXT_PUBLIC_BASE_URL`
-- `NEXT_PUBLIC_ACCESS_PORTAL_URL`
-- `NEXT_PUBLIC_ACCESS_ADMIN_URL`
-- `NEXT_PUBLIC_DASHBOARD_URL`
-- `NEXT_PUBLIC_TAG_SERIES_URL`
-- PostHog and GA browser variables
-
-Do not put private secrets in `NEXT_PUBLIC_*`.
+Important public variables include `NEXT_PUBLIC_BASE_URL`, destination URLs,
+dashboard API-key config, analytics config, and optional development-token
+controls. All `NEXT_PUBLIC_*` values are public browser configuration.
 
 ## Verification
 
-Verify login redirect, URL-token cleanup, role grouping, each destination
-redirect, popup reauthentication, expiry warning, and signout cleanup.
+Build, then verify Google redirect, URL-token removal, admin/event/service
+selection, destination URLs, event hydration, popup reauth, expiry warning,
+theme persistence, and complete signout cleanup.

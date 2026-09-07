@@ -1,34 +1,19 @@
 # Tag Series Agent Instructions
 
-These rules supplement the repository root `AGENTS.md`.
+These rules supplement root `AGENTS.md`.
 
-## Architecture
+- Preserve `/tag_series` basePath, assetPrefix, trailing slash, and static
+  export.
+- Put domain requests in `api/api.js`.
+- Preserve `credentials: "include"` and current API-key behavior.
+- Keep `atomx.auth.tag-series` canonical and migrate the legacy
+  `atomx.auth.tag_series` key on read.
+- Keep `atomx.tag_series.step1` compatible across `/` and `/generate`.
+- Keep XLSX generation browser-only.
+- Do not hardcode event/admin IDs for live requests.
+- Current API headers do not add the stored service token as Bearer. Treat this
+  as a known limitation unless the full auth contract is deliberately changed.
+- `TokenGate` currently normalizes token context but does not enforce access.
 
-- Preserve the `/tag_series` basePath and assetPrefix.
-- Keep the app compatible with static export.
-- Use React state for view/form state and the existing browser-storage contract
-  for cross-route context.
-- Keep browser Excel generation off the server path.
-- Maintain compatibility between `atomx.auth.tag-series` and the migrated
-  legacy `atomx.auth.tag_series` key.
-
-## API And Authentication
-
-- Add Tag Series endpoints in the app-local API module.
-- Keep `credentials: "include"` unless the backend contract changes.
-- Current request headers do not send the read service token as Authorization.
-  Treat that as a known gap; do not describe the route as Bearer-protected
-  without implementing and testing it.
-- Current `TokenGate` normalizes URL token state but does not enforce access.
-- Never hardcode event/admin IDs used by API requests.
-
-## Verification
-
-Run:
-
-```bash
-npm run build:tag_series
-```
-
-Verify both canonical and direct base-path navigation, API loading/empty/error
-states, sessionStorage restoration, ID generation, and XLSX output.
+Run `npm run build:tag_series` and verify API loading/error/empty states,
+session restoration, generation, records, direct URLs, and workbook output.

@@ -1,31 +1,33 @@
 # Access Portal Context
 
-## Runtime Model
+Current behavior as of **20 August 2026**.
 
-This is a Next.js Pages Router static export. The browser performs OAuth
-handoff, token storage, role selection, API calls, and cross-app navigation.
+## Runtime
+
+This is a Pages Router static export. OAuth handoff, token parsing/storage,
+role selection, API calls, analytics, and navigation all run in the browser.
 There is no app-local global state library.
 
-## Token And Storage Behavior
+## Storage Contract
 
-The login page receives a token in the URL, decodes it, stores it, and removes
-the URL parameter. Relevant keys include:
+Important keys/cookie:
 
-- `atomx.portal.token`
-- `atomx.auth.<appId>`
-- `atomx.dashboard.token`
-- `atomx.auth.tag-series`
-- legacy `atomx.auth.tag_series`
-- `atomx.portal.reauth`
-- cookie `atomx_bootstrap_token`
+| Name | Purpose |
+| --- | --- |
+| `atomx.portal.token` | Portal/bootstrap JWT |
+| `atomx.auth.<app-or-service>` | Selected service tokens |
+| `atomx.dashboard.token` | Dashboard compatibility token |
+| `atomx.dashboard.store` | Dashboard persisted state, cleared on reselection/logout |
+| `atomx.auth.tag-series` | Canonical Tag Series token |
+| `atomx.auth.tag_series` | Legacy Tag Series compatibility key |
+| `atomx.portal.reauth` | Reauth return context, 24-hour TTL |
+| `atomx_bootstrap_token` | Short-lived bootstrap cookie, 30-minute max age |
+| `atomx.theme` | Shared light/dark preference |
 
-The bootstrap cookie is short lived, `SameSite=Lax`, and currently has a
-30-minute maximum age.
+Login stores the URL token, identifies analytics context, removes `token` from
+the URL, and redirects after a short success state.
 
 ## Workspace Selection
-
-`/access` reads the bootstrap token, decodes roles, and groups cards into
-Admin, Event, and application choices.
 
 Selection calls:
 
@@ -33,53 +35,54 @@ Selection calls:
 POST {NEXT_PUBLIC_BASE_URL}/auth/select
 ```
 
-Body:
+with one of:
 
 ```js
 { type, adminId }
-```
-
-or:
-
-```js
 { type, eventId }
 ```
 
-The request includes browser credentials and can send the bootstrap token as a
-Bearer token. Event choices may then load:
+The request includes cookies and may send the bootstrap cookie value as Bearer.
+Token extraction tolerates nested response envelopes and several token field
+aliases. A returned token is written to `atomx.dashboard.token`, normalized
+type/service keys, and the legacy Tag Series key when needed.
+
+Event-scoped non-Tag-Series choices can then load:
 
 ```text
 GET /v1/Events/Details/:eventId
 ```
 
-The selected token is written to canonical and compatibility keys before
-redirect.
+using dashboard API-key, optional selected Bearer token, cookies, and no-store.
 
-## Destination Rules
+## Handoff And Reauth
+
+Normal navigation adds service/token/event context to the destination URL.
+Popup return posts:
+
+```js
+{ type: "atomx.auth", service, token, eventId }
+```
+
+to the destination origin and closes the popup. Reauth context expires after 24
+hours. Session guards warn ten minutes before JWT expiry; there is no silent
+refresh.
+
+## Signout
+
+Signout removes portal token, dashboard token/store, reauth state, all
+`atomx.auth.*` keys, the bootstrap cookie, and sessionStorage. New auth storage
+must join this cleanup contract.
+
+## Destinations
 
 - Admin dashboard: `/admin`
 - Event dashboard: `/Config/`
 - Tag Series: `/tag_series/`
-
-Destination base URLs come from root environment variables.
-
-## Reauthentication
-
-Reauth context is stored as `atomx.portal.reauth` with a 24-hour TTL. Successful
-reauthentication either:
-
-- posts `{ type: "atomx.auth", service, token, eventId }` to the opener, or
-- redirects the full page back to the destination.
-
-The app warns ten minutes before JWT expiry. It does not silently refresh
-tokens.
-
-## Signout
-
-Signout clears portal, dashboard, reauth, `atomx.auth.*`, and sessionStorage
-state. Any new auth key must be added to this cleanup contract.
+- Additional service URLs are resolved from permission data and public env
+  destination variables.
 
 ## Analytics
 
-`pages/_app.js` initializes the shared consent-aware PostHog/GA integration.
-Do not introduce a second analytics initialization.
+`pages/_app.js` owns shared PostHog/GA initialization. Login and workspace
+selection emit consent-aware events; do not add a second initialization path.

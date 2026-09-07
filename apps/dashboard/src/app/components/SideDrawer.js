@@ -167,10 +167,10 @@ export default function SideDrawer({ mobileOpen = false, onMobileClose }) {
                   title={item.label}
                   className={`flex h-10 w-full items-center gap-3.5 rounded-[10px] px-[9px] text-left text-[0.84rem] transition-colors duration-200 ${
                     isActive
-                      ? "bg-(--surface) font-semibold text-(--text)"
+                      ? "cursor-pointer bg-(--surface) font-semibold text-(--text)"
                       : item.disabled
                         ? "cursor-default font-normal text-(--railText)"
-                        : "font-normal text-(--railText) hover:bg-white/[0.09]"
+                        : "cursor-pointer font-normal text-(--railText) hover:bg-white/[0.09]"
                   }`}
                 >
                   <span className="flex h-5 w-5 shrink-0 items-center justify-center">
@@ -184,9 +184,6 @@ export default function SideDrawer({ mobileOpen = false, onMobileClose }) {
             })}
           </nav>
           <div className="flex items-center gap-3 border-t border-white/10 px-3 py-3">
-            <span className="font-chillax flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 text-[0.85rem] font-semibold text-(--railText)">
-              N
-            </span>
             <span className="font-vcr whitespace-nowrap text-[9px] tracking-[0.12em] text-white/50 opacity-0 transition-opacity duration-200 group-hover:opacity-100 max-[900px]:opacity-100">
               AtomX Dashboard v3.0.0
             </span>

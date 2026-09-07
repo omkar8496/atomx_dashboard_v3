@@ -2,56 +2,81 @@
 
 These rules supplement the repository root `AGENTS.md`.
 
+## Source Orientation
+
+- Routes: `src/app/**/page.js`
+- Shared shell: `src/component/header.js`, `src/component/SideDrawer.js`
+- API behavior: `src/lib/apiClient.js`, `src/lib/dashboardApi.js`
+- Cross-route state: `src/store/dashboardStore.js`
+- Session lifecycle: `src/component/SessionGuard.js`
+- Device option/default data: Device Master List component files
+
+Read these files before changing a dashboard workflow.
+
 ## Architecture
 
-- This app uses the App Router and static export.
-- Keep route/page wrappers small. Put interactive behavior in `"use client"`
-  components.
-- Use `src/lib/dashboardApi.js` for AtomX API traffic.
-- Use `src/store/dashboardStore.js` only for cross-route or reload-persistent
-  state.
-- Use React state for local forms, filters, view modes, and modals.
-- Keep event ID and service context dynamic from query parameters, decoded
-  profile, or Zustand state.
+- Keep App Router pages/static export compatible.
+- Put interactive behavior in explicit `"use client"` modules.
+- Keep route wrappers small and business behavior in focused components.
+- Use Zustand only for state that must cross routes or survive reload.
+- Keep local form/filter/modal/drag/view state in React.
+- Reuse `Header` and `SideDrawer`; account for the fixed 58px header.
 
-## API Work
+## API Rules
 
-- Preserve browser credentials and existing Bearer behavior.
-- Add endpoint wrappers in the API module before wiring components.
-- For mutations, show actionable pending/error/success states and refresh the
-  relevant persisted cache.
-- Do not restore the obsolete stall list route. Event stalls use
-  `/v1/Stalls/List/Eventwise/:eventId`.
-- Device Master List edits use `POST /v1/Devices/Masterlist/edit` with the
-  complete editable device payload.
-- Do not claim Edit Stall is implemented until an actual update endpoint is
-  connected.
+- Add/modify endpoint wrappers in `dashboardApi.js` first.
+- Preserve the common `ApiError`, `credentials: "include"`, API-key, Bearer,
+  GET de-duplication, and cookie-only GET retry behavior.
+- Never use a hardcoded event ID fallback. Resolve current event context from
+  query parameters, Zustand event state, decoded profile, or the selected row.
+- Stall lists must use `/v1/Stalls/List/Eventwise/:eventId`.
+- Stall menu loads must use the selected stall ID in `/v1/Items/List/:stallId`.
+- Whitelist search uses dynamic event ID; history uses the selected result's
+  own `id` as `wid`.
+- Transaction detail fetches are lazy per expanded row. Only `completed` and
+  `void` may toggle status.
+- Device Master List add/edit must send the complete device form plus the
+  selected bank credential object.
+- Report build currently sends the selected Event/Vendor and Type labels
+  exactly; do not silently remap without a confirmed backend contract.
 
-## UI Work
+## Current Persistence Boundaries
 
-- Reuse `Header` and `SideDrawer`; do not make duplicate navigation shells.
-- Account for the fixed header when positioning route content.
-- Keep operational screens compact enough for 50+ records.
-- Prevent horizontal overflow unless a data table intentionally owns a labeled
-  horizontal scroll area.
-- Preserve exact route casing in links.
-- Keep icon-only actions accessible with labels/tooltips.
+- Vendor create/edit and stall create are live; Edit Stall has no update API.
+- AccessX category create/edit and gate-master create/edit are live.
+- Access Gate Config editing currently calls the gate-master edit endpoint for
+  the associated gate master. There is no separate gate-config mutation.
+- Menu load is live, but category/item edits, additions, drag order, and Save
+  are browser state only. XLSX download is browser-local.
+- Blocked IDs, APK uploads, Timeline, and Patcha remain local/prototype screens.
+- TapX wallet fetch exists but its drawer entry is hidden.
 
-## Security And Storage
+Do not present local-only interactions as persisted behavior.
 
-- Never display or log full JWTs, device/bank passwords, or API-key values.
-- When changing persisted store shape, add a safe migration/default path.
-- Keep `atomx.dashboard.token` and `atomx.dashboard.store` compatible with the
-  Access Portal handoff.
-- The API-key fallback in source is technical debt; do not copy or expand it.
+## Security
+
+- Never log tokens, passwords, complete bank data, or API-key values.
+- Static default bank credentials in client code are sensitive technical debt.
+- Do not reproduce credential values in tests, docs, UI screenshots, or error
+  messages.
+- `NEXT_PUBLIC_*` values are public browser data.
+
+## UI Rules
+
+- Preserve AtomX typography/palette and the compact operational style.
+- Design lists for 50+ records and keep table scroll within its container.
+- Reuse existing gradient icon tiles sparingly; action buttons are usually
+  solid black/orange.
+- Icon-only actions need `aria-label`/title text and stable dimensions.
+- Test dropdowns/modals near viewport edges and drawer-expanded widths.
 
 ## Verification
 
-Run:
+Run `npm run build:dashboard` and `git diff --check`. Manually verify:
 
-```bash
-npm run build:dashboard
-```
-
-Manually verify both card and row/table views where present, sidebar links,
-session expiry/reauth, loading/error/empty states, and static direct navigation.
+- direct static navigation and route casing
+- current event ID propagation
+- API pending/error/empty/success states
+- auth expiry, reauth, logout, and cookie/Bearer behavior
+- desktop and mobile layouts
+- card/list toggles, horizontal tables, modals, and drag behavior as applicable

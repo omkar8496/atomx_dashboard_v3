@@ -1,65 +1,57 @@
 # AtomX Portal Monorepo
 
-AtomX Portal is a client-facing web monorepo containing the access portal, the
-main event dashboard, and the Tag Series application. The applications are
-separate Next.js static exports that share branding, authentication helpers,
-analytics, assets, and utility packages.
+AtomX Portal is a browser-first operations suite built as three independent
+Next.js static exports. The access portal authenticates a user and selects a
+workspace, the dashboard manages event operations, and Tag Series generates
+and exports tag batches. Shared packages provide assets, UI, analytics, and
+small browser-safe helpers.
 
-This file is the entry point for people. AI agents and automation should also
-read [AGENTS.md](./AGENTS.md) and [CONTEXT.md](./CONTEXT.md), followed by the
-matching files inside the app being changed.
+This file is the human entry point. Before changing code, also read
+[AGENTS.md](./AGENTS.md), [CONTEXT.md](./CONTEXT.md), and the three matching
+files inside the app or package being changed.
+
+Last code/documentation audit: **20 August 2026**.
 
 ## Repository Map
 
-| Path | Purpose | Router | Local port |
+| Path | Purpose | Router | Dev port |
 | --- | --- | --- | --- |
 | `apps/access_portal` | Google sign-in, role/workspace selection, token handoff | Pages Router | `3003` |
-| `apps/dashboard` | Event operations dashboard and configuration tools | App Router | `3000` |
-| `apps/tag_series` | Tag-series generation, records, and browser Excel export | App Router | `3002` |
-| `packages` | Shared UI, auth/API helpers, analytics, assets, and utilities | N/A | N/A |
-| `scripts` | Shared asset synchronization and combined static export | N/A | N/A |
-| `docs` | Cross-project product and analytics documentation | N/A | N/A |
+| `apps/dashboard` | Event, vendor, device, AccessX, transaction, and report operations | App Router | `3000` |
+| `apps/tag_series` | Tag-series setup, generation, records, and XLSX export | App Router | `3002` |
+| `packages` | Shared assets, UI, analytics, auth/API foundations, and utilities | N/A | N/A |
+| `scripts` | Shared-asset synchronization and combined static export | N/A | N/A |
+| `docs` | Cross-project analytics and architecture notes | N/A | N/A |
 
 ## Technology
 
-- Next.js `16.2.6`
-- React `19.2.0`
-- npm workspaces with Turborepo `2.6`
-- Tailwind CSS `4`
+- Next.js `16.2.6` and React `19.2.0`
+- npm workspaces (`npm@10.9.0`) and Turborepo
 - JavaScript/JSX
-- Zustand in the dashboard only
-- PostHog and Google Analytics through `@atomx/global-components`
-- SheetJS (`xlsx`) for Tag Series browser exports
+- Tailwind CSS 4 plus route/component CSS
+- Zustand persist in the dashboard only
+- PostHog and GA through `@atomx/global-components`
+- SheetJS (`xlsx`) for browser workbook generation
 
-The apps are configured with `output: "export"`. They do not require a Next.js
-runtime server after building. Browser code calls the AtomX API directly.
+All apps use `output: "export"`. They have no Next.js runtime server after
+build; browser code calls the AtomX API directly.
 
-## Getting Started
+## Setup And Commands
 
-Requirements:
-
-- Node.js compatible with Next.js 16
-- npm `10.9.0` or a compatible npm 10 release
-- A root `.env` containing the required public runtime configuration
-
-Install and run all apps:
+Use Node.js compatible with Next.js 16 and run commands from the repository
+root:
 
 ```bash
 npm install
 npm run dev
 ```
 
-Run one app:
+Common commands:
 
 ```bash
 npm run dev:dashboard
 npm run dev:access
 npm run dev:tag_series
-```
-
-## Common Commands
-
-```bash
 npm run build
 npm run build:dashboard
 npm run build:access
@@ -69,82 +61,81 @@ npm run lint
 npm run sync:public
 ```
 
-`npm run build:out` rebuilds all applications and assembles the deployable
-static site in the root `out/` directory. It deletes generated `out/`
-directories before rebuilding; do not keep hand-authored files there.
+`npm run build:out` rebuilds all apps and assembles the deployable static site
+in root `out/`. It removes generated app/root `out/` directories first; never
+keep hand-authored files there.
 
-## Environment Variables
+## Environment
 
-Every app's Next config loads the root `.env`. Only names are documented here:
+Each app loads the root `.env`. Variable names currently used include:
 
-| Variable | Use |
+| Variable | Purpose |
 | --- | --- |
 | `NEXT_PUBLIC_BASE_URL` | AtomX API base URL |
-| `NEXT_PUBLIC_DASHBOARD_API_KEY` | Dashboard API-key header |
-| `NEXT_PUBLIC_TAG_SERIES_API_KEY` | Tag Series API-key header |
+| `NEXT_PUBLIC_DASHBOARD_API_KEY` | Dashboard `x-api-key` value |
+| `NEXT_PUBLIC_TAG_SERIES_API_KEY` | Tag Series `x-api-key` value |
 | `NEXT_PUBLIC_DASHBOARD_BASEPATH` | Optional dashboard static base path |
-| `NEXT_PUBLIC_ACCESS_PORTAL_URL` | Access portal URL |
-| `NEXT_PUBLIC_ACCESS_ADMIN_URL` | Admin access/redirect URL |
-| `NEXT_PUBLIC_DASHBOARD_URL` | Dashboard URL |
-| `NEXT_PUBLIC_TAG_SERIES_URL` | Tag Series URL |
-| `NEXT_PUBLIC_PORTAL_URL` | General portal URL |
-| `NEXT_PUBLIC_LIVELINK_URL` | LiveLink target URL |
-| `NEXT_PUBLIC_POSTHOG_KEY` | PostHog browser project key |
-| `NEXT_PUBLIC_POSTHOG_HOST` | PostHog host |
-| `NEXT_PUBLIC_GA_MEASUREMENT_ID` | GA4 measurement ID |
-| `NEXT_PUBLIC_DEV_PORTAL_TOKEN` | Optional local development token |
-| `NEXT_PUBLIC_DEV_TOKEN_BUTTON` | Optional local token UI flag |
+| `NEXT_PUBLIC_ACCESS_PORTAL_URL` | Access portal destination |
+| `NEXT_PUBLIC_ACCESS_ADMIN_URL` | Admin dashboard destination |
+| `NEXT_PUBLIC_DASHBOARD_URL` | Dashboard destination |
+| `NEXT_PUBLIC_TAG_SERIES_URL` | Tag Series destination |
+| `NEXT_PUBLIC_PORTAL_URL` | General portal destination |
+| `NEXT_PUBLIC_LIVELINK_URL` | LiveLink destination |
+| `NEXT_PUBLIC_POSTHOG_KEY` / `NEXT_PUBLIC_POSTHOG_HOST` | PostHog browser config |
+| `NEXT_PUBLIC_GA_MEASUREMENT_ID` | GA4 browser config |
+| `NEXT_PUBLIC_DEV_PORTAL_TOKEN` | Optional local bootstrap token |
+| `NEXT_PUBLIC_DEV_TOKEN_BUTTON` | Enables the local token control |
 
-All `NEXT_PUBLIC_*` values are bundled into browser code. They must be treated
-as public configuration, not server secrets. Do not commit `.env` values or
-copy token/API-key values into documentation.
+Every `NEXT_PUBLIC_*` value is bundled into public browser JavaScript. Do not
+put private secrets there or copy environment values into documentation.
 
-## State And Authentication
+## State And Session Model
 
-The dashboard uses a persisted Zustand store (`atomx.dashboard.store`) for its
-token, decoded profile, event metadata/details, selected service, vendors, and
-stalls. The access portal and Tag Series use React state plus browser storage.
-There is no Redux store.
+The dashboard uses a persisted Zustand store named `atomx.dashboard.store`.
+The access portal and Tag Series use React state plus browser storage. There is
+no Redux store and no React Query cache.
 
-Authentication is browser-based:
+The session flow is:
 
-1. The access portal starts Google authentication.
-2. A returned bootstrap token is stored in browser storage/cookie context.
-3. Role/workspace selection calls `/auth/select`.
-4. The selected service token is stored under app-specific localStorage keys.
-5. The destination app reads the URL/storage token and calls the API with
-   `credentials: "include"`; the dashboard also sends a Bearer token when one
-   is available.
+1. Access Portal captures a Google/bootstrap token.
+2. Workspace selection calls `POST /auth/select`.
+3. The selected token is stored under destination-specific localStorage keys.
+4. The destination reads URL/storage context and sends browser API requests.
+5. All live API clients use `credentials: "include"`; the dashboard also adds
+   a Bearer token when its persisted token exists.
+6. Dashboard GET requests may retry once without Bearer after `401`/`403`,
+   allowing the cookie session to authenticate. Mutations do not retry.
 
-There is session-expiry warning and reauthentication, but no silent refresh
-loop in this repository. See [CONTEXT.md](./CONTEXT.md) for the exact keys and
-flow.
+Cookies are attached by the browser; Bearer headers are still built by the
+frontend. There is expiry warning and reauthentication, but no silent refresh
+loop in this repository.
 
 ## Shared Assets
 
-Canonical shared assets live in `packages/public-assets`. Running
-`npm run sync:public` replaces each app's generated `public/shared` folders.
-Edit the canonical source, not generated copies.
+Canonical assets live in `packages/public-assets`. `npm run sync:public`
+replaces generated `apps/*/public/shared` copies. Edit the package source, not
+the generated app copies.
 
 ## Verification
 
-There is currently no automated unit or integration test suite. For code
-changes, run the build for every affected app and manually verify important
-browser flows. For cross-package changes, run:
+There is no automated unit/integration test suite. Build each affected app and
+manually verify browser behavior, direct static navigation, loading/error/empty
+states, responsive layouts, and authentication handoff. For shared changes run:
 
 ```bash
 npm run build
 ```
 
-## Documentation
+## Documentation Index
 
-- [AGENTS.md](./AGENTS.md): repository rules for AI agents and contributors
-- [CONTEXT.md](./CONTEXT.md): detailed architecture and implementation status
-- [apps/access_portal/README.md](./apps/access_portal/README.md)
-- [apps/dashboard/README.md](./apps/dashboard/README.md)
-- [apps/tag_series/README.md](./apps/tag_series/README.md)
-- [packages/README.md](./packages/README.md)
-- [docs/analytics-schema.md](./docs/analytics-schema.md)
+- [Repository agent rules](./AGENTS.md)
+- [Repository architecture/context](./CONTEXT.md)
+- [Dashboard guide](./apps/dashboard/README.md)
+- [Dashboard implementation context](./apps/dashboard/CONTEXT.md)
+- [Access Portal guide](./apps/access_portal/README.md)
+- [Tag Series guide](./apps/tag_series/README.md)
+- [Shared packages guide](./packages/README.md)
+- [Analytics schema](./docs/analytics-schema.md)
 
-`posthog-setup-report.md` is a historical setup report and does not fully match
-the current browser-only shared analytics implementation.
+`posthog-setup-report.md` is historical and is not the source of truth for the
+current shared browser analytics implementation.

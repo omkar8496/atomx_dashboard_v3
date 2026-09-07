@@ -1,55 +1,44 @@
 # AtomX Tag Series
 
-Tag Series is the browser application for selecting event/client/year-series
-context, generating tag IDs, recording batches, viewing records, and exporting
-workbooks.
+Tag Series selects event/client/year-series context, generates tag IDs,
+records batches, displays records, and exports XLSX workbooks in the browser.
+It is statically deployed under `/tag_series`.
 
-It is deployed under the fixed `/tag_series` base path.
+Last code/documentation audit: **20 August 2026**.
 
 ## Run
-
-From the repository root:
 
 ```bash
 npm run dev:tag_series
 npm run build:tag_series
 ```
 
-The development server uses port `3002`.
+Development uses port `3002`.
 
-## Stack
+## Architecture
 
-- Next.js App Router
-- React local state
-- Static export under `/tag_series`
-- Browser localStorage and sessionStorage
-- SheetJS (`xlsx`) for browser workbook export
-- Shared AtomX token gate and analytics
+- Next.js App Router static export
+- fixed `/tag_series` basePath and assetPrefix
+- React local state plus localStorage/sessionStorage
+- SheetJS (`xlsx`) browser export
+- app-local `api/api.js` for live Tag Series requests
+- shared AtomX analytics, token gate, UI, and helpers
 
-There is no Redux or Zustand store in this app.
+There is no Redux or Zustand store.
 
 ## Routes
 
-| Route | Purpose |
+| Route (after `/tag_series`) | Purpose |
 | --- | --- |
 | `/` | Event/client/year-series selection |
-| `/generate` | Generate IDs, post logs, view batches, export XLSX |
-| `/Admin/View` | Admin records view |
+| `/generate` | Generate IDs, write logs, load records, export workbook |
+| `/Admin/View` | Admin records UI |
 | `/Admin/AddFormFactor` | Form-factor prototype |
 | `/Admin/AddProduct` | Product prototype |
 | `/login` | Login entry |
 
-The deployed URLs include `/tag_series` before each route.
-
-## API
-
-The app-local `api/api.js` calls Tag Series endpoints for clients, series,
-logs, batch records, and events. Requests use browser credentials and the Tag
-Series API key.
-
-See [CONTEXT.md](./CONTEXT.md) for current authentication limitations.
-
 ## Verification
 
-Run the build, then verify step-one persistence, generation, API errors, direct
-navigation under the base path, and the downloaded workbook.
+Build and test direct base-path navigation, token-key migration, step-one
+session restoration, selection/API states, generation, records, and the
+downloaded XLSX file.

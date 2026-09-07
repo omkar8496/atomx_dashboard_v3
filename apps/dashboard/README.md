@@ -1,12 +1,14 @@
 # AtomX Dashboard
 
-The Dashboard is the main event-operations application. It contains event
-selection and editing, vendor/stall configuration, device operations,
-transactions, reports, blocked IDs, APK uploads, menu setup, and related admin
-screens.
+The Dashboard is the main event-operations application. It manages events,
+roles, vendors, stalls, menus, AccessX configuration, devices, transactions,
+whitelists, reports, blocked IDs, and event settings.
 
-Read the root `README.md`, `AGENTS.md`, and `CONTEXT.md`, then this app's
-[CONTEXT.md](./CONTEXT.md) before changing behavior.
+Read the root docs first, then [AGENTS.md](./AGENTS.md) and
+[CONTEXT.md](./CONTEXT.md). The context file is the detailed source of truth for
+route/API status.
+
+Last code/documentation audit: **20 August 2026**.
 
 ## Run
 
@@ -17,85 +19,88 @@ npm run dev:dashboard
 npm run build:dashboard
 ```
 
-The development server uses port `3000`.
+Development uses `http://localhost:3000`. The app is an App Router static
+export with an optional `NEXT_PUBLIC_DASHBOARD_BASEPATH`.
 
-## Stack
+## Stack And Architecture
 
-- Next.js App Router
-- React 19
-- Static export with optional dashboard base path
-- Zustand with persisted localStorage state
-- Tailwind CSS 4 plus page/component CSS
-- `xlsx` where browser workbook support is needed
-- Shared AtomX components, helpers, fonts, logos, and analytics
+- Next.js App Router and React 19
+- Zustand persist for cross-route dashboard state
+- React state for forms, filters, modals, view controls, and drag ordering
+- Tailwind CSS 4 plus route/component CSS
+- Shared AtomX header, drawer, assets, Poppins fonts, loader, and analytics
+- `xlsx` for browser-generated menu workbooks
 
-## Routes
+API requests belong in `src/lib/dashboardApi.js` and use the common client in
+`src/lib/apiClient.js`. Do not add raw production endpoint calls to visual
+components.
 
-| Route | Screen |
-| --- | --- |
-| `/admin` | Event list and selection |
-| `/admin/Create_event` | Admin/operator role linking |
-| `/Config` | Vendor and stall configuration |
-| `/Config/menu` | Menu/category/item editor |
-| `/event-edit` | Event settings |
-| `/Reports` | Report filters |
-| `/transactions` | Transaction filters/results with on-demand row details |
-| `/device` | Event device list |
-| `/device_masterlist` | Device Master List |
-| `/Blocked` | Blocked IDs |
-| `/apk_upload` | APK uploads |
-| `/timeline` | Timeline |
+## Active Navigation
 
-Route casing is part of the static URL contract.
+The current SideDrawer exposes:
 
-## State Management
+| Order | Label | Route |
+| --- | --- | --- |
+| 1 | Device Master | `/device_masterlist` |
+| 2 | Configuration | `/Config` |
+| 3 | Whitelist | `/whitelist` |
+| 4 | Admin | `/admin/Create_event` |
+| 5 | Reports | `/Reports` |
+| 6 | Transactions | `/transactions` |
+| 7 | Devices | `/device` |
+| 8 | Blocked | `/Blocked` |
 
-The app uses Zustand `persist` in `src/store/dashboardStore.js`.
+Analytics, APK Uploads, TapX-Transactions, and Patcha-NY-Track are commented
+out in the drawer. Their route files may still build. Route casing is part of
+the static URL contract.
 
-Storage key:
+## State
+
+`src/store/dashboardStore.js` persists under:
 
 ```text
 atomx.dashboard.store
 ```
 
-Persisted state includes the selected token/profile, event metadata/details,
-selected service, and vendor/stall caches keyed by event ID. Component-only
-state stays in React.
+It stores token/profile, event metadata/details, selected service, and vendor
+and stall caches keyed by event ID. `atomx.dashboard.token` remains part of the
+Access Portal handoff contract. There is no Redux or React Query.
 
-An IndexedDB draft utility exists, but current screens do not use it.
+## Authentication And API
 
-## API
+Every request defaults to `credentials: "include"`, so the browser sends
+matching cookies. When Zustand has a token, the frontend also sends Bearer
+authorization. Tokenized GET requests can retry once cookie-only after
+`401`/`403`; mutations cannot. There is no silent refresh.
 
-Use `src/lib/dashboardApi.js` for dashboard API calls. Requests use:
+The API client adds `x-api-key` from public dashboard configuration and wraps
+failures in `ApiError` with normalized user-facing messages. Never hardcode an
+event/stall/transaction/whitelist ID.
 
-- `NEXT_PUBLIC_BASE_URL`
-- `NEXT_PUBLIC_DASHBOARD_API_KEY`
-- `credentials: "include"`
-- a Bearer token when present
+## Key Live Workflows
 
-The API module includes GET de-duplication and a cookie-only GET retry. Do not
-hardcode event IDs in components.
+- Event selection and event detail editing
+- Admin/operator linking plus API-backed grouped history
+- Vendor/stall lists, creation, vendor editing, device attachment
+- AccessX category and gate-master configuration
+- Stall menu loading with category/item matching and local drag reordering
+- Device list/personalization and Device Master List add/edit
+- Transaction filtering, lazy row details, and completed/void status changes
+- Whitelist search and per-record history
+- Report request creation, list refresh, and linked report downloads
+- Event balance-setting update and day close
 
-See [CONTEXT.md](./CONTEXT.md) for the endpoint inventory and live/prototype
-status of each screen.
-
-## UI Shell
-
-The app shell uses:
-
-- a fixed AtomX header
-- profile/session controls
-- a dark hover-expanding side drawer
-- responsive content below the header
-- Poppins and the shared AtomX palette
-
-Reuse these components rather than creating route-specific shells.
+Some routes and controls are still local-only prototypes. See
+[CONTEXT.md](./CONTEXT.md) before extending them.
 
 ## Verification
 
-There is no automated test suite. Build the app and manually verify affected
-routes:
+There is no automated test suite. Run:
 
 ```bash
 npm run build:dashboard
 ```
+
+Manually check the changed route, both compact card/list modes where present,
+API loading/error/empty states, dynamic ID selection, drawer navigation,
+reauthentication, and narrow/wide layouts.

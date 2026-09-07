@@ -87,6 +87,12 @@ function DeviceRow({ device, index, onEdit }) {
         <div className="mt-1 text-[12.5px] font-semibold [overflow-wrap:anywhere]">
           {getDeviceSerial(device)}
         </div>
+        <div className="mt-2.5 font-vcr text-[7.5px] tracking-[0.15em] text-(--faint)">
+          ANDROID ID
+        </div>
+        <div className="font-vcr mt-1 text-[13px] tracking-[0.01em] text-(--text) [overflow-wrap:anywhere]">
+          {device.androidId || "-"}
+        </div>
         <div className="mt-2.5 flex flex-wrap items-center gap-2">
           <span className="rounded-full bg-(--text) px-2.5 py-1 text-[11px] font-semibold text-(--bg)">
             {device.type || "-"}
@@ -106,10 +112,6 @@ function DeviceRow({ device, index, onEdit }) {
           <ClockIcon className="h-3 w-3 shrink-0 opacity-60" />
           <span className="text-[11.5px] font-light">
             {formatDateTime(device.updatedAt ?? device.createdAt)}
-          </span>
-          <span className="text-(--line)">|</span>
-          <span className="font-vcr text-[10.5px] [overflow-wrap:anywhere]">
-            {device.androidId || "-"}
           </span>
         </div>
       </div>

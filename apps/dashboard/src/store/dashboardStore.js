@@ -20,6 +20,15 @@ function safeDecode(token) {
   }
 }
 
+// eventMeta.eventId arrives as a string from URL params and as a number from API
+// responses. shallowEqual compares with ===, so mixing the two makes every write
+// look like a change, which can bounce two components' effects against each other
+// in an endless re-fetch loop. Normalize on the way in.
+function normalizeEventMeta(meta) {
+  if (!meta || meta.eventId === null || meta.eventId === undefined) return meta;
+  return { ...meta, eventId: String(meta.eventId) };
+}
+
 function shallowEqual(a, b) {
   if (a === b) return true;
   if (!a || !b) return false;
@@ -54,7 +63,7 @@ export const useDashboardStore = create(
       setEventMeta: (meta) => {
         if (!meta) return;
         set((state) => {
-          const next = { ...(state.eventMeta ?? {}), ...meta };
+          const next = normalizeEventMeta({ ...(state.eventMeta ?? {}), ...meta });
           if (shallowEqual(state.eventMeta ?? {}, next)) {
             return state;
           }

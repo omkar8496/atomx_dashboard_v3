@@ -1,36 +1,21 @@
 # Shared Packages
 
-This directory contains reusable code consumed by the three AtomX applications.
-It is a shared layer, not a separate deployed application.
+These workspace packages are browser-consumable shared code, not separately
+deployed services. Last audited: **20 August 2026**.
 
-## Package Map
-
-| Package directory | Package name | Purpose |
+| Directory | Package | Responsibility |
 | --- | --- | --- |
-| `lib` | `@atomx/lib` | Base URL, JWT, initials, environment/project metadata |
-| `api` | `@atomx/api-client` | Generic API-client foundation |
+| `lib` | `@atomx/lib` | Base URL, JWT decode, initials, project metadata |
+| `api` | `@atomx/api-client` | Generic/mock-oriented API foundation |
 | `auth` | `@atomx/auth` | Generic in-memory/mock auth foundation |
-| `global-components` | `@atomx/global-components` | Login, TokenGate, shell, loader, analytics |
-| `shared-ui` | `@atomx/shared-ui` | Button, card, and heading primitives |
-| `utils` | `@atomx/utils` | Formatting and feature flags |
-| `public-assets` | `@atomx/public-assets` | Canonical shared fonts, logos, and manifest |
+| `global-components` | `@atomx/global-components` | Login/shell, loader, TokenGate, analytics |
+| `shared-ui` | `@atomx/shared-ui` | Small button/card/heading primitives |
+| `utils` | `@atomx/utils` | Formatting and in-memory feature flags |
+| `public-assets` | `@atomx/public-assets` | Canonical logos, Poppins fonts, asset manifest |
 
-## Important Boundaries
+App-specific production endpoints stay in the owning app unless a stable
+cross-app contract exists. `@atomx/auth` and `@atomx/api-client` are not the
+production Access Portal/dashboard authority.
 
-- App-specific AtomX endpoints belong in the owning app API layer unless they
-  are truly shared and have a stable cross-app contract.
-- The generic auth and API packages are foundations with mock-oriented
-  behavior. They are not currently the sole production authentication/data
-  implementation.
-- Browser analytics belongs in `global-components`.
-- Canonical assets belong in `public-assets`; app copies are generated.
-
-## Build Impact
-
-A shared package change can affect all applications. Run:
-
-```bash
-npm run build
-```
-
-after changing public exports or shared runtime behavior.
+After changing public exports or shared runtime behavior, run `npm run build`.
+After asset edits, run `npm run sync:public`.
