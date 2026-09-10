@@ -18,6 +18,15 @@ const TRANSACTION_TYPES = [
   { label: "REVERSAL SALE", value: "reversal_sale" }
 ];
 
+// Public receipt viewer. Override with NEXT_PUBLIC_RECEIPT_URL if the host moves.
+const RECEIPT_BASE_URL =
+  process.env.NEXT_PUBLIC_RECEIPT_URL ?? "https://fnbxapi.atomx.in/receipts";
+
+function getReceiptUrl(txnId) {
+  if (txnId === "" || txnId == null) return null;
+  return `${RECEIPT_BASE_URL}?r=${encodeURIComponent(txnId)}`;
+}
+
 const STATUS_OPTIONS = [
   { label: "All Status", value: "" },
   { label: "Completed", value: "completed" },
@@ -826,7 +835,25 @@ function TransactionResults({ transactions, token, onUpdateStatus }) {
                           <span className="text-[0.82rem] font-bold text-(--blue)">{normalizeTxnType(transaction.txn_type)}</span>
                         </td>
                         <td className="border-b border-(--line2) px-4 py-3">
-                          <div className="text-[0.76rem] font-medium text-(--muted)">{cleanText(transaction.txn_id)}</div>
+                          {getReceiptUrl(transaction.txn_id) ? (
+                            <a
+                              href={getReceiptUrl(transaction.txn_id)}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={(event) => event.stopPropagation()}
+                              title={`Open receipt for transaction ${transaction.txn_id}`}
+                              className="inline-flex items-center gap-1 text-[0.76rem] font-semibold text-(--text) underline decoration-(--line) decoration-1 underline-offset-2 transition hover:text-(--orange) hover:decoration-(--orange)"
+                            >
+                              {cleanText(transaction.txn_id)}
+                              <svg viewBox="0 0 24 24" className="h-3 w-3 shrink-0 opacity-70" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                                <path d="M14 4h6v6" />
+                                <path d="M20 4 11 13" />
+                                <path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
+                              </svg>
+                            </a>
+                          ) : (
+                            <div className="text-[0.76rem] font-medium text-(--muted)">{cleanText(transaction.txn_id)}</div>
+                          )}
                           <div className="mt-1 text-[0.72rem] font-semibold text-(--orange)">{cleanText(transaction.txn_receipt)}</div>
                         </td>
                         <td className="border-b border-(--line2) px-4 py-3">
@@ -880,7 +907,6 @@ function TransactionResults({ transactions, token, onUpdateStatus }) {
                   >
                     <div>
                       <p className="text-[0.78rem] font-bold text-(--blue)">{normalizeTxnType(transaction.txn_type)}</p>
-                      <p className="mt-1 text-[0.72rem] font-semibold text-(--text)">#{cleanText(transaction.txn_id)}</p>
                     </div>
                     <div className="text-right">
                       <p className="text-[0.74rem] font-bold text-(--text)">{formatMoney(transaction.txn_amount)}</p>
@@ -889,6 +915,24 @@ function TransactionResults({ transactions, token, onUpdateStatus }) {
                       </p>
                     </div>
                   </button>
+                  {getReceiptUrl(transaction.txn_id) ? (
+                    <a
+                      href={getReceiptUrl(transaction.txn_id)}
+                      target="_blank"
+                      rel="noreferrer"
+                      title={`Open receipt for transaction ${transaction.txn_id}`}
+                      className="mt-1 inline-flex items-center gap-1 text-[0.72rem] font-semibold text-(--text) underline decoration-(--line) decoration-1 underline-offset-2 transition hover:text-(--orange) hover:decoration-(--orange)"
+                    >
+                      #{cleanText(transaction.txn_id)}
+                      <svg viewBox="0 0 24 24" className="h-3 w-3 shrink-0 opacity-70" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                        <path d="M14 4h6v6" />
+                        <path d="M20 4 11 13" />
+                        <path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
+                      </svg>
+                    </a>
+                  ) : (
+                    <p className="mt-1 text-[0.72rem] font-semibold text-(--muted)">#{cleanText(transaction.txn_id)}</p>
+                  )}
                   <div className="mt-3 grid grid-cols-2 gap-2 text-[0.68rem]">
                     <div>
                       <span className="block font-semibold uppercase tracking-[0.06em] text-(--faint)">Vendor</span>

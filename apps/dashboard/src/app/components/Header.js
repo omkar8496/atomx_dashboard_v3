@@ -21,7 +21,9 @@ export default function Header({
   breadcrumb = "Profile / Operations",
   variant = "portal",
   showEditEventButton = false,
-  hideNav = false
+  hideNav = false,
+  navOnly = null,
+  navItemHrefs = null
 }) {
   const router = useRouter();
   const profile = useDashboardStore((state) => state.profile);
@@ -172,6 +174,7 @@ export default function Header({
               </div>
             </div>
             <div className="flex-1" />
+            {resolvedEventMeta.eventId ? (
             <span
               className="font-vcr inline-flex shrink-0 items-center gap-2 text-[11px] font-semibold tracking-[0.1em] text-(--muted)"
               aria-label={`Event ID ${resolvedEventMeta.eventId ?? "not selected"}`}
@@ -179,9 +182,10 @@ export default function Header({
             >
               <span className="hidden uppercase sm:inline">Event</span>
               <span className="font-chillax text-[14px] font-bold tracking-[0.01em] text-(--text)">
-                #{resolvedEventMeta.eventId ?? "-"}
+                #{resolvedEventMeta.eventId}
               </span>
             </span>
+            ) : null}
             <button
               type="button"
               onClick={toggleTheme}
@@ -240,6 +244,8 @@ export default function Header({
         <SideDrawer
           mobileOpen={isMobileDrawerOpen}
           onMobileClose={() => setIsMobileDrawerOpen(false)}
+          only={navOnly}
+          itemHrefs={navItemHrefs}
         />
       ) : null}
     </div>

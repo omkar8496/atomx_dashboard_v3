@@ -222,7 +222,7 @@ function EventActionIcon({ type }) {
   );
 }
 
-function EventPoster({ eventItem, status }) {
+function EventPoster({ eventItem, status, showStatus = true }) {
   const style = STATUS_STYLES[status] ?? STATUS_STYLES.present;
   const id = String(getEventId(eventItem));
   const words = getEventName(eventItem)
@@ -251,24 +251,28 @@ function EventPoster({ eventItem, status }) {
       </svg>
 
       <div className="relative flex h-full flex-col justify-between p-3">
-        <div className="flex items-start justify-between">
-          <span
-            className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 backdrop-blur"
-            style={{ background: style.badgeBg, color: style.badgeFg }}
-          >
+        <div className="flex items-start justify-between gap-2">
+          {showStatus ? (
             <span
-              className="h-1.5 w-1.5 rounded-full"
-              style={{ background: style.dot, animation: style.pulse ? "atxLive 1.4s ease-in-out infinite" : undefined }}
-            />
-            <span className="font-vcr text-[9px] tracking-[0.14em]">{status.toUpperCase()}</span>
-          </span>
-          <span className="font-vcr rounded-[7px] bg-[rgba(28,28,28,0.62)] px-2 py-1.5 text-[9px] tracking-[0.12em] text-[#ebebeb] backdrop-blur">
+              className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 backdrop-blur"
+              style={{ background: style.badgeBg, color: style.badgeFg }}
+            >
+              <span
+                className="h-1.5 w-1.5 rounded-full"
+                style={{ background: style.dot, animation: style.pulse ? "atxLive 1.4s ease-in-out infinite" : undefined }}
+              />
+              <span className="font-vcr text-[9px] tracking-[0.14em]">{status.toUpperCase()}</span>
+            </span>
+          ) : (
+            <span aria-hidden />
+          )}
+          {/* Event ID: the card's primary identifier, so it carries weight. */}
+          <span className="font-vcr rounded-[8px] bg-[rgba(28,28,28,0.62)] px-2.5 py-1.5 text-[14px] font-bold tracking-[0.06em] text-white backdrop-blur">
             #{id || "—"}
           </span>
         </div>
 
         <div>
-          <span className="mb-2 block h-1 w-10 rounded-full bg-white/85" />
           {words.map((word, index) => (
             <div
               key={`${word}-${index}`}
@@ -292,6 +296,7 @@ export default function AdminClient() {
   const token = useDashboardStore((state) => state.token);
   const setEventMeta = useDashboardStore((state) => state.setEventMeta);
   const setEventDetails = useDashboardStore((state) => state.setEventDetails);
+  const clearEventContext = useDashboardStore((state) => state.clearEventContext);
   const [events, setEvents] = useState([]);
   const [openingEventId, setOpeningEventId] = useState("");
   const [openingAction, setOpeningAction] = useState("");
@@ -302,6 +307,12 @@ export default function AdminClient() {
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [searchPlaceholder, setSearchPlaceholder] = useState("");
+
+  // Landing on the event list means no event is open yet - drop any event left
+  // over from a previous session so it cannot leak into workspace-level pages.
+  useEffect(() => {
+    clearEventContext();
+  }, [clearEventContext]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -484,12 +495,18 @@ export default function AdminClient() {
     { id: "present", label: "Present", count: tabCounts.present },
     { id: "upcoming", label: "Upcoming", count: tabCounts.upcoming }
   ];
-  const shellClass = "mx-auto w-full max-w-[1680px] px-[clamp(16px,3vw,32px)]";
+  const shellClass =
+    "mx-auto w-full max-w-[1680px] pr-[clamp(16px,3vw,32px)] pl-[72px] md:pl-[88px] max-[900px]:px-3";
 
   return (
     <main className="min-h-screen bg-(--bg) pb-24">
       <style>{`@keyframes atxLive{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.7)}}@keyframes atxCardIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}`}</style>
-      <Header areaLabel="Event List" variant="portal" hideNav />
+      <Header
+        areaLabel="Event List"
+        variant="portal"
+        navOnly={["allEvents", "admin"]}
+        navItemHrefs={{ admin: "/admin/Create_event?scope=workspace" }}
+      />
 
       <div className="sticky top-[58px] z-30 border-b border-(--line) bg-(--bg) pt-3">
         <div className={`${shellClass} flex flex-wrap items-center gap-4`}>
@@ -582,15 +599,13 @@ export default function AdminClient() {
                     animationDelay: `${index * 0.035}s`
                   }}
                 >
-                  <EventPoster eventItem={eventItem} status={bucket} />
+                  <EventPoster
+                    eventItem={eventItem}
+                    status={bucket}
+                    showStatus={activeTab === "all"}
+                  />
 
-                  <div className="px-[14px] pt-[14px]">
-                    <div className="font-chillax truncate text-[15.5px] font-medium tracking-[-0.01em]">
-                      {getEventName(eventItem)}
-                    </div>
-                  </div>
-
-                  <div className="mx-[14px] mt-2.5 grid grid-cols-2 gap-px overflow-hidden rounded-[9px] border border-(--line2) bg-(--line2)">
+                  <div className="mx-[14px] mt-[14px] grid grid-cols-2 gap-px overflow-hidden rounded-[9px] border border-(--line2) bg-(--line2)">
                     {meta.map((item) => (
                       <div key={item.label} className="min-w-0 bg-(--surface2) px-[9px] py-[7px]">
                         <div className="font-vcr text-[7.5px] tracking-[0.15em] text-(--faint)">{item.label}</div>

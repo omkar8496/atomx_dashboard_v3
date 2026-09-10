@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useDashboardStore } from "../../store/dashboardStore";
+import SwitchAccessModal from "./SwitchAccessModal";
 
 const REAUTH_CONTEXT_KEY = "atomx.portal.reauth";
 
@@ -120,6 +121,7 @@ export default function ProfileMenu({
   variant = "event"
 }) {
   const [open, setOpen] = useState(false);
+  const [switchOpen, setSwitchOpen] = useState(false);
   const menuRef = useRef(null);
   const eventMeta = useDashboardStore((state) => state.eventMeta);
   const selectedService = useDashboardStore((state) => state.selectedService);
@@ -158,6 +160,7 @@ export default function ProfileMenu({
 
   return (
     <div ref={menuRef} className="relative">
+      {switchOpen ? <SwitchAccessModal onClose={() => setSwitchOpen(false)} /> : null}
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
@@ -228,7 +231,21 @@ export default function ProfileMenu({
           </div>
           <button
             type="button"
-            className="mt-2 w-full rounded-md bg-(--text) px-3 py-2.5 text-left text-[0.84rem] font-semibold text-(--bg) transition hover:opacity-90"
+            className="mt-2 flex w-full cursor-pointer items-center gap-2.5 rounded-md border border-(--line) bg-(--surface) px-3 py-2.5 text-left text-[0.84rem] font-semibold text-(--text) transition hover:border-(--orange) hover:text-(--orange)"
+            onClick={() => {
+              setOpen(false);
+              setSwitchOpen(true);
+            }}
+          >
+            <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M4 8h13l-3-3" />
+              <path d="M20 16H7l3 3" />
+            </svg>
+            Switch Access
+          </button>
+          <button
+            type="button"
+            className="mt-2 w-full cursor-pointer rounded-md bg-(--text) px-3 py-2.5 text-left text-[0.84rem] font-semibold text-(--bg) transition hover:opacity-90"
             onClick={handleLogout}
           >
             Logout
@@ -243,13 +260,25 @@ export default function ProfileMenu({
               <div className="text-sm font-semibold text-slate-700">{role}</div>
               <div className="text-xs text-slate-500">{email}</div>
             </div>
-            <button
-              type="button"
-              className="text-xs font-semibold text-slate-500 hover:text-[color:rgb(var(--color-orange))]"
-              onClick={handleLogout}
-            >
-              Log out
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                className="cursor-pointer text-xs font-semibold text-slate-500 hover:text-[color:rgb(var(--color-orange))]"
+                onClick={() => {
+                  setOpen(false);
+                  setSwitchOpen(true);
+                }}
+              >
+                Switch Access
+              </button>
+              <button
+                type="button"
+                className="cursor-pointer text-xs font-semibold text-slate-500 hover:text-[color:rgb(var(--color-orange))]"
+                onClick={handleLogout}
+              >
+                Log out
+              </button>
+            </div>
           </div>
 
           <div className="my-3 h-px bg-slate-200" />

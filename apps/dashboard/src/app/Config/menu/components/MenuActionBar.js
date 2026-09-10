@@ -26,7 +26,9 @@ export default function MenuActionBar({
   inactiveCategories,
   onToggleInactiveCategories,
   onDownload,
-  onAddCategory
+  onAddCategory,
+  onSave,
+  saving = false
 }) {
   return (
     <div className="flex flex-wrap items-center gap-3 rounded-[15px] border border-(--line) border-l-[3px] border-l-(--orange) bg-(--surface) px-4 py-3 shadow-(--shadow)">
@@ -72,10 +74,16 @@ export default function MenuActionBar({
 
         <button
           type="button"
-          className="flex h-9 items-center gap-1.5 rounded-[8px] bg-(--text) px-3 text-[12.5px] font-semibold text-(--bg) transition hover:bg-(--orange)"
+          onClick={onSave}
+          disabled={saving}
+          className="flex h-9 cursor-pointer items-center gap-1.5 rounded-[8px] bg-(--text) px-3 text-[12.5px] font-semibold text-(--bg) transition hover:bg-(--orange) disabled:cursor-not-allowed disabled:opacity-55"
         >
-          <SaveIcon className="h-3.5 w-3.5" />
-          Save
+          {saving ? (
+            <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+          ) : (
+            <SaveIcon className="h-3.5 w-3.5" />
+          )}
+          {saving ? "Saving..." : "Save"}
         </button>
       </div>
     </div>

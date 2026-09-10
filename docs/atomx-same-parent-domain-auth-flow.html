@@ -291,6 +291,31 @@
   </section>
 
   <section class="section">
+    <h2>0. Which flow to implement (read first)</h2>
+    <div class="warning">
+      <strong>Implement the token handoff (sections 7-11).</strong> That is the flow AtomX runs in
+      production today on <code>dashboard.atomx.in</code> and <code>tag-series.atomx.in</code>.
+      The parent-domain cookie flow described in section 4 is the future direction and is
+      <strong>not usable yet</strong> - it needs backend endpoints that do not exist. Do not build
+      an auth guard around <code>/auth/me</code>.
+    </div>
+    <h3>Verified current state</h3>
+    <table class="table">
+      <thead>
+        <tr><th>Thing</th><th>Status</th><th>What it means for you</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>?token=</code> handoff from portal</td><td>Works in production</td><td>Build on this.</td></tr>
+        <tr><td>Session cookie on API calls</td><td>Works (verified with Bearer disabled)</td><td>Send <code>credentials: "include"</code> as well, it costs nothing.</td></tr>
+        <tr><td><code>GET /auth/me</code></td><td><strong>Does not exist</strong></td><td>Check the session by decoding the stored token's <code>exp</code>.</td></tr>
+        <tr><td><code>POST /auth/logout</code></td><td><strong>Does not exist</strong></td><td>Log out by clearing local storage and returning to the portal.</td></tr>
+        <tr><td>Portal reads <code>?service=</code></td><td>Not implemented</td><td>Your project cannot force a service; the user picks the card.</td></tr>
+        <tr><td>Portal honours <code>?returnTo=</code></td><td>Reauth only</td><td>See section 12 before relying on it.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="section">
     <h2>1. Objective</h2>
     <p>
       The goal is to let any AtomX project use the same login and access-selection process without rebuilding Google login in every project. A user can open any project subdomain, be redirected to <code>portal.atomx.in</code> for authentication, select the correct workspace/project, and return to the project with an active selected session.
@@ -368,9 +393,9 @@
 
         <rect x="380" y="42" width="250" height="92" class="box project"/>
         <circle cx="406" cy="68" r="15" class="chip"/><text x="402" y="73" class="num">2</text>
-        <text x="428" y="66" class="title">Auth guard checks session</text>
-        <text x="428" y="90" class="text">GET /auth/me or API ping</text>
-        <text x="428" y="112" class="text">credentials: include</text>
+        <text x="428" y="66" class="title">Auth guard checks stored token</text>
+        <text x="428" y="90" class="text">decode exp, no API call</text>
+        <text x="428" y="112" class="text">runs client-side only</text>
 
         <rect x="710" y="42" width="250" height="92" class="box portal"/>
         <circle cx="736" cy="68" r="15" class="chip"/><text x="732" y="73" class="num">3</text>
@@ -405,14 +430,14 @@
         <rect x="380" y="378" width="250" height="92" class="box portal"/>
         <circle cx="406" cy="404" r="15" class="chip"/><text x="402" y="409" class="num">8</text>
         <text x="428" y="402" class="title">Redirect back</text>
-        <text x="428" y="426" class="text">window.location.assign(returnTo)</text>
-        <text x="428" y="448" class="text">Selected session is active</text>
+        <text x="428" y="426" class="text">redirect with ?token=&amp;eventId=</text>
+        <text x="428" y="448" class="text">Project stores token, strips URL</text>
 
         <rect x="710" y="378" width="250" height="92" class="box project"/>
         <circle cx="736" cy="404" r="15" class="chip"/><text x="732" y="409" class="num">9</text>
         <text x="758" y="402" class="title">Project API calls work</text>
-        <text x="758" y="426" class="text">fetch(..., credentials: include)</text>
-        <text x="758" y="448" class="text">No local login required</text>
+        <text x="758" y="426" class="text">Bearer + x-api-key + credentials</text>
+        <text x="758" y="448" class="text">No Google login in the project</text>
 
         <path class="line" d="M290 88 H380"/>
         <path class="line" d="M630 88 H710"/>
@@ -440,7 +465,11 @@
     </ol>
 
     <div class="warning">
-      <strong>Important:</strong> if the cookie is <code>HttpOnly</code>, frontend code cannot read it with <code>document.cookie</code>. That is good. The project should validate login by calling a session-check endpoint like <code>/auth/me</code>, not by reading the cookie directly.
+      <strong>Important:</strong> if the cookie is <code>HttpOnly</code>, frontend code cannot read
+      it with <code>document.cookie</code>. That is intended. A project would then have to validate
+      the session through a server endpoint - but <strong><code>/auth/me</code> does not exist on the
+      AtomX backend today</strong>, so this whole section is future work. Until it ships, validate
+      the session by decoding the token you received from the portal (section 9).
     </div>
 
     <h3>Required Backend Cookie Settings</h3>
@@ -483,133 +512,311 @@ Allow credentials: true</code></pre>
   <section class="section">
     <h2>6. New Project Implementation Guide</h2>
     <p>
-      Give the following small integration kit to the worker building a new AtomX project. The project does not need Google login code. It only needs an auth guard and an API helper.
+      The integration kit is five small files. The project needs no Google login code, no session
+      endpoint, and no server runtime.
     </p>
-
     <table class="table">
       <thead>
-        <tr>
-          <th>File</th>
-          <th>Where to place</th>
-          <th>Purpose</th>
-        </tr>
+        <tr><th>File</th><th>Section</th><th>Purpose</th></tr>
       </thead>
       <tbody>
-        <tr>
-          <td><code>src/lib/atomxAuthConfig.js</code></td>
-          <td>New project</td>
-          <td>Portal URL, API URL, service key, login route settings.</td>
-        </tr>
-        <tr>
-          <td><code>src/lib/atomxApiClient.js</code></td>
-          <td>New project</td>
-          <td>Central API helper using <code>credentials: "include"</code>.</td>
-        </tr>
-        <tr>
-          <td><code>src/components/AtomxAuthGuard.jsx</code></td>
-          <td>New project</td>
-          <td>Client-side session check and redirect to portal.</td>
-        </tr>
-        <tr>
-          <td><code>src/app/layout.jsx</code> or <code>pages/_app.jsx</code></td>
-          <td>New project</td>
-          <td>Wrap the application with <code>AtomxAuthGuard</code>.</td>
-        </tr>
+        <tr><td><code>src/lib/atomxAuthConfig.js</code></td><td>7</td><td>Portal URL, API URL, api key, service key, storage keys.</td></tr>
+        <tr><td><code>src/lib/atomxToken.js</code></td><td>8</td><td>Capture <code>?token=</code>, store/read/clear it, decode <code>exp</code>, read event context.</td></tr>
+        <tr><td><code>src/lib/atomxApiClient.js</code></td><td>9</td><td>Central fetch: Bearer + <code>x-api-key</code> + <code>credentials: "include"</code>.</td></tr>
+        <tr><td><code>src/lib/atomxRedirect.js</code></td><td>10</td><td>Store resume context and send the user to the portal.</td></tr>
+        <tr><td><code>src/components/AtomxAuthGuard.jsx</code></td><td>11</td><td>Client-side gate: capture token, check expiry, redirect, schedule expiry.</td></tr>
       </tbody>
     </table>
-  </section>
+    </section>
 
   <section class="section page-break">
     <h2>7. Code: Auth Config</h2>
+    <p>
+      One file holds every environment-specific value. <code>service</code> is the role type the
+      backend registered for this project - the portal uses it to build the storage key.
+    </p>
     <pre><code>// src/lib/atomxAuthConfig.js
 export const ATOMX_AUTH = {
-  portalUrl: "https://portal.atomx.in",
-  apiBaseUrl: "https://dapi-uat.atomx.in",
-  service: "new-project",
-  sessionCheckPath: "/auth/me"
-};</code></pre>
+  portalUrl:  process.env.NEXT_PUBLIC_PORTAL_URL  || "https://portal.atomx.in",
+  apiBaseUrl: process.env.NEXT_PUBLIC_BASE_URL    || "https://dapi-uat.atomx.in",
+  apiKey:     process.env.NEXT_PUBLIC_API_KEY     || "",   // x-api-key, ask the portal owner
+  service:    "new-project",                               // role type for this project
 
-    <h2>8. Code: API Client</h2>
-    <pre><code>// src/lib/atomxApiClient.js
+  // Storage keys. The portal writes the first one; keep the names exactly.
+  tokenKey:  "atomx.auth.new-project",   // atomx.auth.&lt;service&gt;
+  reauthKey: "atomx.portal.reauth",      // resume context, 24h TTL
+  themeKey:  "atomx.theme"
+};</code></pre>
+  </section>
+
+  <section class="section">
+    <h2>8. Code: Token Utilities</h2>
+    <p>
+      Decode the JWT locally to read <code>exp</code> and the user profile. No library needed - the
+      payload is base64url JSON. Never trust it for authorisation, only for UI and expiry.
+    </p>
+    <pre><code>// src/lib/atomxToken.js
 import { ATOMX_AUTH } from "./atomxAuthConfig";
 
+export function decodeJwt(token) {
+  try {
+    const payload = token.split(".")[1];
+    const json = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
+    return JSON.parse(decodeURIComponent(escape(json)));
+  } catch {
+    return null;
+  }
+}
+
+export function readToken() {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage.getItem(ATOMX_AUTH.tokenKey);
+  } catch {
+    return null;
+  }
+}
+
+export function storeToken(token) {
+  try {
+    window.localStorage.setItem(ATOMX_AUTH.tokenKey, token);
+  } catch (error) {
+    console.error("Failed to store AtomX token", error);
+  }
+}
+
+export function clearToken() {
+  try {
+    window.localStorage.removeItem(ATOMX_AUTH.tokenKey);
+    window.localStorage.removeItem(ATOMX_AUTH.reauthKey);
+  } catch (error) {
+    console.error("Failed to clear AtomX token", error);
+  }
+}
+
+// Capture ?token= handed over by the portal, then remove it from the URL so it
+// does not stay in history or get copied into a shared link.
+export function captureTokenFromUrl() {
+  if (typeof window === "undefined") return null;
+  const url = new URL(window.location.href);
+  const token = url.searchParams.get("token");
+  if (!token) return null;
+
+  storeToken(token);
+  url.searchParams.delete("token");
+  window.history.replaceState(window.history.state, "", url.toString());
+  return token;
+}
+
+export function isExpired(token, skewMs = 0) {
+  const decoded = decodeJwt(token);
+  if (!decoded?.exp) return false;          // no exp: let the API decide
+  return decoded.exp * 1000 - skewMs &lt;= Date.now();
+}
+
+// Event context also arrives as query params on the handoff.
+export function captureContextFromUrl() {
+  if (typeof window === "undefined") return {};
+  const params = new URLSearchParams(window.location.search);
+  return {
+    eventId:   params.get("eventId"),
+    eventName: params.get("eventName"),
+    venue:     params.get("venue"),
+    city:      params.get("city"),
+    service:   params.get("service")
+  };
+}</code></pre>
+  </section>
+
+  <section class="section page-break">
+    <h2>9. Code: API Client</h2>
+    <p>
+      Every AtomX call goes through this helper. It sends the Bearer token, the
+      <code>x-api-key</code>, and <code>credentials: "include"</code> so the cookie session is used
+      too when it is available.
+    </p>
+    <pre><code>// src/lib/atomxApiClient.js
+import { ATOMX_AUTH } from "./atomxAuthConfig";
+import { readToken } from "./atomxToken";
+
+export class ApiError extends Error {
+  constructor(message, status) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
 export async function atomxFetch(path, options = {}) {
-  const url = path.startsWith("http")
-    ? path
-    : `${ATOMX_AUTH.apiBaseUrl}${path}`;
+  const url = path.startsWith("http") ? path : `${ATOMX_AUTH.apiBaseUrl}${path}`;
+  const token = readToken();
+  const isJsonBody = options.body &amp;&amp; typeof options.body !== "string";
+
+  const headers = new Headers(options.headers || {});
+  headers.set("Accept", "application/json");
+  if (isJsonBody) headers.set("Content-Type", "application/json");
+  if (ATOMX_AUTH.apiKey) headers.set("x-api-key", ATOMX_AUTH.apiKey);
+  if (token) headers.set("Authorization", `Bearer ${token}`);
 
   const response = await fetch(url, {
     ...options,
+    headers,
     credentials: "include",
-    headers: {
-      ...(options.headers || {})
-    }
+    cache: options.method &amp;&amp; options.method !== "GET" ? undefined : "no-store",
+    body: isJsonBody ? JSON.stringify(options.body) : options.body
   });
 
   if (!response.ok) {
-    const text = await response.text().catch(() => response.statusText);
-    throw new Error(text || `Request failed (${response.status})`);
+    let message = `Request failed (${response.status})`;
+    try {
+      const data = await response.json();
+      message = data?.message || message;
+    } catch {
+      /* keep the default message */
+    }
+    throw new ApiError(message, response.status);
   }
 
-  return response.json();
+  return response.status === 204 ? null : response.json();
 }</code></pre>
+  </section>
 
-    <h2>9. Code: Redirect Helper</h2>
+  <section class="section">
+    <h2>10. Code: Redirect Helper</h2>
+    <p>
+      Send unauthenticated users to the portal. Store a resume context first so the portal can
+      bring them back to the exact page after they pick their access.
+    </p>
     <pre><code>// src/lib/atomxRedirect.js
 import { ATOMX_AUTH } from "./atomxAuthConfig";
+import { decodeJwt, readToken } from "./atomxToken";
+
+const REAUTH_TTL_MS = 24 * 60 * 60 * 1000;
+
+function sanitizeReturnTo(href) {
+  const url = new URL(href, window.location.origin);
+  url.searchParams.delete("token");      // never round-trip a token
+  url.searchParams.delete("returnTo");
+  return url.toString();
+}
 
 export function redirectToAtomxPortal() {
   if (typeof window === "undefined") return;
 
-  const url = new URL(ATOMX_AUTH.portalUrl);
-  url.searchParams.set("returnTo", window.location.href);
-  url.searchParams.set("service", ATOMX_AUTH.service);
+  const returnTo = sanitizeReturnTo(window.location.href);
+  const profile = decodeJwt(readToken() || "");
 
+  // The portal reads this to resume the same role automatically.
+  try {
+    window.localStorage.setItem(
+      ATOMX_AUTH.reauthKey,
+      JSON.stringify({
+        version: 1,
+        createdAt: Date.now(),
+        expiresAt: Date.now() + REAUTH_TTL_MS,
+        returnTo,
+        type: profile?.ctx?.type || ATOMX_AUTH.service,
+        service: ATOMX_AUTH.service,
+        eventId: profile?.ctx?.eventId ?? null,
+        adminId: profile?.ctx?.adminId ?? null
+      })
+    );
+  } catch (error) {
+    console.error("Failed to store resume context", error);
+  }
+
+  const url = new URL(ATOMX_AUTH.portalUrl);
+  url.searchParams.set("returnTo", returnTo);
+  url.searchParams.set("service", ATOMX_AUTH.service);
   window.location.assign(url.toString());
 }</code></pre>
+  </section>
 
-    <h2>10. Code: Auth Guard</h2>
+  <section class="section page-break">
+    <h2>11. Code: Auth Guard</h2>
+    <p>
+      Wrap the app. The guard captures a handed-over token, then checks expiry. There is no session
+      API to call, so this is entirely local and instant.
+    </p>
     <pre><code>// src/components/AtomxAuthGuard.jsx
 "use client";
 
 import { useEffect, useState } from "react";
-import { ATOMX_AUTH } from "../lib/atomxAuthConfig";
-import { atomxFetch } from "../lib/atomxApiClient";
+import {
+  captureTokenFromUrl,
+  clearToken,
+  decodeJwt,
+  isExpired,
+  readToken
+} from "../lib/atomxToken";
 import { redirectToAtomxPortal } from "../lib/atomxRedirect";
+
+const WARN_BEFORE_MS = 10 * 60 * 1000;   // match the other AtomX apps
 
 export default function AtomxAuthGuard({ children }) {
   const [status, setStatus] = useState("checking");
 
   useEffect(() => {
-    let active = true;
+    const token = captureTokenFromUrl() || readToken();
 
-    async function checkSession() {
-      try {
-        await atomxFetch(ATOMX_AUTH.sessionCheckPath);
-        if (active) setStatus("ready");
-      } catch {
-        if (!active) return;
-        setStatus("redirecting");
-        redirectToAtomxPortal();
-      }
+    if (!token || isExpired(token)) {
+      clearToken();
+      setStatus("redirecting");
+      redirectToAtomxPortal();
+      return undefined;
     }
 
-    checkSession();
-    return () => {
-      active = false;
+    setStatus("ready");
+
+    // Expire in place rather than waiting for a failed request.
+    const decoded = decodeJwt(token);
+    if (!decoded?.exp) return undefined;
+
+    const msLeft = decoded.exp * 1000 - Date.now();
+    const warnAt = setTimeout(() =&gt; {
+      console.warn("AtomX session expires soon");
+    }, Math.max(msLeft - WARN_BEFORE_MS, 0));
+    const expireAt = setTimeout(() =&gt; {
+      clearToken();
+      redirectToAtomxPortal();
+    }, Math.max(msLeft, 0));
+
+    return () =&gt; {
+      clearTimeout(warnAt);
+      clearTimeout(expireAt);
     };
   }, []);
 
-  if (status !== "ready") {
-    return null; // or show AtomX loader
-  }
-
+  if (status !== "ready") return null;    // or an AtomX loader
   return children;
+}</code></pre>
+    <h3>Logout</h3>
+    <p>
+      There is no <code>/auth/logout</code>. Clear local storage and return the user to the portal.
+      Any cookie session stays alive until the backend expires it - flag this to the portal owner if
+      hard logout matters for your project.
+    </p>
+    <pre><code>// src/lib/atomxLogout.js
+import { ATOMX_AUTH } from "./atomxAuthConfig";
+import { clearToken } from "./atomxToken";
+
+export function atomxLogout() {
+  clearToken();
+  try {
+    for (let i = window.localStorage.length - 1; i &gt;= 0; i -= 1) {
+      const key = window.localStorage.key(i);
+      if (key &amp;&amp; key.startsWith("atomx.auth.")) window.localStorage.removeItem(key);
+    }
+    window.sessionStorage?.clear();
+  } catch (error) {
+    console.error("Failed to clear AtomX storage", error);
+  }
+  window.location.assign(`${ATOMX_AUTH.portalUrl}/access/`);
 }</code></pre>
   </section>
 
   <section class="section">
-    <h2>11. Where to Use the Guard</h2>
+    <h2>11b. Where to Use the Guard</h2>
     <h3>Next.js App Router</h3>
     <pre><code>// src/app/layout.jsx
 import AtomxAuthGuard from "../components/AtomxAuthGuard";
@@ -618,14 +825,11 @@ export default function RootLayout({ children }) {
   return (
     &lt;html lang="en"&gt;
       &lt;body&gt;
-        &lt;AtomxAuthGuard&gt;
-          {children}
-        &lt;/AtomxAuthGuard&gt;
+        &lt;AtomxAuthGuard&gt;{children}&lt;/AtomxAuthGuard&gt;
       &lt;/body&gt;
     &lt;/html&gt;
   );
 }</code></pre>
-
     <h3>Next.js Pages Router</h3>
     <pre><code>// src/pages/_app.jsx
 import AtomxAuthGuard from "../components/AtomxAuthGuard";
@@ -637,22 +841,44 @@ export default function App({ Component, pageProps }) {
     &lt;/AtomxAuthGuard&gt;
   );
 }</code></pre>
+    <div class="callout">
+      <strong>Reference implementations.</strong> The same logic, in production, lives in the
+      monorepo at <code>apps/dashboard/src/app/components/Session/SessionGuard.js</code> (token
+      capture, expiry, cross-tab sync) and <code>apps/dashboard/src/lib/apiClient.js</code>
+      (headers, error normalisation). Copy from those if anything here is ambiguous.
+    </div>
   </section>
 
-  <section class="section">
+  <section class="section page-break">
     <h2>12. Access Portal Responsibilities</h2>
-    <p>
-      The portal must accept <code>returnTo</code> and <code>service</code> in the URL, complete login if needed, then perform workspace selection.
-    </p>
-    <ol>
-      <li>Read <code>returnTo</code> from URL and sanitize it.</li>
-      <li>Run Google login if there is no active portal session.</li>
-      <li>Show access/workspace cards from the decoded roles.</li>
-      <li>When user selects the target project/workspace, call <code>POST /auth/select</code>.</li>
-      <li>Backend sets selected session cookie on <code>.atomx.in</code>.</li>
-      <li>Redirect to <code>returnTo</code>.</li>
-    </ol>
-
+    <div class="warning">
+      <strong>Current behaviour differs from the plan.</strong> The portal today
+      <strong>ignores <code>?service=</code></strong>, and it only acts on <code>?returnTo=</code>
+      when a resume context (<code>atomx.portal.reauth</code>) is present. Arriving with just
+      <code>returnTo</code> and no context, the portal redirects straight back to the project
+      <em>without</em> a workspace selection - which loops if the project then redirects again.
+      Storing the resume context (section 10) is what avoids this.
+    </div>
+    <h3>What the portal does today</h3>
+    <ul>
+      <li>Completes Google login if there is no portal session.</li>
+      <li>Renders access cards from the roles in the decoded token.</li>
+      <li>On selection, calls <code>POST /auth/select</code>.</li>
+      <li>Writes the returned token to <code>atomx.auth.&lt;service&gt;</code>.</li>
+      <li>Redirects to the service destination with <code>?token=</code> plus event context.</li>
+      <li>With a valid resume context, repeats the last selection and returns to <code>returnTo</code>.</li>
+    </ul>
+    <h3>What the portal owner must add for a new project</h3>
+    <table class="table">
+      <thead><tr><th>Item</th><th>Where</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>Role type for the project</td><td>Backend <code>roles[]</code></td><td>Without it no access card appears and <code>/auth/select</code> has nothing to select. <strong>Blocking.</strong></td></tr>
+        <tr><td><code>NEXT_PUBLIC_NEWPROJECT_URL</code></td><td>Monorepo root <code>.env</code></td><td>Destination for the redirect. <strong>Blocking.</strong></td></tr>
+        <tr><td>Entry in <code>moduleLinks</code> / <code>MODULE_CATALOG</code></td><td><code>apps/access_portal/pages/access.js</code></td><td>Card title, description, icon, destination.</td></tr>
+        <tr><td><code>x-api-key</code> value</td><td>Given to the project</td><td>Required header on every API call.</td></tr>
+        <tr><td>Project origin in CORS allowlist</td><td>Backend</td><td>Credentialed requests need each explicit origin.</td></tr>
+      </tbody>
+    </table>
     <h3>Portal Selection Request</h3>
     <pre><code>POST https://dapi-uat.atomx.in/auth/select
 credentials: include
@@ -713,27 +939,40 @@ export async function loadStalls(eventId) {
       <li>Sanitize <code>returnTo</code>; allow only approved <code>*.atomx.in</code> destinations.</li>
       <li>Do not put long-lived secrets in query params.</li>
       <li>Allow only known project subdomains in backend CORS.</li>
-      <li>Clear selected session on logout.</li>
+      <li>Clear stored tokens on logout. <strong>Note:</strong> there is no <code>/auth/logout</code>, so a cookie session survives a frontend logout until the backend expires it.</li>
+      <li>Strip <code>?token=</code> from the URL immediately after capture so it does not persist in history.</li>
+      <li>Treat the decoded JWT as UI data only; the backend re-validates every request.</li>
     </ul>
   </section>
 
   <section class="section">
     <h2>16. Final Worker Handoff Summary</h2>
-    <p>
-      Give this summary to anyone building a new project:
-    </p>
-    <ol>
-      <li>Host the app on a subdomain under <code>atomx.in</code>.</li>
-      <li>Do not implement Google login.</li>
-      <li>Add <code>AtomxAuthGuard</code> at the root of the app.</li>
-      <li>In the guard, call <code>/auth/me</code> or a session-check API using <code>credentials: "include"</code>.</li>
-      <li>If unauthorized, redirect to <code>portal.atomx.in?returnTo=currentUrl&amp;service=projectKey</code>.</li>
-      <li>Use <code>atomxFetch</code> for all AtomX backend calls.</li>
-      <li>Build the app normally and deploy the <code>out/</code> folder to its subdomain.</li>
-    </ol>
-    <p class="footer-note">
-      Document generated for AtomX Portal V1 monorepo integration. Keep this file in sync with backend cookie settings and access portal redirect behavior.
-    </p>
+    <p>Give this list to whoever builds the new project.</p>
+    <ul>
+      <li>Do <strong>not</strong> implement Google login, and do <strong>not</strong> call <code>/auth/me</code> - it does not exist.</li>
+      <li>Add the four files from sections 7-10: auth config, token utils, API client, redirect helper.</li>
+      <li>Wrap the app in <code>AtomxAuthGuard</code> (section 11).</li>
+      <li>On load: capture <code>?token=</code> from the URL, store it, strip it from the URL.</li>
+      <li>No token or an expired one: store the resume context and redirect to
+        <code>portal.atomx.in?returnTo=&lt;currentUrl&gt;&amp;service=&lt;projectKey&gt;</code>.</li>
+      <li>Use <code>atomxFetch</code> for every AtomX call - it adds Bearer, <code>x-api-key</code> and <code>credentials: "include"</code>.</li>
+      <li>Read event context (<code>eventId</code>, <code>eventName</code>, <code>venue</code>, <code>city</code>) from the handoff query params.</li>
+      <li>Never call a protected API during static generation; the guard runs client-side only.</li>
+      <li>Build normally and deploy the <code>out/</code> folder to the project subdomain.</li>
+    </ul>
+    <h3>Ask the portal owner for these before you start</h3>
+    <ul>
+      <li>The <strong>role type</strong> registered for this project (used as <code>service</code>).</li>
+      <li>The <strong>x-api-key</strong> value and the API base URL for your environment.</li>
+      <li>Confirmation that the project subdomain is in the backend CORS allowlist.</li>
+      <li>Confirmation that <code>NEXT_PUBLIC_&lt;PROJECT&gt;_URL</code> and the portal card entry are in place.</li>
+    </ul>
+    <div class="callout">
+      <strong>Definition of done:</strong> opening the project with no session lands on the portal;
+      picking the project's card returns to the project already signed in; a protected call such as
+      <code>GET /v1/Events/List</code> succeeds; and an expired token sends the user back to the
+      portal and returns them to the same page afterwards.
+    </div>
   </section>
 </body>
 </html>

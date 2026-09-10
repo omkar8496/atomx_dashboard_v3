@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import * as XLSX from "xlsx";
 import { useSearchParams } from "next/navigation";
-import { fetchStallItems } from "../../../../lib/dashboardApi";
+import { fetchStallItems, saveStallMenu } from "../../../../lib/dashboardApi";
 import { useDashboardStore } from "../../../../store/dashboardStore";
 import MenuActionBar from "./MenuActionBar";
 import CategoryTabs from "./CategoryTabs";
@@ -47,7 +47,10 @@ function normalizeMenuItem(item, index) {
     groupId: asText(item?.groupId),
     variant: asText(item?.variant),
     colour: asText(item?.colour),
-    position: asNumber(item?.position, index)
+    position: asNumber(item?.position, index),
+    // No UI controls for these; kept so saving echoes them back unchanged.
+    mrp: asNumber(item?.mrp),
+    quantity: asNumber(item?.quantity)
   };
 }
 
@@ -89,6 +92,8 @@ function normalizeMenuResponse(response) {
     return {
       id: category?.id ?? `category-${index}`,
       name: asText(category?.name) || `Category ${index + 1}`,
+      // Required by the save payload but not editable in the UI.
+      type: asText(category?.type),
       count: items.length,
       active: asText(category?.status).toLowerCase() === "active",
       vat: asNumber(category?.vat),
@@ -97,6 +102,78 @@ function normalizeMenuResponse(response) {
       items
     };
   });
+}
+
+function toStatus(active) {
+  return active ? "active" : "inactive";
+}
+
+function itemPayload(item, index) {
+  return {
+    name: item.name,
+    price: asNumber(item.price),
+    mrp: asNumber(item.mrp),
+    quantity: asNumber(item.quantity),
+    status: toStatus(item.active),
+    happyPrice: asNumber(item.happy),
+    hsn: item.hsn || "",
+    barcode: item.barcode || "",
+    epc: item.epc || "",
+    type: item.type || "",
+    tags: item.tags ?? [],
+    imagePath: item.image ?? null,
+    supplierCode: item.supplierCode || "",
+    groupId: item.groupId || "",
+    variant: item.variant || "",
+    colour: item.colour || "",
+    position: asNumber(item.position, index + 1)
+  };
+}
+
+function categoryFields(category) {
+  return {
+    name: category.name,
+    type: category.type || "",
+    status: toStatus(category.active),
+    vat: asNumber(category.vat),
+    gstSlab: asNumber(category.gst),
+    gstType: category.gstInclusive ? "inclusive" : "exclusive"
+  };
+}
+
+function sameJson(left, right) {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
+// The endpoint upserts by name, so only edited categories are sent, each
+// carrying only its edited (or new) items. Untouched rows are left alone.
+function buildMenuPayload(categories, baseline) {
+  const baseById = new Map(baseline.map((category) => [String(category.id), category]));
+
+  return categories.reduce((changed, category) => {
+    const previous = baseById.get(String(category.id));
+    const baseItems = new Map(
+      (previous?.items ?? []).map((item) => [String(item.id), item])
+    );
+
+    const items = category.items
+      .map((item, index) => ({ payload: itemPayload(item, index), item, index }))
+      .filter(({ payload, item }) => {
+        const previousItem = baseItems.get(String(item.id));
+        if (!previousItem) return true; // new item
+        const previousIndex = (previous?.items ?? []).indexOf(previousItem);
+        return !sameJson(payload, itemPayload(previousItem, previousIndex));
+      })
+      .map(({ payload }) => payload);
+
+    const categoryChanged =
+      !previous || !sameJson(categoryFields(category), categoryFields(previous));
+
+    if (!categoryChanged && items.length === 0) return changed;
+
+    changed.push({ ...categoryFields(category), items });
+    return changed;
+  }, []);
 }
 
 export default function MenuContent() {
@@ -110,6 +187,11 @@ export default function MenuContent() {
   const [inactiveItems, setInactiveItems] = useState(true);
   const [loading, setLoading] = useState(Boolean(stallId));
   const [loadError, setLoadError] = useState("");
+  // Snapshot of the menu as loaded, used to send only what changed.
+  const [baseline, setBaseline] = useState([]);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const [saveMessage, setSaveMessage] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -131,6 +213,7 @@ export default function MenuContent() {
         if (!active) return;
         const nextCategories = normalizeMenuResponse(response);
         setCategories(nextCategories);
+        setBaseline(nextCategories);
         setActiveCategoryId(nextCategories[0]?.id ?? null);
       })
       .catch((error) => {
@@ -209,6 +292,7 @@ export default function MenuContent() {
       {
         id: newId,
         name: newName,
+        type: "",
         count: 1,
         active: true,
         vat: 0,
@@ -236,6 +320,42 @@ export default function MenuContent() {
       }
     ]);
     setActiveCategoryId(newId);
+  };
+
+  const handleSave = async () => {
+    if (!stallId) {
+      setSaveMessage("");
+      setSaveError("Stall ID is unavailable.");
+      return;
+    }
+
+    const changedCategories = buildMenuPayload(categories, baseline);
+    if (changedCategories.length === 0) {
+      setSaveError("");
+      setSaveMessage("No changes to save.");
+      return;
+    }
+
+    setSaving(true);
+    setSaveError("");
+    setSaveMessage("");
+    try {
+      const response = await saveStallMenu({
+        stallId,
+        categories: changedCategories,
+        token
+      });
+      if (response?.success === false) {
+        throw new Error(response?.message || "Unable to save this menu.");
+      }
+      setBaseline(categories);
+      setSaveMessage("Menu saved.");
+    } catch (error) {
+      console.error(`Unable to save menu for stall ${stallId}`, error);
+      setSaveError(error?.message || "Unable to save this menu.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const downloadExcel = () => {
@@ -297,7 +417,9 @@ export default function MenuContent() {
                   supplierCode: "",
                   groupId: "",
                   variant: "",
-                  colour: ""
+                  colour: "",
+                  mrp: 0,
+                  quantity: 0
                 }
               ]
             }
@@ -318,7 +440,20 @@ export default function MenuContent() {
         onToggleInactiveCategories={() => setInactiveCategories((p) => !p)}
         onDownload={downloadExcel}
         onAddCategory={addCategory}
+        onSave={handleSave}
+        saving={saving}
       />
+
+      {saveError ? (
+        <p className="rounded-[10px] border border-[rgba(224,68,32,0.25)] bg-[rgba(224,68,32,0.06)] px-3.5 py-2.5 text-[12.5px] font-semibold text-(--orange)">
+          {saveError}
+        </p>
+      ) : null}
+      {saveMessage ? (
+        <p className="rounded-[10px] border border-[rgba(0,169,242,0.28)] bg-[rgba(0,169,242,0.08)] px-3.5 py-2.5 text-[12.5px] font-semibold text-[#0284c7]">
+          {saveMessage}
+        </p>
+      ) : null}
 
       <div className="overflow-hidden rounded-[15px] border border-(--line) border-l-[3px] border-l-(--orange) bg-(--surface) shadow-(--shadow)">
         {loading ? (

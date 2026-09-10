@@ -472,11 +472,19 @@ function AddedList({
   );
 }
 
-export default function AdminRoleManager() {
+// isWorkspaceScope: reached from the workspace event list. Operators are
+// event-scoped and no event is selected there, so only admin linking is offered.
+export default function AdminRoleManager({ isWorkspaceScope = false }) {
   const token = useDashboardStore((state) => state.token);
   const profile = useDashboardStore((state) => state.profile);
   const eventMeta = useDashboardStore((state) => state.eventMeta);
   const eventDetails = useDashboardStore((state) => state.eventDetails);
+  const clearEventContext = useDashboardStore((state) => state.clearEventContext);
+  // Workspace scope is admin-only, so no event may be in context here.
+  useEffect(() => {
+    if (isWorkspaceScope) clearEventContext();
+  }, [clearEventContext, isWorkspaceScope]);
+
   const initialAdminId = useMemo(
     () => getInitialAdminId(profile, eventMeta, eventDetails),
     [profile, eventMeta, eventDetails]
@@ -486,6 +494,7 @@ export default function AdminRoleManager() {
     [eventMeta, eventDetails]
   );
   const [activeTab, setActiveTab] = useState("admin");
+  const effectiveTab = isWorkspaceScope ? "admin" : activeTab;
   const [adminEmail, setAdminEmail] = useState("");
   const [operatorEmail, setOperatorEmail] = useState("");
   const [operatorType, setOperatorType] = useState("");
@@ -594,7 +603,7 @@ export default function AdminRoleManager() {
   };
 
   const addRole = async () => {
-    const isAdmin = activeTab === "admin";
+    const isAdmin = effectiveTab === "admin";
     const email = (isAdmin ? adminEmail : operatorEmail).trim();
     const normalizedAdminId = String(initialAdminId || "").trim();
     const normalizedEventId = String(initialEventId || "").trim();
@@ -670,7 +679,7 @@ export default function AdminRoleManager() {
     }
   };
 
-  const isAdmin = activeTab === "admin";
+  const isAdmin = effectiveTab === "admin";
 
   return (
     <div className="space-y-4">
@@ -678,10 +687,14 @@ export default function AdminRoleManager() {
         <div>
           <h1 className="font-chillax m-0 text-[clamp(24px,3vw,32px)] font-semibold tracking-[-0.02em] text-(--text)">Admin</h1>
           <p className="m-0 mt-1 text-[13.5px] font-light text-(--muted)">
-            Link admin access and event operators.
+            {isWorkspaceScope
+              ? "Link admin access for this workspace."
+              : "Link admin access and event operators."}
           </p>
         </div>
-        <RoleTabs activeTab={activeTab} onChange={setActiveTab} />
+        {isWorkspaceScope ? null : (
+          <RoleTabs activeTab={activeTab} onChange={setActiveTab} />
+        )}
       </div>
 
       <section className="rounded-[15px] border border-(--line) border-l-[3px] border-l-(--orange) bg-(--surface) p-4 shadow-(--shadow)">

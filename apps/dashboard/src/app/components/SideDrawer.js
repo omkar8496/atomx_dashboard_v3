@@ -7,11 +7,11 @@ const ITEMS = [
   // { id: "analytics", label: "Analytics", disabled: true },
   { id: "configuration", label: "Configuration", href: "/Config", match: "/Config" },
   { id: "whitelist", label: "Whitelist", href: "/whitelist", match: "/whitelist" },
-  { id: "admin", label: "Admin", href: "/admin/Create_event", match: "/admin/Create_event" },
   { id: "reports", label: "Reports", href: "/Reports", match: "/Reports" },
   { id: "transactions", label: "Transactions", href: "/transactions", match: "/transactions" },
   { id: "device", label: "Devices", href: "/device", match: "/device" },
   { id: "blocked", label: "Blocked", href: "/Blocked", match: "/Blocked" },
+  { id: "admin", label: "User Roles", href: "/admin/Create_event", match: "/admin/Create_event" },
   // { id: "apk", label: "APK Uploads", href: "/apk_upload", match: "/apk_upload" },
   // { id: "tapx", label: "TapX-Transactions", href: "/tapx", match: "/tapx" },
   // { id: "patchaTrack", label: "Patcha-NY-Track", href: "/patcha-ny-track", match: "/patcha-ny-track" }
@@ -19,7 +19,22 @@ const ITEMS = [
 
 const iconClass = "h-4 w-4";
 
+// Reachable only from workspace-level pages (see WORKSPACE_ITEMS below).
+const WORKSPACE_ITEMS = [
+  { id: "allEvents", label: "All Events", href: "/admin", match: "/admin", exact: true }
+];
+
 const ICONS = {
+  allEvents: (
+    <svg viewBox="0 0 24 24" className={iconClass} fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="4" y="5" width="16" height="15" rx="2" />
+      <path d="M8 3v4" />
+      <path d="M16 3v4" />
+      <path d="M4 10h16" />
+      <path d="M8 14h3" />
+      <path d="M13 14h3" />
+    </svg>
+  ),
   deviceMaster: (
     <svg viewBox="0 0 24 24" className={iconClass} fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
       <rect x="5" y="3" width="14" height="18" rx="2" />
@@ -124,9 +139,19 @@ const ICONS = {
   )
 };
 
-export default function SideDrawer({ mobileOpen = false, onMobileClose }) {
+// `only` restricts the rail to a subset of item ids, in the order given. Used by
+// workspace-level pages (the event list) that expose a single destination.
+export default function SideDrawer({ mobileOpen = false, onMobileClose, only = null, itemHrefs = null }) {
   const pathname = usePathname();
   const router = useRouter();
+  const selectable = [...ITEMS, ...WORKSPACE_ITEMS];
+  const items = (
+    Array.isArray(only)
+      ? only.map((id) => selectable.find((item) => item.id === id)).filter(Boolean)
+      : ITEMS
+  ).map((item) =>
+    itemHrefs?.[item.id] ? { ...item, href: itemHrefs[item.id] } : item
+  );
 
   return (
     <>
@@ -146,9 +171,9 @@ export default function SideDrawer({ mobileOpen = false, onMobileClose }) {
         }`}
         style={{ top: "var(--header-h)", height: "calc(100vh - var(--header-h))" }}
       >
-        <div className="flex h-full w-[60px] flex-col overflow-hidden bg-(--rail) text-(--railText) shadow-[16px_0_42px_rgba(0,0,0,0.28)] transition-[width] duration-300 ease-out group-hover:w-[248px] max-[900px]:w-[248px]">
+        <div className="flex h-full w-[60px] flex-col overflow-hidden border-r border-white/10 bg-(--rail) text-(--railText) shadow-[16px_0_42px_rgba(0,0,0,0.28)] transition-[width] duration-300 ease-out group-hover:w-[248px] max-[900px]:w-[248px]">
           <nav className="flex flex-1 flex-col gap-1 overflow-y-auto overflow-x-hidden px-2.5 py-3.5">
-            {ITEMS.map((item) => {
+            {items.map((item) => {
               const matchBase = item.match || item.href;
               const isActive = item.exact
                 ? pathname === matchBase
@@ -167,7 +192,7 @@ export default function SideDrawer({ mobileOpen = false, onMobileClose }) {
                   title={item.label}
                   className={`flex h-10 w-full items-center gap-3.5 rounded-[10px] px-[9px] text-left text-[0.84rem] transition-colors duration-200 ${
                     isActive
-                      ? "cursor-pointer bg-(--surface) font-semibold text-(--text)"
+                      ? "cursor-pointer bg-(--railActive) font-semibold text-(--railActiveText)"
                       : item.disabled
                         ? "cursor-default font-normal text-(--railText)"
                         : "cursor-pointer font-normal text-(--railText) hover:bg-white/[0.09]"

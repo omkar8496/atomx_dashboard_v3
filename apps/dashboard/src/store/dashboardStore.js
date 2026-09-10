@@ -74,6 +74,16 @@ export const useDashboardStore = create(
         if (!details) return;
         set({ eventDetails: details });
       },
+      // Explicit reset: the setters above ignore null so a partial update can't
+      // wipe context by accident. Workspace-level pages (no event chosen yet)
+      // call this so a previously opened event can't leak into them.
+      clearEventContext: () => {
+        set((state) =>
+          state.eventMeta === null && state.eventDetails === null
+            ? state
+            : { eventMeta: null, eventDetails: null }
+        );
+      },
       setSelectedService: (service) => {
         const normalized = normalizeService(service);
         if (get().selectedService === (normalized || null)) return;

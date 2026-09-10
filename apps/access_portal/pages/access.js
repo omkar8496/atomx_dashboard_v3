@@ -8,8 +8,14 @@ import { WelcomePanel } from "../components/WelcomePanel/WelcomePanel";
 
 const moduleLinks = {
   livelink: process.env.NEXT_PUBLIC_LIVELINK_URL ?? "/livelink",
-  "tag-series": process.env.NEXT_PUBLIC_TAG_SERIES_URL ?? "/tag_series"
+  "tag-series": process.env.NEXT_PUBLIC_TAG_SERIES_URL ?? "/tag_series",
+  // timeline-readonly and timeline-admin both open the Details app.
+  timeline: process.env.NEXT_PUBLIC_TIMELINE_URL ?? "https://ai.details.atomx.in"
 };
+
+function isTimelineRole(type) {
+  return normalizeRoleType(type).includes("timeline");
+}
 const dashboardBase = (process.env.NEXT_PUBLIC_DASHBOARD_URL ?? "").replace(/\/$/, "");
 const dashboardConfigPath = "/Config/";
 const REAUTH_CONTEXT_KEY = "atomx.portal.reauth";
@@ -115,7 +121,7 @@ function normalizeRoleType(value) {
 // Role types that are standalone applications rather than admin workspaces or
 // event-scoped modules. They are admin-scoped (no eventId) and render in their
 // own "Apps" section. Add a type here to surface it there.
-const APP_ROLE_TYPES = new Set(["tag-series"]);
+const APP_ROLE_TYPES = new Set(["tag-series", "timeline-readonly", "timeline-admin"]);
 
 function isAppRoleType(type) {
   return APP_ROLE_TYPES.has(normalizeRoleType(type));
@@ -745,6 +751,7 @@ export default function AccessPage() {
       normalizedType !== "tag-series" &&
       normalizedType !== "tag_series" &&
       normalizedType !== "tag series" &&
+      !isTimelineRole(apiType) &&
       !isAdminType;
     const eventId = permission.eventId ?? roleMatch?.eventId ?? null;
     const userEmail = profile?.email ?? null;
@@ -1018,12 +1025,15 @@ export default function AccessPage() {
 
   const handleAppRoleClick = (role) => {
     const service = mapServiceParam(role?.type);
+    const isTimeline = isTimelineRole(role?.type);
+    const destination = isTimeline
+      ? moduleLinks.timeline
+      : moduleLinks[service] ?? moduleLinks["tag-series"];
+
     handlePermissionClick({
       type: role.type,
       label: role.type,
-      destination: ensureTrailingSlashForRoute(
-        moduleLinks[service] ?? moduleLinks["tag-series"]
-      ),
+      destination: ensureTrailingSlashForRoute(destination),
       service,
       eventId: role.eventId ?? null,
       adminId: role.adminId,
@@ -1061,7 +1071,11 @@ export default function AccessPage() {
     const { onCardClick, showOpenIcon = false } = options;
     // Admin workspaces and apps are both admin-scoped, so both show the admin
     // identity; event cards show the event identity.
-    const isAdminSection = options.section === "admin" || options.section === "app";
+    const section = options.section;
+    // Admin workspaces and admin-scoped apps (tag-series) show the admin;
+    // anything carrying an eventId shows the event.
+    const showsAdminIdentity = (role) =>
+      section === "admin" || (section === "app" && role?.eventId == null);
 
     if (!roles.length) {
       return (
@@ -1127,16 +1141,16 @@ export default function AccessPage() {
 
               <div className="px-4 pb-3">
                 <p className="font-chillax m-0 truncate text-[16.5px] font-medium tracking-[-0.01em] text-(--text)">
-                  {isAdminSection ? role.adminName || "—" : role.eventName || "—"}
+                  {showsAdminIdentity(role) ? role.adminName || "—" : role.eventName || "—"}
                 </p>
               </div>
 
               <div className="mt-auto flex items-center justify-between gap-2.5 border-t border-(--line2) bg-(--surface2) px-4 py-[9px]">
                 <span className="font-vcr text-[9px] tracking-[0.14em] text-(--faint)">
-                  {isAdminSection ? "ADMIN ID" : "EVENT ID"}
+                  {showsAdminIdentity(role) ? "ADMIN ID" : "EVENT ID"}
                 </span>
                 <span className="font-vcr text-[13px] tracking-[0.02em] text-(--text)">
-                  {isAdminSection ? role.adminId ?? "—" : role.eventId ?? "—"}
+                  {showsAdminIdentity(role) ? role.adminId ?? "—" : role.eventId ?? "—"}
                 </span>
               </div>
             </button>

@@ -5,11 +5,13 @@ import { useRouter } from "next/navigation";
 import { AtomXLoader } from "@atomx/global-components";
 import {
   closeEventDay,
+  fetchDeviceClosedList,
   fetchEventDetails,
   updateEventBalanceSetting,
   updateEventDetails
 } from "../../../lib/dashboardApi";
 import { useDashboardStore } from "../../../store/dashboardStore";
+import DayCloseDevicesModal from "./DayCloseDevicesModal";
 import {
   CalendarIcon,
   Field,
@@ -336,6 +338,8 @@ export default function EventEditContent() {
   const [loading, setLoading] = useState(Boolean(eventId));
   const [saving, setSaving] = useState(false);
   const [closingDay, setClosingDay] = useState(false);
+  const [checkingDevices, setCheckingDevices] = useState(false);
+  const [dayCloseGate, setDayCloseGate] = useState(null);
   const [dayCloseMessage, setDayCloseMessage] = useState("");
   const [updatingBalanceSetting, setUpdatingBalanceSetting] = useState(false);
   const [balanceToast, setBalanceToast] = useState(null);
@@ -490,7 +494,7 @@ export default function EventEditContent() {
     }
   };
 
-  const handleDayClose = async () => {
+  const performDayClose = async () => {
     if (!eventId) return;
     setClosingDay(true);
     setDayCloseMessage("");
@@ -503,11 +507,41 @@ export default function EventEditContent() {
         volunteerCount: 0
       });
       setDayCloseMessage("Event day closed successfully.");
+      setDayCloseGate(null);
     } catch (err) {
       console.error("Failed to close event day", err);
       setError("Unable to close the event day.");
+      setDayCloseGate(null);
     } finally {
       setClosingDay(false);
+    }
+  };
+
+  // Day close warns about devices that have not been closed yet. With none open
+  // (or nothing to show) it closes straight away.
+  const handleDayClose = async () => {
+    if (!eventId) return;
+    setCheckingDevices(true);
+    setDayCloseMessage("");
+    setError("");
+    try {
+      const devices = await fetchDeviceClosedList({ eventId, token });
+      const openDevices = Array.isArray(devices) ? devices : [];
+      if (openDevices.length === 0) {
+        setCheckingDevices(false);
+        await performDayClose();
+        return;
+      }
+      setDayCloseGate({ devices: openDevices, loadError: "" });
+    } catch (err) {
+      console.error("Failed to check open devices", err);
+      // A failing check must not block the day close - warn and let them confirm.
+      setDayCloseGate({
+        devices: [],
+        loadError: err?.message || "Unable to check open devices."
+      });
+    } finally {
+      setCheckingDevices(false);
     }
   };
 
@@ -557,10 +591,10 @@ export default function EventEditContent() {
               <button
                 type="button"
                 onClick={handleDayClose}
-                disabled={closingDay || !eventId}
+                disabled={closingDay || checkingDevices || !eventId}
                 className="h-11 shrink-0 rounded-[10px] border border-(--line) bg-(--surface) px-4 text-[13px] font-semibold text-(--muted) transition hover:border-(--orange) hover:text-(--orange) disabled:cursor-not-allowed disabled:opacity-55 max-[640px]:h-10 max-[640px]:flex-1 max-[640px]:px-3 max-[640px]:text-[12px]"
               >
-                {closingDay ? "Closing..." : "Day Close"}
+                {checkingDevices ? "Checking..." : closingDay ? "Closing..." : "Day Close"}
               </button>
               <button
                 type="button"
@@ -826,6 +860,17 @@ export default function EventEditContent() {
             Nothing found for &quot;{search}&quot;. Try a different field or service name.
           </div>
         </div>
+      ) : null}
+
+      {dayCloseGate ? (
+        <DayCloseDevicesModal
+          devices={dayCloseGate.devices}
+          loadError={dayCloseGate.loadError}
+          eventName={eventFields["Event Name"]}
+          closing={closingDay}
+          onClose={() => setDayCloseGate(null)}
+          onConfirm={performDayClose}
+        />
       ) : null}
 
       {balanceToast ? (

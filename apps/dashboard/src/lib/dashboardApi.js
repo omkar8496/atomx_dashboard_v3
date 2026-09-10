@@ -35,6 +35,31 @@ async function fetchGetJsonDeduped({ url, token, dedupe = true }) {
   return request;
 }
 
+// Switches the signed-in user to another of their roles without re-login. Same
+// contract as the access portal's selection: {type, adminId} for workspace-level
+// roles, {type, eventId} for event-scoped ones. Returns the new service token.
+export async function selectAccess({ type, adminId, eventId, token }) {
+  const normalizedType = String(type || "").trim();
+  if (!normalizedType) {
+    throw new Error("Missing role type");
+  }
+
+  const useEventId = eventId !== null && eventId !== undefined && eventId !== "";
+  if (!useEventId && (adminId === null || adminId === undefined || adminId === "")) {
+    throw new Error("Missing adminId");
+  }
+
+  const baseUrl = getBaseUrl();
+  return apiRequest({
+    url: `${baseUrl}/auth/select`,
+    method: "POST",
+    token,
+    body: useEventId
+      ? { type: normalizedType, eventId }
+      : { type: normalizedType, adminId }
+  });
+}
+
 export async function linkRole({ token, payload }) {
   const baseUrl = getBaseUrl();
   return apiRequest({
@@ -291,6 +316,30 @@ export async function fetchStallItems({ stallId, token, dedupe = true }) {
   });
 }
 
+// Creates/updates a stall's whole menu tree. The endpoint takes the full
+// category+item structure, so callers must send every field they loaded -
+// anything omitted is lost.
+export async function saveStallMenu({ stallId, categories, token }) {
+  if (!stallId) {
+    throw new Error("Missing stallId");
+  }
+  if (!Array.isArray(categories)) {
+    throw new Error("Missing menu categories");
+  }
+
+  const numericStallId = Number(stallId);
+  const baseUrl = getBaseUrl();
+  return apiRequest({
+    url: `${baseUrl}/v1/Menu/Items/Edit`,
+    method: "POST",
+    token,
+    body: {
+      stall_id: Number.isNaN(numericStallId) ? stallId : numericStallId,
+      categories
+    }
+  });
+}
+
 async function fetchAccessXList({ path, eventId, token, dedupe = true }) {
   if (!eventId) {
     throw new Error("Missing eventId");
@@ -448,6 +497,23 @@ export async function fetchEventDevices({ eventId, token, type = "event-wise", d
   return data?.devices ?? data?.data?.devices ?? data?.data ?? data?.list ?? [];
 }
 
+// Devices that have not been day-closed yet for this event. Used to warn before
+// a day close; an empty list means nothing is still open.
+export async function fetchDeviceClosedList({ eventId, token, dedupe = false }) {
+  if (!eventId) {
+    throw new Error("Missing eventId");
+  }
+
+  const baseUrl = getBaseUrl();
+  const data = await fetchGetJsonDeduped({
+    url: `${baseUrl}/v1/Devices/deviceClosedList?code=${encodeURIComponent(eventId)}`,
+    token,
+    dedupe
+  });
+
+  return data?.devices ?? data?.data?.devices ?? data?.data ?? data?.list ?? [];
+}
+
 export async function fetchPersoDevices({ eventId, token, dedupe = true }) {
   return fetchEventDevices({ eventId, token, type: "perso-wise", dedupe });
 }
@@ -538,6 +604,67 @@ export async function removePersoDevice({ eventId, token, id }) {
     method: "POST",
     token,
     body: { id }
+  });
+}
+
+// Cards blocked for an event. `code` is the event id.
+export async function fetchBlockedCards({ eventId, token, dedupe = false }) {
+  if (eventId === "" || eventId == null) {
+    throw new Error("Missing eventId");
+  }
+
+  const baseUrl = getBaseUrl();
+  const data = await fetchGetJsonDeduped({
+    url: `${baseUrl}/v1/Cards/Block/List?code=${encodeURIComponent(eventId)}`,
+    token,
+    dedupe
+  });
+
+  return data?.cards ?? data?.data?.cards ?? data?.data ?? data?.list ?? [];
+}
+
+// Blocks a card for an event. This endpoint is a GET with every parameter in the
+// query string. `retryWithoutToken` is deliberately NOT used: it is a mutation,
+// so it must never be replayed cookie-only after a 401/403.
+export async function blockCard({ eventId, cardId, token }) {
+  if (eventId === "" || eventId == null) {
+    throw new Error("Missing eventId");
+  }
+
+  const normalizedCardId = String(cardId ?? "").trim();
+  if (!normalizedCardId) {
+    throw new Error("Missing card ID");
+  }
+
+  const code = encodeURIComponent(eventId);
+  const baseUrl = getBaseUrl();
+  return apiRequest({
+    url: `${baseUrl}/v1/Cards/Block?code=${code}&cardId=${encodeURIComponent(normalizedCardId)}&eventId=${code}`,
+    method: "GET",
+    token
+  });
+}
+
+// Unblocks a card. `id` is the block record's own id from /v1/Cards/Block/List,
+// not the event id. GET, and deliberately no cookie-only retry: it mutates.
+export async function unblockCard({ eventId, cardId, id, token }) {
+  if (eventId === "" || eventId == null) {
+    throw new Error("Missing eventId");
+  }
+  if (id === "" || id == null) {
+    throw new Error("Missing blocked card record id");
+  }
+
+  const normalizedCardId = String(cardId ?? "").trim();
+  if (!normalizedCardId) {
+    throw new Error("Missing card ID");
+  }
+
+  const baseUrl = getBaseUrl();
+  return apiRequest({
+    url: `${baseUrl}/v1/Cards/Unblock?code=${encodeURIComponent(eventId)}&cardId=${encodeURIComponent(normalizedCardId)}&id=${encodeURIComponent(id)}`,
+    method: "GET",
+    token
   });
 }
 
