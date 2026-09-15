@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useDashboardStore } from "../../store/dashboardStore";
 import SwitchAccessModal from "./SwitchAccessModal";
+import { useAccessRoleCount } from "./accessRoles";
 
 const REAUTH_CONTEXT_KEY = "atomx.portal.reauth";
 
@@ -122,6 +123,8 @@ export default function ProfileMenu({
 }) {
   const [open, setOpen] = useState(false);
   const [switchOpen, setSwitchOpen] = useState(false);
+  // With a single access there is nothing to switch to, so the entry is hidden.
+  const canSwitchAccess = useAccessRoleCount() > 1;
   const menuRef = useRef(null);
   const eventMeta = useDashboardStore((state) => state.eventMeta);
   const selectedService = useDashboardStore((state) => state.selectedService);
@@ -229,6 +232,7 @@ export default function ProfileMenu({
               </small>
             </div>
           </div>
+          {canSwitchAccess ? (
           <button
             type="button"
             className="mt-2 flex w-full cursor-pointer items-center gap-2.5 rounded-md border border-(--line) bg-(--surface) px-3 py-2.5 text-left text-[0.84rem] font-semibold text-(--text) transition hover:border-(--orange) hover:text-(--orange)"
@@ -243,6 +247,7 @@ export default function ProfileMenu({
             </svg>
             Switch Access
           </button>
+          ) : null}
           <button
             type="button"
             className="mt-2 w-full cursor-pointer rounded-md bg-(--text) px-3 py-2.5 text-left text-[0.84rem] font-semibold text-(--bg) transition hover:opacity-90"
@@ -261,16 +266,18 @@ export default function ProfileMenu({
               <div className="text-xs text-slate-500">{email}</div>
             </div>
             <div className="flex items-center gap-3">
-              <button
-                type="button"
-                className="cursor-pointer text-xs font-semibold text-slate-500 hover:text-[color:rgb(var(--color-orange))]"
-                onClick={() => {
-                  setOpen(false);
-                  setSwitchOpen(true);
-                }}
-              >
-                Switch Access
-              </button>
+              {canSwitchAccess ? (
+                <button
+                  type="button"
+                  className="cursor-pointer text-xs font-semibold text-slate-500 hover:text-[color:rgb(var(--color-orange))]"
+                  onClick={() => {
+                    setOpen(false);
+                    setSwitchOpen(true);
+                  }}
+                >
+                  Switch Access
+                </button>
+              ) : null}
               <button
                 type="button"
                 className="cursor-pointer text-xs font-semibold text-slate-500 hover:text-[color:rgb(var(--color-orange))]"

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { getInitials } from "@atomx/lib";
 import SideDrawer from "./SideDrawer";
 import ProfileMenu from "./ProfileMenu";
+import { useWorkspaceName } from "./accessRoles";
 import { useDashboardStore } from "../../store/dashboardStore";
 
 export default function Header({
@@ -33,6 +34,9 @@ export default function Header({
   const setEventMeta = useDashboardStore((state) => state.setEventMeta);
   const setSelectedService = useDashboardStore((state) => state.setSelectedService);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+  const workspaceName = useWorkspaceName(profile);
+  const selectedEventName =
+    storedEventMeta?.eventName || storedEventDetails?.name || "";
   const [theme, setTheme] = useState("light");
 
   useEffect(() => {
@@ -174,17 +178,25 @@ export default function Header({
               </div>
             </div>
             <div className="flex-1" />
-            {resolvedEventMeta.eventId ? (
-            <span
-              className="font-vcr inline-flex shrink-0 items-center gap-2 text-[11px] font-semibold tracking-[0.1em] text-(--muted)"
-              aria-label={`Event ID ${resolvedEventMeta.eventId ?? "not selected"}`}
-              title="Selected event ID"
-            >
-              <span className="hidden uppercase sm:inline">Event</span>
-              <span className="font-chillax text-[14px] font-bold tracking-[0.01em] text-(--text)">
-                #{resolvedEventMeta.eventId}
-              </span>
-            </span>
+            {resolvedEventMeta.eventId || workspaceName ? (
+              <div className="mr-2.5 flex min-w-0 shrink flex-col items-end justify-center leading-none max-[640px]:hidden">
+                {resolvedEventMeta.eventId ? (
+                  <span
+                    className="font-chillax max-w-[240px] truncate text-[15px] font-semibold tracking-[-0.01em] text-(--text)"
+                    title={`Selected event: ${selectedEventName || resolvedEventMeta.eventId} (#${resolvedEventMeta.eventId})`}
+                  >
+                    {selectedEventName || `Event ${resolvedEventMeta.eventId}`}
+                  </span>
+                ) : null}
+                {workspaceName ? (
+                  <span
+                    className="font-vcr mt-1 max-w-[240px] truncate text-[9.5px] tracking-[0.16em] text-(--faint)"
+                    title={`Workspace: ${workspaceName}`}
+                  >
+                    {workspaceName}
+                  </span>
+                ) : null}
+              </div>
             ) : null}
             <button
               type="button"

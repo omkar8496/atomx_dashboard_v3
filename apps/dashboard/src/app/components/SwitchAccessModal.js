@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { decodeJwt } from "@atomx/lib";
 import { selectAccess } from "../../lib/dashboardApi";
+import { readAccessRoles } from "./accessRoles";
 import { useDashboardStore } from "../../store/dashboardStore";
 
 const DASHBOARD_TOKEN_KEY = "atomx.dashboard.token";
-const PORTAL_TOKEN_KEY = "atomx.portal.token";
 
 // Where each role type lands after switching, mirroring the access portal.
 const TAG_SERIES_URL = process.env.NEXT_PUBLIC_TAG_SERIES_URL ?? "/tag_series";
@@ -38,23 +37,7 @@ function isEventScoped(role) {
   return !isAdminRole(role?.type) && !isTagSeries(role?.type) && role?.eventId != null;
 }
 
-function readStoredToken(key) {
-  if (typeof window === "undefined") return null;
-  try {
-    return window.localStorage.getItem(key);
-  } catch {
-    return null;
-  }
-}
 
-function safeDecode(token) {
-  if (!token) return null;
-  try {
-    return decodeJwt(token);
-  } catch {
-    return null;
-  }
-}
 
 function formatTypeLabel(value) {
   const raw = String(value || "").trim();
@@ -101,10 +84,6 @@ function SwitchIcon({ className = "h-4 w-4" }) {
 export default function SwitchAccessModal({ onClose }) {
   const token = useDashboardStore((state) => state.token);
   const profile = useDashboardStore((state) => state.profile);
-  const setToken = useDashboardStore((state) => state.setToken);
-  const setSelectedService = useDashboardStore((state) => state.setSelectedService);
-  const setEventMeta = useDashboardStore((state) => state.setEventMeta);
-  const clearEventContext = useDashboardStore((state) => state.clearEventContext);
 
   const [switching, setSwitching] = useState("");
   const [error, setError] = useState("");
@@ -124,16 +103,7 @@ export default function SwitchAccessModal({ onClose }) {
 
   // Roles come from the current session token. The portal token is the richer
   // source when it is still around, so it wins; the service token is the fallback.
-  const { roles, ctx } = useMemo(() => {
-    const portalProfile = safeDecode(readStoredToken(PORTAL_TOKEN_KEY));
-    const serviceProfile = profile ?? safeDecode(readStoredToken(DASHBOARD_TOKEN_KEY));
-    const portalRoles = Array.isArray(portalProfile?.roles) ? portalProfile.roles : [];
-    const serviceRoles = Array.isArray(serviceProfile?.roles) ? serviceProfile.roles : [];
-    return {
-      roles: portalRoles.length ? portalRoles : serviceRoles,
-      ctx: serviceProfile?.ctx ?? null
-    };
-  }, [profile]);
+  const { roles, ctx } = useMemo(() => readAccessRoles(profile), [profile]);
 
   const groups = useMemo(() => groupRoles(roles), [roles]);
 
@@ -175,7 +145,13 @@ export default function SwitchAccessModal({ onClose }) {
         throw new Error("No token was returned for this access.");
       }
 
+      // Hand off exactly like the access portal does: purge everything from the
+      // previous access, then carry the new token and event context in the URL
+      // so the destination hydrates from scratch. Mutating the store and
+      // navigating to a bare URL left stale event ids and the vendor/stall
+      // caches behind, which is what caused calls for the old event.
       try {
+        window.localStorage.removeItem("atomx.dashboard.store");
         window.localStorage.setItem(DASHBOARD_TOKEN_KEY, nextToken);
         if (service) window.localStorage.setItem(`atomx.auth.${service}`, nextToken);
         if (service === "tag-series") {
@@ -185,26 +161,25 @@ export default function SwitchAccessModal({ onClose }) {
         console.error("Failed to persist switched token", storageError);
       }
 
-      setToken(nextToken);
-      setSelectedService(service);
+      const base =
+        service === "tag-series"
+          ? TAG_SERIES_URL.endsWith("/")
+            ? TAG_SERIES_URL
+            : `${TAG_SERIES_URL}/`
+          : isAdminRole(role.type)
+            ? "/admin"
+            : "/Config";
 
-      // Event context belongs to the newly selected role only.
-      clearEventContext();
+      const target = new URL(base, window.location.origin);
+      target.searchParams.set("token", nextToken);
+      if (service) target.searchParams.set("service", service);
       if (eventScoped) {
-        setEventMeta({
-          eventId: role.eventId,
-          eventName: role.eventName ?? "",
-          venue: "",
-          city: ""
-        });
+        target.searchParams.set("eventId", String(role.eventId));
+        if (role.eventName) target.searchParams.set("eventName", role.eventName);
       }
 
-      if (service === "tag-series") {
-        const target = TAG_SERIES_URL.endsWith("/") ? TAG_SERIES_URL : `${TAG_SERIES_URL}/`;
-        window.location.assign(target);
-        return;
-      }
-      window.location.assign(isAdminRole(role.type) ? "/admin" : "/Config");
+      window.location.assign(target.toString());
+      return;
     } catch (requestError) {
       console.error("Failed to switch access", requestError);
       setError(requestError?.message || "Unable to switch to this access.");

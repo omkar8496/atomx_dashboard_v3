@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
+import { assetPath } from "../../lib/assetPath";
 import { decodeJwt } from "@atomx/lib";
 import {
   capturePostHogEvent,
@@ -65,17 +66,17 @@ export default function LoginScreen({
   const sliderItems = useMemo(
     () => [
       {
-        src: "/images/1.avif",
+        src: assetPath("/images/1.avif"),
         title: "CashlessX",
         description: "Enable fast, secure NFC payments for high-volume event counters."
       },
       {
-        src: "/images/2.avif",
+        src: assetPath("/images/2.avif"),
         title: "AccessX",
         description: "Control gates and scan entries in real time with reliable validation."
       },
       {
-        src: "/images/3.avif",
+        src: assetPath("/images/3.avif"),
         title: "InventoryX",
         description: "Track stock movement live and keep every stall inventory synchronized."
       }
@@ -257,71 +258,118 @@ export default function LoginScreen({
   };
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#031026]">
+    <main className="relative min-h-dvh overflow-hidden bg-[#0c0c0c]">
+      {/* Full-bleed backdrop: the card is glass, so it needs something to refract. */}
       {sliderItems.map((item, index) => (
         <img
           key={item.src}
           src={item.src}
-          alt={`AtomX sign in visual ${index + 1}`}
-          className={`absolute inset-0 h-full w-full object-cover brightness-[1.04] contrast-[1.03] saturate-[1.06] transition-opacity duration-[1200ms] ease-out ${
+          alt=""
+          aria-hidden
+          loading={index === 0 ? "eager" : "lazy"}
+          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-[1200ms] ease-out ${
             index === activeSlide ? "opacity-100" : "opacity-0"
           }`}
         />
       ))}
-      <div className="absolute inset-0 bg-[linear-gradient(102deg,rgba(2,8,20,0.06)_0%,rgba(2,8,20,0.03)_44%,rgba(2,8,20,0.2)_78%,rgba(2,8,20,0.28)_100%)]" />
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "linear-gradient(115deg,rgba(12,12,12,0.34) 0%,rgba(12,12,12,0.16) 40%,rgba(12,12,12,0.66) 100%)"
+        }}
+        aria-hidden
+      />
+      <div className="relative z-10 mx-auto flex min-h-dvh w-full max-w-[1560px] items-center justify-center overflow-x-hidden px-4 py-8 sm:px-[clamp(18px,4vw,56px)] sm:py-[clamp(24px,4vw,48px)] lg:grid lg:grid-cols-[1.05fr_minmax(420px,0.95fr)] lg:gap-[clamp(24px,4vw,72px)]">
+        {/* Story panel */}
+        <section className="hidden lg:flex lg:flex-col lg:justify-center">
+          <span className="font-vcr text-[10px] tracking-[0.22em] text-white/70">
+            ATOMX PORTAL
+          </span>
+          <h2 className="font-chillax mt-3 max-w-[15ch] text-[clamp(34px,3.6vw,54px)] font-semibold leading-[1.03] tracking-[-0.02em] text-white">
+            {activeSlideItem?.title}
+          </h2>
+          <p className="mt-4 max-w-[46ch] text-[clamp(14px,1.05vw,17px)] font-light leading-relaxed text-white/75">
+            {activeSlideItem?.description}
+          </p>
 
-      <div className="absolute bottom-9 left-8 right-[42%] z-10 hidden text-white md:block lg:left-12">
-        <h2 className="max-w-[460px] text-[3.1rem] font-semibold leading-[1.05] drop-shadow-[0_6px_14px_rgba(0,0,0,0.45)]">
-          {activeSlideItem?.title}
-        </h2>
-        <p className="mt-5 max-w-[560px] text-xl leading-relaxed text-white/86">
-          {activeSlideItem?.description}
-        </p>
-      </div>
+          <div className="mt-8 flex items-center gap-2" role="tablist" aria-label="Highlights">
+            {sliderItems.map((item, index) => (
+              <span
+                key={`slide-dot-${index}`}
+                role="tab"
+                aria-selected={index === activeSlide}
+                aria-label={item.title}
+                className={`h-1.5 rounded-full transition-all duration-300 ${
+                  index === activeSlide ? "w-8 bg-(--orange)" : "w-2.5 bg-white/35"
+                }`}
+              />
+            ))}
+          </div>
+        </section>
 
-      <section className="relative z-10 flex min-h-screen items-end justify-center px-5 py-8 md:items-center md:justify-end md:pl-10 md:pr-4 lg:pl-14 lg:pr-6">
-        <div className="w-full max-w-[460px]">
-          <div className="flex rounded-[8px] border border-white/28 bg-black/32 p-7 shadow-[0_26px_60px_rgba(2,8,20,0.46)] backdrop-blur-[10px] md:min-h-[600px] md:px-9 md:py-10">
-            <div className="flex w-full flex-col">
-            <img
-              src="/shared/logos/AtomX_Logo.svg"
-              alt="AtomX"
-              className="block h-24 w-auto self-start object-contain brightness-0 invert md:h-60 md:-mt-24 md:-mb-16 md:-ml-12"
-            />
-            <div className="mt-2 h-px w-full max-w-[210px] bg-[linear-gradient(90deg,#F88C43_0%,#1495AB_52%,#FFFFFF_100%)]" />
+        {/* Glass auth card */}
+        <section className="mx-auto w-full min-w-0 max-w-[440px] lg:mx-0 lg:justify-self-end">
+          <div className="rounded-[20px] border border-white/20 bg-white/10 p-[clamp(22px,2.6vw,34px)] shadow-[0_30px_80px_rgba(2,8,20,0.45)] backdrop-blur-2xl">
+            {/* 384x384 canvas with the mark in a thin band, so it is cropped, not scaled. */}
+            <span className="relative block h-[52px] w-[132px] overflow-hidden">
+              <img
+                src={assetPath("/shared/logos/AtomX_Logo.svg")}
+                alt="AtomX"
+                className="absolute -left-[36px] -top-[69px] h-[176px] w-[200px] max-w-none brightness-0 invert"
+              />
+            </span>
 
-            <h1 className="mt-7 text-[2.25rem] font-semibold leading-[1.08] text-white md:text-[3rem]">
-              Sign in to{" "}
-              <span className="text-[#1495AB] drop-shadow-[0_2px_2px_rgba(15,23,42,0.45)]">
-                Portal
+            <div className="mt-[clamp(20px,2.4vw,28px)]">
+              <span className="font-vcr text-[9.5px] tracking-[0.2em] text-white/65">
+                SIGN IN
               </span>
-            </h1>
-
-            <p className="mt-5 max-w-[640px] text-[1.08rem] leading-relaxed text-white/65 md:text-[1.22rem]">
-              {helperText}
-            </p>
+              <h1 className="font-chillax mt-2.5 text-[clamp(26px,2.8vw,34px)] font-semibold leading-[1.05] tracking-[-0.02em] text-white">
+                Welcome to Portal
+              </h1>
+              <p className="mt-2.5 text-[13.5px] font-light leading-relaxed text-white/70">
+                {helperText}
+              </p>
+            </div>
 
             {status === "error" ? (
-              <div className="mt-6 rounded-2xl border border-red-300/40 bg-red-400/10 px-4 py-3 text-base text-red-100">
+              <div
+                role="alert"
+                className="mt-5 rounded-[10px] border border-[rgba(224,68,32,0.45)] bg-[rgba(224,68,32,0.20)] px-3.5 py-2.5 text-[12.5px] font-semibold text-white"
+              >
                 {error}
               </div>
             ) : null}
 
             {profile ? (
-              <div className="mt-7 rounded-2xl border border-white/25 bg-white/10 px-4 py-3 text-base text-white/90">
-                Authenticated as <span className="font-semibold text-white">{profile.email}</span>. Redirecting...
+              <div
+                role="status"
+                aria-live="polite"
+                className="mt-6 flex items-center gap-3 rounded-[12px] border border-white/20 bg-white/10 px-4 py-3.5"
+              >
+                <span className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                <p className="min-w-0 text-[13px] text-white/75">
+                  Signed in as <span className="font-semibold text-white">{profile.email}</span>
+                  <span className="block text-[12px] text-white/55">Taking you to your workspaces...</span>
+                </p>
               </div>
             ) : (
+              // text-* forced: globals.css has an unlayered `a { color: inherit }`
+              // which outranks layered utilities.
               <a
                 href={loginUrl}
                 onClick={handleGoogleSignIn}
-                className={`mt-8 flex h-14 w-full items-center justify-center gap-3 rounded-[26px] bg-[#f88c43] px-7 text-[1.2rem] font-semibold text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.28)] shadow-[0_18px_38px_rgba(248,140,67,0.45)] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f88c43]/45 ${
+                className={`mt-6 flex h-12 w-full items-center justify-center gap-3 rounded-[10px] bg-white px-5 text-[14px] font-semibold text-[#1c1c1c]! transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-transparent ${
                   status === "loading"
-                    ? "pointer-events-none opacity-95"
-                    : "hover:brightness-105"
+                    ? "pointer-events-none opacity-70"
+                    : "hover:bg-(--orange) hover:text-white!"
                 }`}
               >
-                <IconGoogle className="h-7 w-7" />
+                {status === "loading" ? (
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                ) : (
+                  <IconGoogle className="h-5 w-5 shrink-0" />
+                )}
                 <span className="leading-none">
                   {status === "loading" ? "Verifying..." : "Continue with Google"}
                 </span>
@@ -332,64 +380,76 @@ export default function LoginScreen({
               <button
                 type="button"
                 onClick={handleDevTokenLogin}
-                className="mt-3 w-full rounded-full border border-dashed border-[#ffbb92] bg-[#fff3ea] px-4 py-2 text-sm font-semibold text-[#d24f10]"
+                className="mt-2.5 w-full cursor-pointer rounded-[10px] border border-dashed border-white/35 bg-white/5 px-4 py-2.5 text-[12.5px] font-semibold text-white/80 transition hover:border-(--orange) hover:text-white"
               >
                 Use dev session token
               </button>
             ) : null}
 
-            <p className="mt-auto pt-9 text-[0.96rem] leading-relaxed text-white/66 md:text-[1rem]">
-              By continuing, you agree to AtomX&apos;s{" "}
-              <a href="/legal/terms" className="text-[#f88c43] underline underline-offset-2 hover:text-[#ff9f5f]">
-                Terms
-              </a>{" "}
-              and{" "}
-              <a href="/legal/privacy" className="text-[#f88c43] underline underline-offset-2 hover:text-[#ff9f5f]">
-                Privacy Policy
-              </a>
-              .
-            </p>
-            <button
-              type="button"
-              onClick={() => setConsentOpen(true)}
-              className="mt-3 self-start text-sm text-white/70 underline underline-offset-2 transition hover:text-white"
-            >
-              Cookie settings
-            </button>
+            <div className="mt-[clamp(20px,2.4vw,28px)] border-t border-white/15 pt-4">
+              <p className="text-[12px] font-light leading-relaxed text-white/60">
+                By continuing, you agree to AtomX&apos;s{" "}
+                <a
+                  href="/legal/terms"
+                  className="font-medium text-white! underline underline-offset-2 transition hover:text-(--orange)!"
+                >
+                  Terms
+                </a>{" "}
+                and{" "}
+                <a
+                  href="/legal/privacy"
+                  className="font-medium text-white! underline underline-offset-2 transition hover:text-(--orange)!"
+                >
+                  Privacy Policy
+                </a>
+                .
+              </p>
+              <button
+                type="button"
+                onClick={() => setConsentOpen(true)}
+                className="font-vcr mt-3 cursor-pointer text-[9px] uppercase tracking-[0.16em] text-white/55 underline underline-offset-4 transition hover:text-white"
+              >
+                Cookie settings
+              </button>
             </div>
           </div>
-        </div>
-      </section>
 
-      <div className="pointer-events-none absolute bottom-7 left-1/2 z-10 hidden -translate-x-1/2 items-center gap-2 md:flex">
-        {sliderItems.map((_, index) => (
-          <span
-            key={`slide-dot-${index}`}
-            className={`h-2 rounded-full transition-all duration-300 ${
-              index === activeSlide ? "w-7 bg-white" : "w-2 bg-white/35"
-            }`}
-          />
-        ))}
+          {/* Slider dots move under the card on small screens. */}
+          <div className="mt-6 flex items-center justify-center gap-2 lg:hidden" aria-hidden>
+            {sliderItems.map((_, index) => (
+              <span
+                key={`slide-dot-sm-${index}`}
+                className={`h-1.5 rounded-full transition-all duration-300 ${
+                  index === activeSlide ? "w-8 bg-(--orange)" : "w-2.5 bg-white/35"
+                }`}
+              />
+            ))}
+          </div>
+        </section>
       </div>
 
       {consentOpen ? (
-        <div className="fixed inset-x-4 bottom-4 z-30 mx-auto w-full max-w-[620px] rounded-2xl border border-white/30 bg-black/55 p-5 text-white shadow-[0_24px_46px_rgba(2,8,20,0.55)] backdrop-blur-xl md:inset-x-auto md:right-6 md:mx-0">
-          <h3 className="text-lg font-semibold tracking-tight">Cookie Preferences</h3>
+        <div className="fixed bottom-4 left-4 right-4 z-30 mx-auto w-auto max-w-[560px] rounded-[14px] border border-white/20 bg-black/45 p-4 text-white shadow-[0_24px_60px_rgba(2,8,20,0.55)] backdrop-blur-2xl md:left-auto md:right-6 md:mx-0 md:w-[560px]">
+          <h3 className="font-chillax text-[16px] font-semibold text-white">Cookie preferences</h3>
+          <p className="mt-1.5 text-[12.5px] font-light text-white/70">
+            Analytics cookies help us understand how the portal is used. Essential cookies are
+            always on.
+          </p>
 
-          <div className="mt-4 flex flex-wrap items-center gap-2">
+          <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
             <button
               type="button"
               onClick={handleAcceptAnalytics}
-              className="rounded-full bg-[#f88c43] px-4 py-2 text-sm font-semibold text-white shadow-[0_10px_20px_rgba(248,140,67,0.35)] hover:brightness-105"
+              className="h-10 cursor-pointer rounded-[10px] bg-white text-[12.5px] font-semibold text-[#1c1c1c] transition hover:bg-(--orange) hover:text-white"
             >
               Accept all cookies
             </button>
             <button
               type="button"
               onClick={handleRejectAnalytics}
-              className="rounded-full border border-white/35 bg-transparent px-4 py-2 text-sm font-semibold text-white/90 hover:bg-white/10"
+              className="h-10 cursor-pointer rounded-[10px] border border-white/30 bg-transparent text-[12.5px] font-semibold text-white/85 transition hover:border-(--orange) hover:text-white"
             >
-              Accept only essential cookies
+              Essential only
             </button>
           </div>
         </div>

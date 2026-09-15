@@ -1,4 +1,4 @@
-export const VENDOR_TYPES = ["FNB", "PASS", "TICKET", "SALE", "INVENTORY", "TABLES", "ACCESSX"];
+export const VENDOR_TYPES = ["FNB", "PASS", "TICKET", "SALE", "INVENTORY", "TABLES", "ACCESSX", "GENERIC-ITEMS"];
 
 export const DEFAULT_VENDOR_FORM = {
   vendorName: "",

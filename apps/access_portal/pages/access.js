@@ -238,6 +238,47 @@ function setBootstrapTokenCookie(tokenValue) {
   )}; Path=/; Max-Age=1800; SameSite=Lax${secure}`;
 }
 
+// Wipes every AtomX credential and returns to login. Used whenever the session
+// is gone: there is nothing the user can retry, so never show an error first.
+function purgeSessionAndRestart() {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem("atomx.portal.token");
+    window.localStorage.removeItem(DASHBOARD_SELECTED_TOKEN_KEY);
+    window.localStorage.removeItem("atomx.dashboard.store");
+    window.localStorage.removeItem(REAUTH_CONTEXT_KEY);
+    const keysToRemove = [];
+    for (let i = 0; i < window.localStorage.length; i += 1) {
+      const key = window.localStorage.key(i);
+      if (key && key.startsWith("atomx.auth.")) keysToRemove.push(key);
+    }
+    keysToRemove.forEach((key) => window.localStorage.removeItem(key));
+    window.sessionStorage?.clear();
+  } catch (err) {
+    console.error("Failed to clear auth cache", err);
+  }
+  clearBootstrapTokenCookie();
+  window.location.assign("/");
+}
+
+// An expired or rejected session - as opposed to a network or server fault.
+function isSessionExpiredError(error) {
+  if (error?.status === 401 || error?.status === 403) return true;
+  const message = String(error?.message || "").toLowerCase();
+  return (
+    message.includes("unauthor") ||
+    message.includes("token expired") ||
+    message.includes("jwt expired") ||
+    message.includes("invalid token") ||
+    message.includes("session expired")
+  );
+}
+
+function isTokenExpired(decoded) {
+  if (!decoded?.exp) return false;
+  return decoded.exp * 1000 <= Date.now();
+}
+
 function clearBootstrapTokenCookie() {
   if (typeof document === "undefined") return;
   document.cookie = `${BOOTSTRAP_TOKEN_COOKIE}=; Path=/; Max-Age=0; SameSite=Lax`;
@@ -560,6 +601,10 @@ export default function AccessPage() {
 
     try {
       const decoded = decodeJwt(tokenCandidate);
+      if (isTokenExpired(decoded)) {
+        purgeSessionAndRestart();
+        return;
+      }
       const sanitized = sanitizeModules(decoded.roles);
       setProfile(decoded);
       setModules(sanitized);
@@ -814,7 +859,9 @@ export default function AccessPage() {
 
       if (!res.ok) {
         const text = await res.text();
-        throw new Error(text || `Request failed (${res.status})`);
+        const selectError = new Error(text || `Request failed (${res.status})`);
+        selectError.status = res.status;
+        throw selectError;
       }
       const selectionData = await res.json().catch(() => null);
       const selectedToken = findTokenInResponse(selectionData);
@@ -915,10 +962,15 @@ export default function AccessPage() {
         event_id: eventId ?? null,
         error_message: err?.message || "service_selection_failed"
       });
+      if (isSessionExpiredError(err)) {
+        // Nothing to retry - the session is gone. Clear everything and re-login.
+        purgeSessionAndRestart();
+        return;
+      }
       setSelectError(err.message || "Failed to switch module");
       setModalApp({
         title: permission.label,
-        description: "We could not refresh your access token. Please try again."
+        description: "We could not complete this request. Please try again."
       });
     } finally {
       clearBootstrapTokenCookie();
@@ -976,27 +1028,7 @@ export default function AccessPage() {
 
   const handleSignOut = () => {
     if (typeof window !== "undefined") {
-      try {
-        window.localStorage.removeItem("atomx.portal.token");
-        window.localStorage.removeItem(DASHBOARD_SELECTED_TOKEN_KEY);
-        window.localStorage.removeItem("atomx.dashboard.store");
-        window.localStorage.removeItem(REAUTH_CONTEXT_KEY);
-        const keysToRemove = [];
-        for (let i = 0; i < window.localStorage.length; i += 1) {
-          const key = window.localStorage.key(i);
-          if (!key) continue;
-          if (key.startsWith("atomx.auth.")) {
-            keysToRemove.push(key);
-          }
-        }
-        keysToRemove.forEach((key) => window.localStorage.removeItem(key));
-        if (window.sessionStorage) {
-          window.sessionStorage.clear();
-        }
-      } catch (err) {
-        console.error("Failed to clear auth cache", err);
-      }
-      window.location.assign("/");
+      purgeSessionAndRestart();
       return;
     }
     setProfile(null);

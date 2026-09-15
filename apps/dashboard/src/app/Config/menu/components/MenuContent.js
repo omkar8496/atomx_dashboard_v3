@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import * as XLSX from "xlsx";
 import { useSearchParams } from "next/navigation";
 import { fetchStallItems, saveStallMenu } from "../../../../lib/dashboardApi";
@@ -9,6 +9,8 @@ import MenuActionBar from "./MenuActionBar";
 import CategoryTabs from "./CategoryTabs";
 import CategoryDetailPanel from "./CategoryDetailPanel";
 import MenuItemsTable from "./MenuItemsTable";
+import { parseMenuFile, mergeImportedRows } from "./menuImport";
+import SampleItemsPopup, { useSampleItems } from "./SampleItemsPopup";
 
 function asNumber(value, fallback = 0) {
   const numberValue = Number(value);
@@ -33,6 +35,13 @@ function normalizeTags(value) {
 function normalizeMenuItem(item, index) {
   return {
     id: item?.id ?? `item-${index}`,
+    // The row's real id on the server, so saving updates it instead of
+    // inserting a copy. Null for rows added or imported in the browser, whose
+    // `id` above is only a local key.
+    serverId: item?.id ?? null,
+    // Everything the API returned, replayed on save so fields this page has no
+    // control over (itemCode, description, bottle/portion, expiry...) survive.
+    raw: item ?? null,
     name: asText(item?.name),
     price: asNumber(item?.price),
     happy: asNumber(item?.happyPrice),
@@ -89,8 +98,12 @@ function normalizeMenuResponse(response) {
       : itemsByCategory.get(String(category?.id)) ?? [];
     const items = categoryItems.map(normalizeMenuItem);
 
+    const { items: _rawItems, ...rawCategory } = category ?? {};
+
     return {
       id: category?.id ?? `category-${index}`,
+      serverId: category?.id ?? null,
+      raw: category == null ? null : rawCategory,
       name: asText(category?.name) || `Category ${index + 1}`,
       // Required by the save payload but not editable in the UI.
       type: asText(category?.type),
@@ -108,8 +121,22 @@ function toStatus(active) {
   return active ? "active" : "inactive";
 }
 
-function itemPayload(item, index) {
+// Fields the server owns and we must not echo back.
+function serverBase(raw) {
+  const { id: _id, categoryId: _categoryId, createdAt: _createdAt, updatedAt: _updatedAt, items: _items, ...rest } =
+    raw ?? {};
+  return rest;
+}
+
+function itemPayload(item, index, categoryServerId) {
   return {
+    ...serverBase(item.raw),
+    // Present only for rows that already exist server-side; a new row is
+    // inserted when it is absent.
+    ...(item.serverId == null ? {} : { id: item.serverId }),
+    // Taken from the category being saved rather than from the row's own
+    // response, so it cannot point at a category the row no longer sits in.
+    ...(categoryServerId == null ? {} : { categoryId: categoryServerId }),
     name: item.name,
     price: asNumber(item.price),
     mrp: asNumber(item.mrp),
@@ -132,6 +159,8 @@ function itemPayload(item, index) {
 
 function categoryFields(category) {
   return {
+    ...serverBase(category.raw),
+    ...(category.serverId == null ? {} : { id: category.serverId }),
     name: category.name,
     type: category.type || "",
     status: toStatus(category.active),
@@ -157,12 +186,19 @@ function buildMenuPayload(categories, baseline) {
     );
 
     const items = category.items
-      .map((item, index) => ({ payload: itemPayload(item, index), item, index }))
+      .map((item, index) => ({
+        payload: itemPayload(item, index, category.serverId),
+        item,
+        index
+      }))
       .filter(({ payload, item }) => {
         const previousItem = baseItems.get(String(item.id));
         if (!previousItem) return true; // new item
         const previousIndex = (previous?.items ?? []).indexOf(previousItem);
-        return !sameJson(payload, itemPayload(previousItem, previousIndex));
+        return !sameJson(
+          payload,
+          itemPayload(previousItem, previousIndex, category.serverId)
+        );
       })
       .map(({ payload }) => payload);
 
@@ -192,6 +228,22 @@ export default function MenuContent() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [saveMessage, setSaveMessage] = useState("");
+  // Bumped after a save so the menu is re-read and newly created rows pick up
+  // the ids the server just assigned them.
+  const [reloadCount, setReloadCount] = useState(0);
+  const [sampleOpen, setSampleOpen] = useState(false);
+  // One catalogue for the whole page: the first Sample click loads it, later
+  // clicks reuse it, and only the popup's Refresh re-fetches.
+  const eventMetaId = useDashboardStore((state) => state.eventMeta?.eventId);
+  const eventDetailsId = useDashboardStore((state) => state.eventDetails?.id);
+  const eventId = eventMetaId ?? eventDetailsId;
+  const sampleCatalogue = useSampleItems({ eventId, token });
+  const { load: loadSampleItems } = sampleCatalogue;
+
+  const openSampleItems = useCallback(() => {
+    setSampleOpen(true);
+    loadSampleItems();
+  }, [loadSampleItems]);
 
   useEffect(() => {
     let active = true;
@@ -214,7 +266,11 @@ export default function MenuContent() {
         const nextCategories = normalizeMenuResponse(response);
         setCategories(nextCategories);
         setBaseline(nextCategories);
-        setActiveCategoryId(nextCategories[0]?.id ?? null);
+        setActiveCategoryId((current) =>
+          nextCategories.some((category) => category.id === current)
+            ? current
+            : nextCategories[0]?.id ?? null
+        );
       })
       .catch((error) => {
         if (!active) return;
@@ -230,7 +286,7 @@ export default function MenuContent() {
     return () => {
       active = false;
     };
-  }, [stallId, token]);
+  }, [stallId, token, reloadCount]);
 
   const activeCategory = categories.find((c) => c.id === activeCategoryId) ?? null;
 
@@ -291,6 +347,8 @@ export default function MenuContent() {
       ...prev,
       {
         id: newId,
+        serverId: null,
+        raw: null,
         name: newName,
         type: "",
         count: 1,
@@ -301,6 +359,8 @@ export default function MenuContent() {
         items: [
           {
             id: newItemId,
+            serverId: null,
+            raw: null,
             name: "",
             price: 0,
             happy: 0,
@@ -329,6 +389,17 @@ export default function MenuContent() {
       return;
     }
 
+    // An unnamed row would be saved as a blank item, so stop before sending.
+    const unnamed = categories.find((category) =>
+      category.items.some((item) => !asText(item.name))
+    );
+    if (unnamed) {
+      setSaveMessage("");
+      setSaveError(`Every item in "${unnamed.name}" needs a name before saving.`);
+      setActiveCategoryId(unnamed.id);
+      return;
+    }
+
     const changedCategories = buildMenuPayload(categories, baseline);
     if (changedCategories.length === 0) {
       setSaveError("");
@@ -350,6 +421,8 @@ export default function MenuContent() {
       }
       setBaseline(categories);
       setSaveMessage("Menu saved.");
+      // Re-read so rows created by this save stop looking new.
+      setReloadCount((count) => count + 1);
     } catch (error) {
       console.error(`Unable to save menu for stall ${stallId}`, error);
       setSaveError(error?.message || "Unable to save this menu.");
@@ -391,6 +464,38 @@ export default function MenuContent() {
     XLSX.writeFile(wb, `${stallName} Inventory.xlsx`);
   };
 
+  // Loads a CSV/Excel menu straight into the table so it can be reviewed and
+  // edited before Save sends it. Nothing is uploaded to the server here.
+  const importMenuFile = async (file) => {
+    if (!file) return;
+
+    setSaveError("");
+    setSaveMessage("");
+    try {
+      const { rows, truncated } = await parseMenuFile(file);
+      const { categories: nextCategories, summary, focusCategoryId } =
+        mergeImportedRows(categories, rows, {
+          fileName: file.name,
+          activeCategoryId
+        });
+
+      setCategories(nextCategories);
+      if (focusCategoryId != null) setActiveCategoryId(focusCategoryId);
+
+      const parts = [];
+      if (summary.added) parts.push(`${summary.added} item(s) added`);
+      if (summary.updated) parts.push(`${summary.updated} item(s) updated`);
+      if (summary.createdCategories) {
+        parts.push(`${summary.createdCategories} new category(s)`);
+      }
+      if (truncated) parts.push(`${truncated} name(s) trimmed to 16 characters`);
+      setSaveMessage(`${file.name}: ${parts.join(", ")}. Review, then Save.`);
+    } catch (error) {
+      console.error(`Unable to import menu file ${file.name}`, error);
+      setSaveError(error?.message || "Unable to read this file.");
+    }
+  };
+
   const addItem = () => {
     if (!activeCategoryId) return;
     const newId = Date.now();
@@ -404,6 +509,8 @@ export default function MenuContent() {
                 ...c.items,
                 {
                   id: newId,
+                  serverId: null,
+                  raw: null,
                   name: "",
                   price: 0,
                   happy: 0,
@@ -484,10 +591,19 @@ export default function MenuContent() {
           onAddItem={addItem}
           inactiveItems={inactiveItems}
           onToggleInactiveItems={() => setInactiveItems((p) => !p)}
+          categoryName={activeCategory?.name}
+          onImportMenu={importMenuFile}
+          onOpenSampleItems={openSampleItems}
         />
           </>
         )}
       </div>
+
+      <SampleItemsPopup
+        open={sampleOpen}
+        onClose={() => setSampleOpen(false)}
+        catalogue={sampleCatalogue}
+      />
     </div>
   );
 }

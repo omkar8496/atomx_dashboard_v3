@@ -25,6 +25,55 @@ function formatItemName(value) {
   return name.length > ITEM_NAME_LIMIT ? name.slice(0, ITEM_NAME_LIMIT) : name;
 }
 
+// Sample import sheet handed to vendors: one header row plus two placeholder rows.
+const SAMPLE_CSV_HEADERS = [
+  "Item",
+  "Cost",
+  "MRP",
+  "Price",
+  "Happy Price",
+  "HSN",
+  "Barcode",
+  "Epc",
+  "Type(food/drink/ticket/other)",
+  "Item Code",
+  "Description",
+  "Group Id",
+  "Variation",
+  "Colour",
+  "Supplier Code",
+  "Tags(separate by;)"
+];
+
+const SAMPLE_CSV_ROWS = [
+  ["Item Name 1", "0", "0", "0", "0", "", "", "", "food", "", "", "", "", "", "", ""],
+  ["Item Name 2", "0", "0", "0", "0", "", "", "", "food", "", "", "", "", "", "", ""]
+];
+
+function sampleFileName(categoryName) {
+  const safe = String(categoryName ?? "")
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  return `${safe || "MENU"}.csv`;
+}
+
+function downloadSampleCsv(categoryName) {
+  const csv = [SAMPLE_CSV_HEADERS, ...SAMPLE_CSV_ROWS]
+    .map((row) => row.join(","))
+    .join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = sampleFileName(categoryName);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 const INPUT_CLASS =
   "rounded-[8px] border border-(--line) bg-(--surface) px-2.5 py-1.5 text-[13px] font-medium text-(--text) outline-none transition placeholder:text-(--faint) focus:border-(--orange) focus:shadow-[0_0_0_3px_rgba(224,68,32,0.12)]";
 
@@ -151,6 +200,7 @@ function TagsDropdown({ value = [], onChange }) {
 function ItemRow({
   item,
   onUpdate,
+  onOpenSampleItems,
   onDragStart,
   onDragOver,
   onDrop,
@@ -178,12 +228,26 @@ function ItemRow({
             >
               <GripVerticalIcon className="h-4 w-4" />
             </button>
-            <span
-              title={item.name || "Unnamed item"}
-              className="w-[150px] truncate text-[12.5px] font-semibold text-(--text)"
-            >
-              {formatItemName(item.name)}
-            </span>
+            {item.serverId == null ? (
+              // A row that has not been saved yet still needs a name typed in.
+              // Once the server has it, the name is fixed.
+              <input
+                type="text"
+                value={item.name}
+                maxLength={ITEM_NAME_LIMIT}
+                onChange={(e) => onUpdate({ name: e.target.value })}
+                placeholder="Item name"
+                aria-label="Item name"
+                className={`w-[150px] font-semibold ${INPUT_CLASS}`}
+              />
+            ) : (
+              <span
+                title={item.name || "Unnamed item"}
+                className="w-[150px] truncate text-[12.5px] font-semibold text-(--text)"
+              >
+                {formatItemName(item.name)}
+              </span>
+            )}
           </div>
         </td>
         <td className="py-3 pr-3">
@@ -235,6 +299,15 @@ function ItemRow({
             >
               <ImageUploadIcon className="h-5 w-5" />
             </button>
+            <button
+              type="button"
+              onClick={onOpenSampleItems}
+              title="Browse items from Generic-Items stalls"
+              className="flex h-9 items-center gap-1.5 rounded-[10px] border border-(--line) bg-(--surface) px-3 text-[12.5px] font-semibold text-(--text) transition hover:border-(--orange) hover:text-(--orange)"
+            >
+              <PlusIcon className="h-3.5 w-3.5" />
+              Sample
+            </button>
           </div>
         </td>
       </tr>
@@ -248,9 +321,13 @@ export default function MenuItemsTable({
   onReorderItems,
   onAddItem,
   inactiveItems,
-  onToggleInactiveItems
+  onToggleInactiveItems,
+  categoryName,
+  onImportMenu,
+  onOpenSampleItems
 }) {
   const [search, setSearch] = useState("");
+  const importInputRef = useRef(null);
   const [draggedItemId, setDraggedItemId] = useState(null);
   const [dropTarget, setDropTarget] = useState(null);
 
@@ -339,8 +416,22 @@ export default function MenuItemsTable({
         <div className="flex-1" />
 
         <div className="flex items-center gap-2">
+          <input
+            ref={importInputRef}
+            type="file"
+            accept=".csv,.xlsx,.xls"
+            className="hidden"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              // Reset so picking the same file again still fires a change.
+              event.target.value = "";
+              if (file) onImportMenu?.(file);
+            }}
+          />
           <button
             type="button"
+            onClick={() => importInputRef.current?.click()}
+            title="Upload a CSV or Excel menu into this table"
             className="flex h-9 items-center gap-1.5 rounded-[8px] bg-[linear-gradient(135deg,#E04420,#341CD6)] px-3 text-[12.5px] font-semibold text-white transition hover:brightness-105"
           >
             <CloudUploadIcon className="h-3.5 w-3.5" />
@@ -348,6 +439,7 @@ export default function MenuItemsTable({
           </button>
           <button
             type="button"
+            onClick={() => downloadSampleCsv(categoryName)}
             className="flex h-9 items-center gap-1.5 rounded-[8px] border border-(--orange) bg-(--surface) px-3 text-[12.5px] font-semibold text-(--orange) transition hover:bg-[rgba(224,68,32,0.06)]"
           >
             <DownloadIcon className="h-3.5 w-3.5" />
@@ -408,6 +500,7 @@ export default function MenuItemsTable({
                 key={item.id}
                 item={item}
                 onUpdate={(updates) => onItemUpdate?.(item.id, updates)}
+                onOpenSampleItems={onOpenSampleItems}
                 onDragStart={handleDragStart}
                 onDragOver={handleDragOver}
                 onDrop={handleDrop}

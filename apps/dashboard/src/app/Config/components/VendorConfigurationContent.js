@@ -64,16 +64,8 @@ function getVendorLogin(vendor) {
   );
 }
 
-function getCreateStallVendorId(vendor, index) {
-  return (
-    vendor?.loginCode ??
-    vendor?.login ??
-    vendor?.code ??
-    vendor?.password ??
-    vendor?.vendorId ??
-    vendor?.id ??
-    index + 1
-  );
+function getCreateStallVendorId(vendor) {
+  return vendor?.id ?? vendor?.vendorId ?? vendor?.vendor_id ?? null;
 }
 
 function getVendorLink(vendor) {
@@ -322,6 +314,7 @@ function ScrollRows({ children }) {
 
 function VendorRow({ vendor, index, onAddStall, onEditVendor }) {
   const link = getVendorLink(vendor);
+  const canAddStall = getCreateStallVendorId(vendor) !== null;
 
   return (
     <div
@@ -363,7 +356,12 @@ function VendorRow({ vendor, index, onAddStall, onEditVendor }) {
               <LinkIcon />
             </ActionButton>
           )}
-          <ActionButton label="Add stall" active onClick={onAddStall}>
+          <ActionButton
+            label={canAddStall ? "Add stall" : "This vendor has no ID, so a stall cannot be created"}
+            active
+            onClick={onAddStall}
+            disabled={!canAddStall}
+          >
             <PlusIcon />
           </ActionButton>
           <ActionButton label="Edit vendor" onClick={onEditVendor}>
@@ -1027,7 +1025,7 @@ export default function VendorConfigurationContent() {
                       index={index}
                       onAddStall={() =>
                         setCreateStallFor({
-                          vendorId: getCreateStallVendorId(vendor, index),
+                          vendorId: getCreateStallVendorId(vendor),
                           vendorName: getVendorName(vendor),
                           vendorType: getVendorType(vendor),
                         })

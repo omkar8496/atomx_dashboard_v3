@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-const STALL_TYPES = ["TOPUP", "SALE", "ACCESSX", "INVENTORY", "STOCKMASTER", "TABLES"];
+const STALL_TYPES = ["TOPUP", "SALE", "ACCESSX", "INVENTORY", "STOCKMASTER", "TABLES", "GENERIC-ITEMS"];
 const SCAN_MODES = ["NONE", "MENU", "TICKET"];
 const PAYMENT_MODE_OPTIONS = ["cash", "card", "coupon"];
 const NFC_SETTINGS = ["LOGIC"];

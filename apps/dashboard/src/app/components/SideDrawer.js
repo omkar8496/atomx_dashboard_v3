@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
+import { useDashboardStore } from "../../store/dashboardStore";
 
 const ITEMS = [
   { id: "deviceMaster", label: "Device Master", href: "/device_masterlist", match: "/device_masterlist" },
@@ -144,6 +145,10 @@ const ICONS = {
 export default function SideDrawer({ mobileOpen = false, onMobileClose, only = null, itemHrefs = null }) {
   const pathname = usePathname();
   const router = useRouter();
+  const eventMeta = useDashboardStore((state) => state.eventMeta);
+  const eventDetails = useDashboardStore((state) => state.eventDetails);
+  const eventId = eventMeta?.eventId ?? eventDetails?.id ?? null;
+  const eventName = eventMeta?.eventName || eventDetails?.name || "";
   const selectable = [...ITEMS, ...WORKSPACE_ITEMS];
   const items = (
     Array.isArray(only)
@@ -172,6 +177,25 @@ export default function SideDrawer({ mobileOpen = false, onMobileClose, only = n
         style={{ top: "var(--header-h)", height: "calc(100vh - var(--header-h))" }}
       >
         <div className="flex h-full w-[60px] flex-col overflow-hidden border-r border-white/10 bg-(--rail) text-(--railText) shadow-[16px_0_42px_rgba(0,0,0,0.28)] transition-[width] duration-300 ease-out group-hover:w-[248px] max-[900px]:w-[248px]">
+          {eventId ? (
+            <div
+              className="flex shrink-0 items-center gap-3 border-b border-white/10 px-2.5 py-3"
+              title={eventName ? `${eventName} (#${eventId})` : `Event #${eventId}`}
+            >
+              <span className="font-vcr grid h-9 w-9 shrink-0 place-items-center rounded-[10px] border border-white/15 bg-white/10 text-[10px] tracking-[0.04em] text-(--railText)">
+                {String(eventId).slice(0, 4)}
+              </span>
+              <span className="min-w-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100 max-[900px]:opacity-100">
+                <span className="font-chillax block truncate text-[13.5px] font-semibold leading-tight text-(--railText)">
+                  {eventName || `Event ${eventId}`}
+                </span>
+                <span className="font-vcr mt-0.5 block whitespace-nowrap text-[8.5px] tracking-[0.16em] text-white/55">
+                  EVENT
+                </span>
+              </span>
+            </div>
+          ) : null}
+
           <nav className="flex flex-1 flex-col gap-1 overflow-y-auto overflow-x-hidden px-2.5 py-3.5">
             {items.map((item) => {
               const matchBase = item.match || item.href;
@@ -208,8 +232,8 @@ export default function SideDrawer({ mobileOpen = false, onMobileClose, only = n
               );
             })}
           </nav>
-          <div className="flex items-center gap-3 border-t border-white/10 px-3 py-3">
-            <span className="font-vcr whitespace-nowrap text-[9px] tracking-[0.12em] text-white/50 opacity-0 transition-opacity duration-200 group-hover:opacity-100 max-[900px]:opacity-100">
+          <div className="flex items-center justify-center border-t border-white/10 px-3 py-3">
+            <span className="font-vcr whitespace-nowrap text-center text-[9px] tracking-[0.12em] text-white/50 opacity-0 transition-opacity duration-200 group-hover:opacity-100 max-[900px]:opacity-100">
               AtomX Dashboard v3.0.0
             </span>
           </div>

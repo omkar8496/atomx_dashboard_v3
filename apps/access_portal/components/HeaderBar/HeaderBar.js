@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { assetPath } from "../../lib/assetPath";
 import { UserMenu } from "../UserMenu/UserMenu";
 
-const LOGO_SRC = "/shared/logos/AtomX_Logo.svg";
+const LOGO_SRC = assetPath("/shared/logos/AtomX_Logo.svg");
 const THEME_KEY = "atomx.theme";
 
 function useTheme() {
