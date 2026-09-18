@@ -473,12 +473,9 @@ export default function AdminClient() {
           city: details.locationCity ?? ""
         });
       }
-      const params = new URLSearchParams();
-      if (details?.id ?? selectedEventId) params.set("eventId", details?.id ?? selectedEventId);
-      if (details?.name) params.set("eventName", details.name);
-      if (details?.venue) params.set("venue", details.venue);
-      if (details?.locationCity) params.set("city", details.locationCity);
-      router.push(`${destination}?${params.toString()}`);
+      // The event is already in the store via setEventMeta above, so it is not
+      // repeated in the address bar.
+      router.push(destination);
     } catch (err) {
       console.error("Failed to load event details", err);
       setError("Unable to load event details.");

@@ -201,6 +201,7 @@ function ItemRow({
   item,
   onUpdate,
   onOpenSampleItems,
+  genericItemLabel,
   onDragStart,
   onDragOver,
   onDrop,
@@ -208,6 +209,9 @@ function ItemRow({
   isDragging,
   dropPosition
 }) {
+  const idLabel = `GENERIC #${item.genericItemId}`;
+  const genericLabel = genericItemLabel ?? idLabel;
+
   return (
     <tbody
       onDragOver={(event) => onDragOver(event, item.id)}
@@ -308,6 +312,29 @@ function ItemRow({
               <PlusIcon className="h-3.5 w-3.5" />
               Sample
             </button>
+            {item.genericItemId == null ? null : (
+              <span
+                title={`Linked to generic item #${item.genericItemId}`}
+                className={`flex h-9 max-w-[220px] items-center gap-1.5 rounded-[10px] bg-[rgba(224,68,32,0.08)] px-2.5 text-(--orange) ${
+                  // The saved "GENERIC #id" form keeps the VCR treatment; an
+                  // unsaved link shows the item's own name in the body font.
+                  genericLabel === idLabel
+                    ? "font-vcr text-[11px] tracking-[0.06em]"
+                    : "text-[11.5px] font-semibold"
+                }`}
+              >
+                <span className="truncate">{genericLabel}</span>
+                <button
+                  type="button"
+                  onClick={() => onUpdate({ genericItemId: null })}
+                  aria-label="Remove generic item link"
+                  title="Remove link"
+                  className="text-[13px] leading-none transition hover:text-(--text)"
+                >
+                  ×
+                </button>
+              </span>
+            )}
           </div>
         </td>
       </tr>
@@ -324,7 +351,8 @@ export default function MenuItemsTable({
   onToggleInactiveItems,
   categoryName,
   onImportMenu,
-  onOpenSampleItems
+  onOpenSampleItems,
+  genericItemLabels
 }) {
   const [search, setSearch] = useState("");
   const importInputRef = useRef(null);
@@ -500,7 +528,8 @@ export default function MenuItemsTable({
                 key={item.id}
                 item={item}
                 onUpdate={(updates) => onItemUpdate?.(item.id, updates)}
-                onOpenSampleItems={onOpenSampleItems}
+                onOpenSampleItems={() => onOpenSampleItems?.(item.id)}
+                genericItemLabel={genericItemLabels?.get(item.id)}
                 onDragStart={handleDragStart}
                 onDragOver={handleDragOver}
                 onDrop={handleDrop}

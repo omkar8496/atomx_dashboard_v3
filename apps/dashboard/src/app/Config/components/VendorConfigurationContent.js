@@ -577,6 +577,7 @@ export default function VendorConfigurationContent() {
   );
   const setVendorsForEvent = useDashboardStore((state) => state.setVendorsForEvent);
   const setStallsForEvent = useDashboardStore((state) => state.setStallsForEvent);
+  const setMenuStall = useDashboardStore((state) => state.setMenuStall);
   const [vendors, setVendors] = useState(() => cachedVendors || []);
   const [stalls, setStalls] = useState(() => cachedStalls || []);
   const [vendorQuery, setVendorQuery] = useState("");
@@ -659,13 +660,12 @@ export default function VendorConfigurationContent() {
         return;
       }
 
-      const params = new URLSearchParams({
-        stallId: String(stallId),
-        stallName: getStallName(stall)
-      });
-      router.push(`/Config/menu?${params.toString()}`);
+      // Handed over in the store, not the query string, so the address bar
+      // stays free of stall ids.
+      setMenuStall({ id: stallId, name: getStallName(stall) });
+      router.push("/Config/menu");
     },
-    [router]
+    [router, setMenuStall]
   );
 
   useEffect(() => {

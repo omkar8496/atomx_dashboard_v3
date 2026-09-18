@@ -28,10 +28,16 @@ export default function MenuActionBar({
   onDownload,
   onAddCategory,
   onSave,
-  saving = false
+  saving = false,
+  hasUnsavedChanges = false
 }) {
+  // Sticks directly under the fixed 58px page header. z-35 keeps it above the
+  // item-row dropdowns (z-30) and below the header itself (z-40).
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-[15px] border border-(--line) border-l-[3px] border-l-(--orange) bg-(--surface) px-4 py-3 shadow-(--shadow)">
+    <div
+      style={{ top: "58px" }}
+      className="sticky z-[35] flex flex-wrap items-center gap-3 rounded-[15px] border border-(--line) border-l-[3px] border-l-(--orange) bg-(--surface) px-4 py-3 shadow-(--shadow)"
+    >
       <span className="font-chillax shrink-0 text-[15px] font-semibold text-(--text)">
         {stallName} <span className="text-(--orange)">MENU</span>
       </span>
@@ -76,7 +82,11 @@ export default function MenuActionBar({
           type="button"
           onClick={onSave}
           disabled={saving}
-          className="flex h-9 cursor-pointer items-center gap-1.5 rounded-[8px] bg-(--text) px-3 text-[12.5px] font-semibold text-(--bg) transition hover:bg-(--orange) disabled:cursor-not-allowed disabled:opacity-55"
+          title={hasUnsavedChanges ? "You have unsaved changes" : "Everything is saved"}
+          className={`flex h-9 cursor-pointer items-center gap-1.5 rounded-[8px] px-3 text-[12.5px] font-semibold text-(--bg) transition hover:bg-(--orange) disabled:cursor-not-allowed disabled:opacity-55 ${
+            // Turns orange the moment anything is edited, back to black on save.
+            hasUnsavedChanges ? "bg-(--orange)" : "bg-(--text)"
+          }`}
         >
           {saving ? (
             <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />

@@ -61,6 +61,8 @@ function flattenStallItems(response, stall) {
     .filter(({ item }) => asText(item?.name))
     .map(({ item, categoryName }) => ({
       key: `${stallId(stall)}-${item?.id ?? asText(item?.name)}-${asText(item?.variant)}`,
+      // The id stored on a menu item as genericItemId when this row is linked.
+      id: item?.id ?? null,
       stallId: stallId(stall),
       stallName: stallName(stall),
       categoryName,
@@ -157,7 +159,7 @@ function RefreshIcon({ className = "h-3.5 w-3.5" }) {
   );
 }
 
-export default function SampleItemsPopup({ open, onClose, catalogue }) {
+export default function SampleItemsPopup({ open, onClose, catalogue, onLink, linkedId }) {
   const { items, stallCount, loading, error, refresh } = catalogue;
   const [search, setSearch] = useState("");
 
@@ -307,6 +309,25 @@ export default function SampleItemsPopup({ open, onClose, catalogue }) {
                         <span className="w-16 text-right text-[13px] font-semibold text-(--text)">
                           {row.price}
                         </span>
+                        <button
+                          type="button"
+                          disabled={row.id == null}
+                          onClick={() => onLink?.(row)}
+                          title={
+                            row.id == null
+                              ? "This item has no ID to link"
+                              : `Link generic item #${row.id}`
+                          }
+                          className={`flex h-7 shrink-0 items-center rounded-[8px] px-2.5 text-[11.5px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-40 ${
+                            linkedId != null && String(linkedId) === String(row.id)
+                              ? "bg-(--text) text-(--bg)"
+                              : "border border-(--orange) text-(--orange) hover:bg-[rgba(224,68,32,0.08)]"
+                          }`}
+                        >
+                          {linkedId != null && String(linkedId) === String(row.id)
+                            ? "Linked"
+                            : "Link"}
+                        </button>
                       </div>
                     ))}
                   </div>

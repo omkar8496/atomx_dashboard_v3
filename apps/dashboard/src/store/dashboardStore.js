@@ -48,6 +48,9 @@ export const useDashboardStore = create(
       selectedService: null,
       vendorsByEventId: {},
       stallsByEventId: {},
+      // The stall whose menu is open. Held here rather than in the URL so stall
+      // ids are not on display and cannot be swapped by editing the address bar.
+      menuStall: null,
       setToken: (token) => {
         if (!token) {
           set({ token: null, profile: null });
@@ -79,10 +82,25 @@ export const useDashboardStore = create(
       // call this so a previously opened event can't leak into them.
       clearEventContext: () => {
         set((state) =>
-          state.eventMeta === null && state.eventDetails === null
+          state.eventMeta === null &&
+          state.eventDetails === null &&
+          state.menuStall === null
             ? state
-            : { eventMeta: null, eventDetails: null }
+            : { eventMeta: null, eventDetails: null, menuStall: null }
         );
+      },
+      setMenuStall: (stall) => {
+        const id = stall?.id ?? null;
+        if (id == null) {
+          set({ menuStall: null });
+          return;
+        }
+        set((state) => {
+          const next = { id: String(id), name: String(stall?.name ?? "").trim() };
+          const current = state.menuStall;
+          if (current?.id === next.id && current?.name === next.name) return state;
+          return { menuStall: next };
+        });
       },
       setSelectedService: (service) => {
         const normalized = normalizeService(service);
@@ -133,7 +151,8 @@ export const useDashboardStore = create(
         eventDetails: state.eventDetails,
         selectedService: state.selectedService,
         vendorsByEventId: state.vendorsByEventId,
-        stallsByEventId: state.stallsByEventId
+        stallsByEventId: state.stallsByEventId,
+        menuStall: state.menuStall
       }),
       storage: createJSONStorage(() =>
         typeof window !== "undefined" ? window.localStorage : undefined

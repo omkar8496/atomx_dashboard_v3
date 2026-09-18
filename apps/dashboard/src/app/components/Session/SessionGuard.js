@@ -144,11 +144,14 @@ function readTokenFromUrl() {
   return new URLSearchParams(window.location.search).get("token");
 }
 
+// Handoff params are consumed into the store above; clearing them keeps the
+// session token and the service out of the address bar, history and referrers.
 function removeTokenFromUrl() {
   if (typeof window === "undefined") return;
   const url = new URL(window.location.href);
-  if (!url.searchParams.has("token")) return;
-  url.searchParams.delete("token");
+  const consumed = ["token", "service"].filter((key) => url.searchParams.has(key));
+  if (consumed.length === 0) return;
+  consumed.forEach((key) => url.searchParams.delete(key));
   window.history.replaceState(window.history.state, "", url.toString());
 }
 

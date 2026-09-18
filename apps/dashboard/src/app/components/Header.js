@@ -82,6 +82,15 @@ export default function Header({
         venue: nextVenue || storedEventMeta?.venue || venue,
         city: nextCity || storedEventMeta?.city || city
       });
+
+      // Now that the event lives in the store, take it out of the address bar
+      // so ids and names are not on show or open to editing. SessionGuard
+      // clears `token` and `service` the same way.
+      const url = new URL(window.location.href);
+      ["eventId", "eventName", "venue", "city"].forEach((key) =>
+        url.searchParams.delete(key)
+      );
+      window.history.replaceState(window.history.state, "", url.toString());
     }
     if (nextService && nextService !== selectedService) {
       setSelectedService(nextService);

@@ -161,7 +161,8 @@ function newItem(row, id, position) {
     colour: row.colour,
     position,
     mrp: row.mrp,
-    quantity: row.quantity
+    quantity: row.quantity,
+    genericItemId: null
   };
 }
 

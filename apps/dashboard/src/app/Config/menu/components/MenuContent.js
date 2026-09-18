@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import * as XLSX from "xlsx";
-import { useSearchParams } from "next/navigation";
 import { fetchStallItems, saveStallMenu } from "../../../../lib/dashboardApi";
 import { useDashboardStore } from "../../../../store/dashboardStore";
 import MenuActionBar from "./MenuActionBar";
@@ -57,6 +57,8 @@ function normalizeMenuItem(item, index) {
     variant: asText(item?.variant),
     colour: asText(item?.colour),
     position: asNumber(item?.position, index),
+    // Set by linking a row to an item from a Generic-Items stall.
+    genericItemId: item?.genericItemId ?? null,
     // No UI controls for these; kept so saving echoes them back unchanged.
     mrp: asNumber(item?.mrp),
     quantity: asNumber(item?.quantity)
@@ -153,7 +155,8 @@ function itemPayload(item, index, categoryServerId) {
     groupId: item.groupId || "",
     variant: item.variant || "",
     colour: item.colour || "",
-    position: asNumber(item.position, index + 1)
+    position: asNumber(item.position, index + 1),
+    genericItemId: item.genericItemId ?? null
   };
 }
 
@@ -213,9 +216,10 @@ function buildMenuPayload(categories, baseline) {
 }
 
 export default function MenuContent() {
-  const searchParams = useSearchParams();
-  const stallId = searchParams.get("stallId");
-  const stallName = searchParams.get("stallName") || "Stall";
+  // Set by the Config page before it navigates here; never read from the URL.
+  const menuStall = useDashboardStore((state) => state.menuStall);
+  const stallId = menuStall?.id ?? null;
+  const stallName = menuStall?.name || "Stall";
   const token = useDashboardStore((state) => state.token);
   const [categories, setCategories] = useState([]);
   const [activeCategoryId, setActiveCategoryId] = useState(null);
@@ -240,10 +244,38 @@ export default function MenuContent() {
   const sampleCatalogue = useSampleItems({ eventId, token });
   const { load: loadSampleItems } = sampleCatalogue;
 
-  const openSampleItems = useCallback(() => {
-    setSampleOpen(true);
-    loadSampleItems();
-  }, [loadSampleItems]);
+  // The row whose "+ Sample" button opened the popup; the Link button writes
+  // the chosen generic item's id onto it.
+  const [sampleTargetId, setSampleTargetId] = useState(null);
+
+  // Names for linked generic items, so a row can show what it points at. Only
+  // known once the catalogue has been opened at least once; until then the row
+  // falls back to the id rather than fetching on its own.
+  const genericItemNames = useMemo(() => {
+    const names = new Map();
+    for (const row of sampleCatalogue.items) {
+      if (row.id != null) {
+        names.set(String(row.id), row.variant ? `${row.name} (${row.variant})` : row.name);
+      }
+    }
+    return names;
+  }, [sampleCatalogue.items]);
+
+  // Anything the save would actually send counts as an unsaved change, so the
+  // Save button uses the same diff the payload does.
+  const hasUnsavedChanges = useMemo(
+    () => buildMenuPayload(categories, baseline).length > 0,
+    [categories, baseline]
+  );
+
+  const openSampleItems = useCallback(
+    (itemId) => {
+      setSampleTargetId(itemId);
+      setSampleOpen(true);
+      loadSampleItems();
+    },
+    [loadSampleItems]
+  );
 
   useEffect(() => {
     let active = true;
@@ -252,7 +284,7 @@ export default function MenuContent() {
       setCategories([]);
       setActiveCategoryId(null);
       setLoading(false);
-      setLoadError("Stall ID is unavailable.");
+      setLoadError("No stall is selected. Open a stall from the Configuration page.");
       return () => {
         active = false;
       };
@@ -289,6 +321,31 @@ export default function MenuContent() {
   }, [stallId, token, reloadCount]);
 
   const activeCategory = categories.find((c) => c.id === activeCategoryId) ?? null;
+
+  // What a linked row shows: the generic item's name while the link is still
+  // unsaved, and the stored "GENERIC #id" once it has been saved.
+  const genericItemLabels = useMemo(() => {
+    const labels = new Map();
+    const savedCategory = baseline.find((c) => c.id === activeCategoryId);
+    const savedItems = new Map(
+      (savedCategory?.items ?? []).map((item) => [String(item.id), item])
+    );
+
+    for (const item of activeCategory?.items ?? []) {
+      if (item.genericItemId == null) continue;
+
+      const saved = savedItems.get(String(item.id));
+      const isSaved =
+        saved != null && String(saved.genericItemId) === String(item.genericItemId);
+      const name = genericItemNames.get(String(item.genericItemId));
+
+      labels.set(
+        item.id,
+        isSaved || !name ? `GENERIC #${item.genericItemId}` : name
+      );
+    }
+    return labels;
+  }, [activeCategory, activeCategoryId, baseline, genericItemNames]);
 
   const updateCategory = (updates) => {
     setCategories((prev) =>
@@ -374,7 +431,8 @@ export default function MenuContent() {
             supplierCode: "",
             groupId: "",
             variant: "",
-            colour: ""
+            colour: "",
+            genericItemId: null
           }
         ]
       }
@@ -385,7 +443,7 @@ export default function MenuContent() {
   const handleSave = async () => {
     if (!stallId) {
       setSaveMessage("");
-      setSaveError("Stall ID is unavailable.");
+      setSaveError("No stall is selected.");
       return;
     }
 
@@ -525,6 +583,7 @@ export default function MenuContent() {
                   groupId: "",
                   variant: "",
                   colour: "",
+                  genericItemId: null,
                   mrp: 0,
                   quantity: 0
                 }
@@ -549,6 +608,7 @@ export default function MenuContent() {
         onAddCategory={addCategory}
         onSave={handleSave}
         saving={saving}
+        hasUnsavedChanges={hasUnsavedChanges}
       />
 
       {saveError ? (
@@ -568,8 +628,16 @@ export default function MenuContent() {
             Loading menu…
           </div>
         ) : loadError ? (
-          <div className="flex min-h-[220px] items-center justify-center px-5 text-center text-[13px] font-semibold text-(--orange)">
-            {loadError}
+          <div className="flex min-h-[220px] flex-col items-center justify-center gap-3 px-5 text-center">
+            <p className="text-[13px] font-semibold text-(--orange)">{loadError}</p>
+            {stallId ? null : (
+              <Link
+                href="/Config"
+                className="flex h-9 items-center rounded-[8px] bg-(--text) px-3.5 text-[12.5px] font-semibold text-(--bg) transition hover:bg-(--orange)"
+              >
+                Go to Configuration
+              </Link>
+            )}
           </div>
         ) : (
           <>
@@ -594,6 +662,7 @@ export default function MenuContent() {
           categoryName={activeCategory?.name}
           onImportMenu={importMenuFile}
           onOpenSampleItems={openSampleItems}
+          genericItemLabels={genericItemLabels}
         />
           </>
         )}
@@ -603,6 +672,15 @@ export default function MenuContent() {
         open={sampleOpen}
         onClose={() => setSampleOpen(false)}
         catalogue={sampleCatalogue}
+        linkedId={
+          (activeCategory?.items ?? []).find((item) => item.id === sampleTargetId)
+            ?.genericItemId ?? null
+        }
+        onLink={(row) => {
+          if (sampleTargetId == null || row?.id == null) return;
+          updateItem(sampleTargetId, { genericItemId: row.id });
+          setSampleOpen(false);
+        }}
       />
     </div>
   );
